@@ -13,7 +13,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
     - [x] Make a makefile target to run unit tests and generate a coverage report
 * [x] Create an .env.example
     - [x] Add LangSmith environment variables for observability and tracing
-* [ ] Make a pre-commit hook for ensuring 80% test coverage
+* [x] Make a pre-commit hook for ensuring 80% test coverage
 * [ ] Add badges to README.md - https://github.com/jeffrichley/petal
     - [ ] Build & CI - ![GitHub Actions Build Status](https://img.shields.io/github/actions/workflow/status/your-org/your-repo/ci.yml?branch=main)
     - [ ] Test Coverage - ![Coverage](https://img.shields.io/codecov/c/gh/your-org/your-repo)
