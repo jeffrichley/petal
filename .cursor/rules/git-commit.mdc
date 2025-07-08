@@ -3,8 +3,6 @@ alwaysApply: true
 ---
 # Git Workflow Guide
 
-You should always follow this whe told 'stuffit' or something along the lines of getting changes to git
-
 **IMPORTANT:**
 All commands in this guide use [`uv`](https://github.com/astral-sh/uv) to ensure they run inside your project’s virtual environment, regardless of your platform (Mac, Linux, or Windows).
 
@@ -129,6 +127,14 @@ uv run git push origin main
 ```
 
 ## Troubleshooting
+
+### Fix Corrupted Coverage Files
+If pre-commit hooks fail with coverage errors, clean up corrupted coverage data:
+```bash
+rm -f .coverage*
+uv run git add .
+uv run git commit --no-verify -m "your commit message"
+```
 
 ### Undo Last Commit (keep changes)
 ```bash
