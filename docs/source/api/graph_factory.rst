@@ -8,4 +8,4 @@ GraphFactory
 
 .. note::
 
-   This module will be automatically documented once the GraphFactory class is implemented. 
+   This module will be automatically documented once the GraphFactory class is implemented.

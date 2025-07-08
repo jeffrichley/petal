@@ -137,4 +137,4 @@ Submitting Changes
 3. **Test your changes** by building the documentation
 4. **Submit a pull request** with a clear description
 
-Thank you for contributing to Petal's documentation! 
+Thank you for contributing to Petal's documentation!

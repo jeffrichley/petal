@@ -165,4 +165,4 @@ The architecture supports several planned extensions:
 - **YAML configuration**: Declarative agent definitions
 - **Visual debugging**: Graph visualization tools
 - **Plugin system**: Third-party extensions
-- **Distributed execution**: Multi-node agent workflows 
+- **Distributed execution**: Multi-node agent workflows

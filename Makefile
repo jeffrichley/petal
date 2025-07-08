@@ -20,6 +20,9 @@ test:  ## Run tests
 test-cov:  ## Run tests with coverage
 	uv run pytest tests/ --cov=src/petal --cov-report=html --cov-report=term --cov-report=xml
 
+test-cov-check:  ## Run tests with coverage and fail if below 80%
+	uv run pytest tests/ --cov=src/petal --cov-report=term-missing --cov-fail-under=80
+
 docs:  ## Build documentation
 	cd docs && make html
 
@@ -40,4 +43,4 @@ build:  ## Build the package
 
 # Documentation shortcuts
 docs-build: docs  ## Alias for docs
-docs-view: docs-serve  ## Alias for docs-serve 
+docs-view: docs-serve  ## Alias for docs-serve

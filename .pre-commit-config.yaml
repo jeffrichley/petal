@@ -13,7 +13,7 @@ repos:
     hooks:
       - id: mypy
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-merge-conflict
@@ -33,5 +33,10 @@ repos:
       - id: pip-audit
         name: pip-audit
         entry: pip-audit
+        language: system
+        pass_filenames: false
+      - id: coverage-check
+        name: coverage-check
+        entry: scripts/check_coverage.py
         language: system
         pass_filenames: false

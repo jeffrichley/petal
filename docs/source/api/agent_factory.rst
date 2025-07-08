@@ -8,4 +8,4 @@ AgentFactory
 
 .. note::
 
-   This module will be automatically documented once the AgentFactory class is implemented. 
+   This module will be automatically documented once the AgentFactory class is implemented.

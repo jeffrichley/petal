@@ -95,4 +95,4 @@ Create complex workflows with multiple agents:
        .connect("research", "write")
        .build())
 
-   result = workflow.run({"topic": "AI agents"}) 
+   result = workflow.run({"topic": "AI agents"})

@@ -8,4 +8,4 @@ Types
 
 .. note::
 
-   This module will be automatically documented once the types are implemented. 
+   This module will be automatically documented once the types are implemented.

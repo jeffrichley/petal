@@ -79,4 +79,4 @@ Next Steps
 
 - :doc:`api/index` - Complete API reference
 - :doc:`examples/index` - Tutorials and examples
-- :doc:`architecture` - Framework architecture overview 
+- :doc:`architecture` - Framework architecture overview

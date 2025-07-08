@@ -29,4 +29,4 @@ Core Classes
 .. automodule:: petal.graph_factory
    :members:
    :undoc-members:
-   :show-inheritance: 
+   :show-inheritance:

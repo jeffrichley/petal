@@ -8,4 +8,4 @@ Decorators
 
 .. note::
 
-   This module will be automatically documented once the decorators are implemented. 
+   This module will be automatically documented once the decorators are implemented.

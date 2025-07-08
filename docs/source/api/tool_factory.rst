@@ -8,4 +8,4 @@ ToolFactory
 
 .. note::
 
-   This module will be automatically documented once the ToolFactory class is implemented. 
+   This module will be automatically documented once the ToolFactory class is implemented.
