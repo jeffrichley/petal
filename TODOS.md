@@ -14,18 +14,16 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Create an .env.example
     - [x] Add LangSmith environment variables for observability and tracing
 * [x] Make a pre-commit hook for ensuring 80% test coverage
-* [ ] Add badges to README.md - https://github.com/jeffrichley/petal
-    - [ ] Build & CI - ![GitHub Actions Build Status](https://img.shields.io/github/actions/workflow/status/your-org/your-repo/ci.yml?branch=main)
-    - [ ] Test Coverage - ![Coverage](https://img.shields.io/codecov/c/gh/your-org/your-repo)
-    - [ ] License - ![License](https://img.shields.io/github/license/your-org/your-repo)
-    - [ ] PyPI Version - ![PyPI - Version](https://img.shields.io/pypi/v/your-package)
-    - [ ] Docs Status - ![Read the Docs](https://img.shields.io/readthedocs/your-project)
-    - [ ] Top Language - ![Top Language](https://img.shields.io/github/languages/top/your-org/your-repo)
-    - [ ] Dependencies - ![Dependencies](https://img.shields.io/librariesio/release/pypi/your-package)
-    - [ ] Code Quality - ![Maintainability](https://img.shields.io/codeclimate/maintainability/your-org/your-repo)
-    - [ ] Meme of the Day - ![Random Meme](https://img.shields.io/badge/meme-of-the-day-%F0%9F%98%82)
-* [ ] Update pyproject.toml’s [tool.setuptools.packages.find] (or equivalent) to point at src
-* [ ] Create a template project
+* [x] Add badges to README.md - https://github.com/jeffrichley/petal
+    - [x] Build & CI - ![Build Status](https://github.com/jeffrichley/petal/actions/workflows/ci.yml/badge.svg)
+    - [x] Test Coverage - ![Coverage](https://img.shields.io/codecov/c/gh/jeffrichley/petal)
+    - [x] License - ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+    - [x] PyPI Version - ![PyPI version](https://badge.fury.io/py/petal.svg)
+    - [x] Python Versions - ![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)
+    - [x] pre-commit - ![pre-commit enabled](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)
+    - [x] Security - ![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)
+* [x] Update pyproject.toml’s [tool.setuptools.packages.find] (or equivalent) to point at src
+* [x] Create a template project
 
 ## 🧠 AgentFactory
 

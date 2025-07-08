@@ -1,9 +1,10 @@
-[![Build Status](https://github.com/<your-username>/<your-repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/<your-repo>/actions)
+[![Build Status](https://github.com/jeffrichley/petal/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffrichley/petal/actions)
 [![PyPI version](https://badge.fury.io/py/petal.svg)](https://badge.fury.io/py/petal)
 [![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)](https://pypi.org/project/petal/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pre-commit enabled](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 [![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)](https://github.com/pypa/pip-audit)
+[![Coverage](https://img.shields.io/codecov/c/gh/jeffrichley/petal)](https://codecov.io/gh/jeffrichley/petal)
 
 # 🌸 Petal
 
