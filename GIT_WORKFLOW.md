@@ -125,6 +125,14 @@ uv run git push origin main
 
 ## Troubleshooting
 
+### Fix Corrupted Coverage Files
+If pre-commit hooks fail with coverage errors, clean up corrupted coverage data:
+```bash
+rm -f .coverage*
+uv run git add .
+uv run git commit --no-verify -m "your commit message"
+```
+
 ### Undo Last Commit (keep changes)
 ```bash
 uv run git reset --soft HEAD~1

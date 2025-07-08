@@ -64,7 +64,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Implement `.add(fn)` for direct registration (now `.add(name, fn)`)
 * [x] Implement `.resolve(name)` to retrieve tool
 * [x] Implement `.list()` to show all registered tools
-* [ ] Implement `.add_mcp(name, resolver)` for mcp related tools
+* [x] Implement `.add_mcp(name, resolver)` for mcp related tools
 
 ### Discovery
 
@@ -107,10 +107,29 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 ## 🧪 Testing & Dev Tools
 
 * [x] Unit tests for each method above
-* [ ] Integration tests for full agent flow
+* [x] Integration tests for full agent flow
 * [ ] LangGraph test with multi-node chain
 * [ ] YAML config roundtrip test
 * [x] Add pre-built test agents in `examples/`
+
+---
+
+## ✅ Completed During Development
+
+### Infrastructure & Workflow
+* [x] Fix Makefile workflow to prevent duplicate test runs
+* [x] Add proper mypy configuration to exclude tests
+* [x] Add troubleshooting section for corrupted coverage files in GIT_WORKFLOW.md
+* [x] Achieve 100% test coverage across all modules
+* [x] Implement comprehensive CI/CD pipeline with pre-commit hooks
+* [x] Add development workflow documentation and rules
+
+### Core Framework
+* [x] Implement complete Petal framework with all core modules
+* [x] Add configuration system with settings management
+* [x] Add comprehensive type definitions and state management
+* [x] Add example implementations for custom tools and agents
+* [x] Add MCP server testing fixtures and integration
 
 ---
 
