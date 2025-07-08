@@ -87,5 +87,3 @@ docker-compose.override.yml
 sandbox/
 scratch/
 test_output/
-docs/Petal_Project.pdf
-docs/image.png
