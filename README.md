@@ -1,5 +1,4 @@
 [![Build Status](https://github.com/<your-username>/<your-repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/<your-repo>/actions)
-[![Coverage Status](https://coveralls.io/repos/github/<your-username>/<your-repo>/badge.svg?branch=main)](https://coveralls.io/github/<your-username>/<your-repo>?branch=main)
 [![PyPI version](https://badge.fury.io/py/petal.svg)](https://badge.fury.io/py/petal)
 [![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)](https://pypi.org/project/petal/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -96,5 +95,7 @@ For more details, see CONTRIBUTING.md and the rest of this README.
 ---
 
 ## 🧰 Project Structure
+
+```
 
 ```
