@@ -71,6 +71,8 @@ skip-magic-trailing-comma = false
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+
+[tool.ruff.lint]
 extend-select = [
   "E", "F", "I", "N", "B", "Q", "SIM", "C90", "ARG"
 ]

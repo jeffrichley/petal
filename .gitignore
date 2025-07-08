@@ -16,6 +16,7 @@ htmlcov/
 .cache/
 .tox/
 .nox/
+.coverage
 
 # -----------------------------------------------------------------------------
 # 🔧 Tooling & Virtual Environments

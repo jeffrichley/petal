@@ -9,7 +9,7 @@ install-dev:  ## Install development dependencies
 
 format:  ## Format code with black and ruff
 	uv run black .
-	uv run ruff . --fix
+	uv run ruff check . --fix
 
 lint:  ## Lint code with ruff
 	uv run ruff check .
@@ -18,7 +18,7 @@ test:  ## Run tests
 	uv run pytest tests/ -v
 
 test-cov:  ## Run tests with coverage
-	uv run pytest tests/ --cov=src/petal --cov-report=html --cov-report=term
+	uv run pytest tests/ --cov=src/petal --cov-report=html --cov-report=term --cov-report=xml
 
 docs:  ## Build documentation
 	cd docs && make html

@@ -8,10 +8,11 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ## Project Structure
 * [x] Add automatic documentation creation with Sphinx
-* [ ] Create a makefile
-    - [ ] Make a makefile target to run black and ruff to automatically fix issues
-    - [ ] Make a makefile target to run unit tests and generate a coverage report
-* [ ] Create an .env.example
+* [x] Create a makefile
+    - [x] Make a makefile target to run black and ruff to automatically fix issues
+    - [x] Make a makefile target to run unit tests and generate a coverage report
+* [x] Create an .env.example
+    - [x] Add LangSmith environment variables for observability and tracing
 * [ ] Make a pre-commit hook for ensuring 80% test coverage
 * [ ] Add badges to README.md - https://github.com/jeffrichley/petal
     - [ ] Build & CI - ![GitHub Actions Build Status](https://img.shields.io/github/actions/workflow/status/your-org/your-repo/ci.yml?branch=main)
@@ -24,6 +25,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
     - [ ] Code Quality - ![Maintainability](https://img.shields.io/codeclimate/maintainability/your-org/your-repo)
     - [ ] Meme of the Day - ![Random Meme](https://img.shields.io/badge/meme-of-the-day-%F0%9F%98%82)
 * [ ] Update pyproject.toml’s [tool.setuptools.packages.find] (or equivalent) to point at src
+* [ ] Create a template project
 
 ## 🧠 AgentFactory
 
