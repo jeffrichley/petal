@@ -29,10 +29,10 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Core Implementation
 
-* [ ] Create `AgentFactory` class
-* [ ] Implement `.add(step)` for function/step registration
-* [ ] Add `.with_prompt()` for f-string prompt injection
-* [ ] Add `.with_system_prompt()` to define system role
+* [x] Create `AgentFactory` class
+* [x] Implement `.add(step)` for function/step registration
+* [x] Add `.with_prompt()` for f-string prompt injection
+* [x] Add `.with_system_prompt()` to define system role
 * [ ] Add `.with_chat()` to configure LLM support
 * [ ] Add `.with_memory()` for memory support
 * [ ] Add `.with_logger()` for internal state logging
@@ -42,8 +42,8 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [ ] Add `.with_timeout()` support
 * [ ] Add `.with_tool_registry()` to inject tools
 * [ ] Add `.with_mcp_proxy()` for deferred MCP toolkit resolution
-* [ ] Add `.build()` to compile final agent Runnable
-* [ ] Add `.run()` to execute with state dict
+* [x] Add `.build()` to compile final agent Runnable
+* [x] Add `.run()` to execute with state dict
 * [ ] Add `.as_node()` for LangGraph compatibility
 
 ### Extras
@@ -60,11 +60,11 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Core Implementation
 
-* [ ] Create `ToolFactory` class
-* [ ] Implement `.add(fn)` for direct registration
-* [ ] Implement `.add_lazy(name, resolver)` for on-demand tools
-* [ ] Implement `.resolve(name)` to retrieve tool
-* [ ] Implement `.list()` to show all registered tools
+* [x] Create `ToolFactory` class
+* [x] Implement `.add(fn)` for direct registration (now `.add(name, fn)`)
+* [x] Implement `.resolve(name)` to retrieve tool
+* [x] Implement `.list()` to show all registered tools
+* [ ] Implement `.add_mcp(name, resolver)` for mcp related tools
 
 ### Discovery
 
@@ -106,11 +106,11 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ## 🧪 Testing & Dev Tools
 
-* [ ] Unit tests for each method above
+* [x] Unit tests for each method above
 * [ ] Integration tests for full agent flow
 * [ ] LangGraph test with multi-node chain
 * [ ] YAML config roundtrip test
-* [ ] Add pre-built test agents in `examples/`
+* [x] Add pre-built test agents in `examples/`
 
 ---
 

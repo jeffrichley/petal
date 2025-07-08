@@ -1,4 +1,4 @@
-.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov build install-dev
+.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov test-cov-check build install-dev checkit
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -44,3 +44,9 @@ build:  ## Build the package
 # Documentation shortcuts
 docs-build: docs  ## Alias for docs
 docs-view: docs-serve  ## Alias for docs-serve
+
+checkit:
+	black .
+	ruff check . --fix
+	mypy src/
+	$(MAKE) test-cov-check
