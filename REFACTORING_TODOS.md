@@ -332,13 +332,13 @@ def test_agent_config():
     # Test validation methods
 ```
 
-### Task 1.5: Create StateTypeFactory (1.5 hours)
+### Task 1.5: Create StateTypeFactory (1.5 hours) ✅
 **Goal**: Centralize state type creation logic
 
 **Files to create/modify**:
-- `src/petal/core/config/state.py`
-- `src/petal/core/factory.py` (move logic)
-- `tests/petal/test_config_state.py`
+- [x] `src/petal/core/config/state.py`
+- [x] `src/petal/core/factory.py` (move logic)
+- [x] `tests/petal/test_config_state.py`
 
 **Sample Code**:
 ```python
@@ -378,35 +378,25 @@ class StateTypeFactory:
         """Create a state type that supports merging."""
         # Implementation for mergeable state types
         return base_type
-
-# Usage example:
-from typing import TypedDict
-
-class MyState(TypedDict):
-    name: str
-
-# Create state with messages
-state_with_messages = StateTypeFactory.create_with_messages(MyState)
-# Now state_with_messages includes message support
 ```
 
 **Deliverables**:
-- [ ] `StateTypeFactory` class with static methods:
-  - `create_with_messages(base_type: type) -> type`
-  - `create_mergeable(base_type: type) -> type`
-- [ ] Move `_create_state_type()` logic from `AgentFactory`
-- [ ] Caching mechanism for dynamic type creation
-- [ ] Comprehensive error handling for type creation failures
-- [ ] Unit tests with 100% coverage
-- [ ] All tests passing
+- [x] `StateTypeFactory` class with static methods:
+  - [x] `create_with_messages(base_type: type) -> type`
+  - [x] `create_mergeable(base_type: type) -> type`
+- [x] Move `_create_state_type()` logic from `AgentFactory`
+- [x] Caching mechanism for dynamic type creation
+- [x] Comprehensive error handling for type creation failures
+- [x] Unit tests with 100% coverage
+- [x] All tests passing
 
 **Success Criteria**:
-- [ ] Can create state types with message support
-- [ ] Caching works correctly and improves performance
-- [ ] Error handling for invalid state types
-- [ ] No memory leaks from caching
-- [ ] All existing state type logic preserved
-- [ ] Type hints are accurate and complete
+- [x] Can create state types with message support
+- [x] Caching works correctly and improves performance
+- [x] Error handling for invalid state types
+- [x] No memory leaks from caching
+- [x] All existing state type logic preserved
+- [x] Type hints are accurate and complete
 
 **Test Requirements**:
 ```python

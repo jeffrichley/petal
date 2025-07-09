@@ -71,14 +71,14 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] Add validation methods for configuration integrity
   - [x] Create unit tests in `tests/petal/test_config_agent.py`
 
-* [ ] **Create State Type Factory**
-  - [ ] Create `src/petal/core/config/state.py` with `StateTypeFactory` class
-  - [ ] Move `_create_state_type()` logic from `AgentFactory` to this class
-  - [ ] Implement `create_with_messages(base_type: type) -> type` static method
-  - [ ] Implement `create_mergeable(base_type: type) -> type` static method
-  - [ ] Add caching mechanism for dynamic type creation
-  - [ ] Add comprehensive error handling for type creation failures
-  - [ ] Create unit tests in `tests/petal/test_config_state.py`
+* [x] **Create State Type Factory**
+  - [x] Create `src/petal/core/config/state.py` with `StateTypeFactory` class
+  - [x] Move `_create_state_type()` logic from `AgentFactory` to this class
+  - [x] Implement `create_with_messages(base_type: type) -> type` static method
+  - [x] Implement `create_mergeable(base_type: type) -> type` static method
+  - [x] Add caching mechanism for dynamic type creation
+  - [x] Add comprehensive error handling for type creation failures
+  - [x] Create unit tests in `tests/petal/test_config_state.py`
 
 * [ ] **Create Graph Configuration**
   - [ ] Create `src/petal/core/config/graph.py` with `GraphConfig` class

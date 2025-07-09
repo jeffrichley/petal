@@ -8,6 +8,7 @@ from petal.core.config.agent import (
     MemoryConfig,
     StepConfig,
 )
+from petal.core.config.state import StateTypeFactory
 
 __all__ = [
     "AgentConfig",
@@ -16,4 +17,5 @@ __all__ = [
     "GraphConfig",
     "LLMConfig",
     "LoggingConfig",
+    "StateTypeFactory",
 ]
