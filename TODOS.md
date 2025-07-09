@@ -25,6 +25,189 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Update pyproject.toml's [tool.setuptools.packages.find] (or equivalent) to point at src
 * [x] Create a template project
 
+## 🏗️ Factory.py Architectural Refactoring
+
+### Phase 1: Extract Step Management (Strategy Pattern)
+
+* [ ] **Create StepStrategy Abstract Base Class**
+  - [ ] Create `src/petal/core/steps/__init__.py`
+  - [ ] Create `src/petal/core/steps/base.py` with `StepStrategy` ABC
+  - [ ] Define abstract methods: `create_step(config: Dict[str, Any]) -> Callable` and `get_node_name(index: int) -> str`
+  - [ ] Add type hints and comprehensive docstrings
+  - [ ] Create unit tests in `tests/petal/test_steps_base.py`
+
+* [ ] **Implement LLMStepStrategy**
+  - [ ] Create `src/petal/core/steps/llm.py` with `LLMStepStrategy` class
+  - [ ] Inherit from `StepStrategy` and implement abstract methods
+  - [ ] Move `LLMStep` class from `factory.py` to `steps/llm.py`
+  - [ ] Refactor `LLMStep` to use configuration object pattern
+  - [ ] Add comprehensive validation for LLM configuration
+  - [ ] Create unit tests in `tests/petal/test_steps_llm.py`
+  - [ ] Test all LLM provider configurations (OpenAI, etc.)
+
+* [ ] **Implement CustomStepStrategy**
+  - [ ] Create `src/petal/core/steps/custom.py` with `CustomStepStrategy` class
+  - [ ] Support arbitrary callable functions as steps
+  - [ ] Add validation for step function signatures
+  - [ ] Support both sync and async functions
+  - [ ] Create unit tests in `tests/petal/test_steps_custom.py`
+
+* [ ] **Create Step Registry**
+  - [ ] Create `src/petal/core/steps/registry.py` with `StepRegistry` class
+  - [ ] Implement `register(name: str, strategy: Type[StepStrategy])` method
+  - [ ] Implement `get_strategy(name: str) -> StepStrategy` method
+  - [ ] Add `_register_defaults()` method to register built-in strategies
+  - [ ] Add validation and error handling for unknown step types
+  - [ ] Create unit tests in `tests/petal/test_steps_registry.py`
+
+### Phase 2: Configuration Management (Configuration Object Pattern)
+
+* [ ] **Create AgentConfig Data Class**
+  - [ ] Create `src/petal/core/config/__init__.py`
+  - [ ] Create `src/petal/core/config/agent.py` with `AgentConfig` dataclass
+  - [ ] Define fields: `state_type`, `steps`, `memory`, `graph_config`
+  - [ ] Add `add_step(strategy: StepStrategy, config: Dict[str, Any])` method
+  - [ ] Add `set_memory(memory_config: Dict[str, Any])` method
+  - [ ] Add validation methods for configuration integrity
+  - [ ] Create unit tests in `tests/petal/test_config_agent.py`
+
+* [ ] **Create State Type Factory**
+  - [ ] Create `src/petal/core/config/state.py` with `StateTypeFactory` class
+  - [ ] Move `_create_state_type()` logic from `AgentFactory` to this class
+  - [ ] Implement `create_with_messages(base_type: type) -> type` static method
+  - [ ] Implement `create_mergeable(base_type: type) -> type` static method
+  - [ ] Add caching mechanism for dynamic type creation
+  - [ ] Add comprehensive error handling for type creation failures
+  - [ ] Create unit tests in `tests/petal/test_config_state.py`
+
+* [ ] **Create Graph Configuration**
+  - [ ] Create `src/petal/core/config/graph.py` with `GraphConfig` class
+  - [ ] Define graph building parameters and edge configurations
+  - [ ] Support different graph topologies (linear, branching, etc.)
+  - [ ] Add validation for graph structure integrity
+  - [ ] Create unit tests in `tests/petal/test_config_graph.py`
+
+### Phase 3: Builder Pattern with Composition
+
+* [ ] **Create AgentBuilder Class**
+  - [ ] Create `src/petal/core/builders/__init__.py`
+  - [ ] Create `src/petal/core/builders/agent.py` with `AgentBuilder` class
+  - [ ] Implement fluent interface with `with_step()`, `with_memory()`, etc.
+  - [ ] Use composition with `AgentConfig` and `StepRegistry`
+  - [ ] Add validation for builder state consistency
+  - [ ] Create unit tests in `tests/petal/test_builders_agent.py`
+
+* [ ] **Create AgentBuilderDirector**
+  - [ ] Create `src/petal/core/builders/director.py` with `AgentBuilderDirector` class
+  - [ ] Move complex building logic from `AgentFactory.build()` to this class
+  - [ ] Implement `build() -> Agent` method
+  - [ ] Add `_create_state_type()` and `_build_graph()` private methods
+  - [ ] Add comprehensive error handling for build failures
+  - [ ] Create unit tests in `tests/petal/test_builders_director.py`
+
+* [ ] **Create Step Configuration Handlers**
+  - [ ] Create `src/petal/core/builders/handlers/__init__.py`
+  - [ ] Create `src/petal/core/builders/handlers/base.py` with `StepConfigHandler` ABC
+  - [ ] Implement Chain of Responsibility pattern for step configuration
+  - [ ] Create `src/petal/core/builders/handlers/llm.py` with `LLMConfigHandler`
+  - [ ] Create `src/petal/core/builders/handlers/custom.py` with `CustomConfigHandler`
+  - [ ] Add comprehensive error handling and validation
+  - [ ] Create unit tests in `tests/petal/test_builders_handlers.py`
+
+### Phase 4: Refactor Existing Factory
+
+* [ ] **Update AgentFactory to Use New Architecture**
+  - [ ] Modify `src/petal/core/factory.py` to use new builder pattern
+  - [ ] Replace direct step management with `AgentBuilder` composition
+  - [ ] Update `with_chat()` method to use new step registry
+  - [ ] Update `add()` method to use new step strategies
+  - [ ] Maintain backward compatibility during transition
+  - [ ] Update all existing tests to work with new architecture
+
+* [ ] **Remove ChatStepBuilder**
+  - [ ] Deprecate `ChatStepBuilder` class in favor of new builder pattern
+  - [ ] Update all examples and documentation to use new approach
+  - [ ] Remove `ChatStepBuilder` after migration is complete
+  - [ ] Update tests to reflect new architecture
+
+* [ ] **Update State Management**
+  - [ ] Replace dynamic type creation in `AgentFactory` with `StateTypeFactory`
+  - [ ] Update state type caching mechanism
+  - [ ] Add better error messages for state type creation failures
+  - [ ] Update tests to use new state management approach
+
+### Phase 5: Extensibility and Advanced Features
+
+* [ ] **Add Plugin System for Step Types**
+  - [ ] Create `src/petal/core/plugins/__init__.py`
+  - [ ] Create `src/petal/core/plugins/base.py` with plugin interface
+  - [ ] Implement automatic discovery of step type plugins
+  - [ ] Add plugin registration and management system
+  - [ ] Create example plugins for common step types
+  - [ ] Create unit tests in `tests/petal/test_plugins.py`
+
+* [ ] **Add Configuration Validation**
+  - [ ] Create `src/petal/core/validation/__init__.py`
+  - [ ] Create `src/petal/core/validation/config.py` with validation schemas
+  - [ ] Use Pydantic for configuration validation
+  - [ ] Add comprehensive validation for all configuration objects
+  - [ ] Create unit tests in `tests/petal/test_validation.py`
+
+* [ ] **Add Advanced Graph Building**
+  - [ ] Create `src/petal/core/graph/__init__.py`
+  - [ ] Create `src/petal/core/graph/builder.py` with advanced graph building
+  - [ ] Support conditional edges and branching logic
+  - [ ] Support parallel execution paths
+  - [ ] Add graph visualization capabilities
+  - [ ] Create unit tests in `tests/petal/test_graph.py`
+
+### Phase 6: Testing and Documentation
+
+* [ ] **Comprehensive Integration Testing**
+  - [ ] Create `tests/integration/test_factory_refactor.py`
+  - [ ] Test complete agent building workflows with new architecture
+  - [ ] Test backward compatibility with existing code
+  - [ ] Test performance impact of new architecture
+  - [ ] Test error handling and edge cases
+
+* [ ] **Update Documentation**
+  - [ ] Update `docs/source/api/factory.rst` with new architecture
+  - [ ] Create migration guide from old to new factory usage
+  - [ ] Update all examples to use new builder pattern
+  - [ ] Add architectural decision records (ADRs) for the refactoring
+  - [ ] Update README.md with new usage patterns
+
+* [ ] **Performance Optimization**
+  - [ ] Profile new architecture for performance bottlenecks
+  - [ ] Optimize step creation and configuration
+  - [ ] Optimize state type creation and caching
+  - [ ] Add performance benchmarks and monitoring
+  - [ ] Create performance regression tests
+
+### Phase 7: Cleanup and Finalization
+
+* [ ] **Remove Deprecated Code**
+  - [ ] Remove old `ChatStepBuilder` class completely
+  - [ ] Remove old step management code from `AgentFactory`
+  - [ ] Remove old state type creation logic
+  - [ ] Clean up unused imports and dependencies
+  - [ ] Update type hints and annotations
+
+* [ ] **Final Testing and Validation**
+  - [ ] Run complete test suite to ensure no regressions
+  - [ ] Test all existing examples and playground code
+  - [ ] Validate that all existing functionality still works
+  - [ ] Check code coverage is maintained or improved
+  - [ ] Run performance benchmarks to ensure no degradation
+
+* [ ] **Update Development Workflow**
+  - [ ] Update `PLANNING.md` with new architecture decisions
+  - [ ] Update `GIT_WORKFLOW.md` if needed for new patterns
+  - [ ] Update pre-commit hooks if needed for new code structure
+  - [ ] Update CI/CD pipeline if needed for new testing patterns
+
+---
+
 ## 🧠 AgentFactory
 
 ### Core Implementation

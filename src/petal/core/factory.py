@@ -1,10 +1,11 @@
 from typing import Any, Callable, Dict, List, Optional, Union, get_type_hints
 
 from langchain.chat_models.base import BaseChatModel
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import MessagesState, add_messages
 from typing_extensions import Annotated, TypedDict
+
+from petal.core.steps.llm import LLMStep
 
 
 class DefaultState(TypedDict):
@@ -25,66 +26,6 @@ class MergeableState(TypedDict, total=False):
 
     # This allows any keys to be added and merged
     # We'll use a simple dict approach for now
-
-
-class LLMStep:
-    """
-    Encapsulates the configuration and logic for an LLM step.
-    """
-
-    def __init__(self, prompt_template, system_prompt, llm_config, llm_instance):
-        self.prompt_template = prompt_template
-        self.system_prompt = system_prompt
-        self.llm_config = llm_config
-        self.llm_instance = llm_instance
-
-    async def __call__(self, state):
-        llm = self._create_llm_instance()
-        llm_messages, user_prompt = self._build_llm_messages(state)
-        response = await llm.ainvoke(llm_messages)
-        return self._format_llm_response(response, user_prompt)
-
-    def _build_llm_messages(self, state):
-        original_messages = state.get("messages", [])
-        llm_messages = []
-        if self.system_prompt:
-            llm_messages.append({"role": "system", "content": self.system_prompt})
-        llm_messages.extend(original_messages)
-        user_prompt = None
-        if self.prompt_template:
-            try:
-                user_prompt = self.prompt_template.format(**state)
-            except KeyError as e:
-                missing_key = str(e).strip("'")
-                raise ValueError(
-                    f"Prompt template '{self.prompt_template}' requires key '{missing_key}' "
-                    f"but it's not available in the state. Available keys: {list(state.keys())}"
-                ) from e
-            llm_messages.append({"role": "user", "content": user_prompt})
-        return llm_messages, user_prompt
-
-    def _create_llm_instance(self):
-        if self.llm_instance is not None:
-            return self.llm_instance
-        config = self.llm_config or {}
-        provider = config.get("provider", "openai")
-        openai_config = {k: v for k, v in config.items() if k != "provider"}
-        if "model" not in openai_config:
-            openai_config["model"] = "gpt-4o-mini"
-        if "temperature" not in openai_config:
-            openai_config["temperature"] = 0
-        if provider == "openai":
-            return ChatOpenAI(**openai_config)
-        else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
-
-    def _format_llm_response(self, response, user_prompt):
-        # Return the complete state with messages added
-        # This ensures the messages field is always present in the final state
-        if user_prompt:
-            return {"messages": [{"role": "user", "content": user_prompt}, response]}
-        else:
-            return {"messages": [response]}
 
 
 class Agent:
@@ -133,7 +74,6 @@ class AgentFactory:
             raise TypeError("state_type is required and cannot be None")
 
         self._steps: List[Union[Callable[..., Any], "LLMStep"]] = []
-        self._memory: Optional[Any] = None
         self._built = False
         self._state_type = state_type
         self._node_names: List[str] = []
@@ -150,13 +90,6 @@ class AgentFactory:
 
         self._steps.append(step)
         self._node_names.append(node_name)
-        return self
-
-    def with_memory(self, memory: Optional[Any] = None) -> "AgentFactory":
-        """
-        Add memory support to the agent.
-        """
-        self._memory = memory
         return self
 
     def with_chat(

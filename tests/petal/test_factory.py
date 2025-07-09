@@ -139,7 +139,7 @@ async def test_chat_step_builder_with_system_prompt_on_non_llm_step():
 @pytest.mark.asyncio
 async def test_with_chat_default_openai():
     """Test that with_chat() with None uses default OpenAI config."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -153,7 +153,7 @@ async def test_with_chat_default_openai():
 @pytest.mark.asyncio
 async def test_with_chat_custom_config():
     """Test that with_chat() accepts a custom config dict."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -184,7 +184,7 @@ async def test_with_chat_custom_llm_instance():
 @pytest.mark.asyncio
 async def test_with_chat_kwargs():
     """Test that with_chat() accepts kwargs for configuration."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -220,7 +220,7 @@ async def test_agent_with_llm():
     async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -271,7 +271,7 @@ async def test_with_chat_invalid_input():
     with pytest.raises(
         ValueError, match="llm must be None, a BaseChatModel instance, or a dict"
     ):
-        factory.with_chat("invalid")
+        factory.with_chat("invalid")  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -281,7 +281,7 @@ async def test_with_chat_integration():
     async def step1(state):  # noqa: ARG001
         return {"step": 1}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -297,7 +297,7 @@ async def test_with_chat_integration():
 @pytest.mark.asyncio
 async def test_chat_step_builder_with_prompt():
     """Test that ChatStepBuilder can configure prompts."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -320,7 +320,7 @@ async def test_chat_step_builder_with_prompt():
 @pytest.mark.asyncio
 async def test_chat_step_builder_fluent_interface():
     """Test that ChatStepBuilder supports fluent chaining."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -339,7 +339,7 @@ async def test_chat_step_builder_fluent_interface():
 @pytest.mark.asyncio
 async def test_unsupported_provider():
     """Test that unsupported LLM providers raise an error."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_chat_openai.side_effect = Exception("Unsupported provider")
 
         agent = (
@@ -360,7 +360,7 @@ async def test_agent_run_with_llm_auto_invoke():
     async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -382,7 +382,7 @@ async def test_agent_arun_with_llm_auto_invoke():
     async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = AsyncMock()
         mock_llm.ainvoke.return_value = AIMessage(content="Test response")
         mock_chat_openai.return_value = mock_llm
@@ -451,7 +451,7 @@ async def test_agent_with_typed_dict_state():
 @pytest.mark.asyncio
 async def test_agent_with_prompt_template():
     """Test that prompt templates work correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -473,7 +473,7 @@ async def test_agent_with_prompt_template():
 @pytest.mark.asyncio
 async def test_agent_with_system_prompt_only():
     """Test that system prompt works without user prompt template."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -492,7 +492,7 @@ async def test_agent_with_system_prompt_only():
 @pytest.mark.asyncio
 async def test_agent_with_no_prompts():
     """Test that LLM step works without any prompts."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -501,22 +501,6 @@ async def test_agent_with_no_prompts():
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
-
-
-@pytest.mark.asyncio
-async def test_agent_with_memory():
-    """Test that memory support works."""
-    mock_memory = Mock()
-    mock_memory.load_memory_variables.return_value = {"memory_key": "memory_value"}
-
-    async def step(state):  # noqa: ARG001
-        return {"processed": True}
-
-    agent = AgentFactory(SimpleState).add(step).with_memory(mock_memory).build()
-
-    result = await agent.arun({})
-    # Only the last step's fields should be in the result
-    assert result["processed"] is True
 
 
 @pytest.mark.asyncio
@@ -531,7 +515,7 @@ async def test_agent_with_typed_dict_return():
     async def step(_state: MyState) -> Dict[str, Any]:
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -546,7 +530,7 @@ async def test_agent_with_typed_dict_return():
 @pytest.mark.asyncio
 async def test_agent_with_empty_messages():
     """Test that agent handles empty messages correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -560,7 +544,7 @@ async def test_agent_with_empty_messages():
 @pytest.mark.asyncio
 async def test_agent_with_no_messages_key():
     """Test that agent handles missing messages key correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -578,7 +562,7 @@ async def test_agent_with_async_dispatch():
     async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -633,7 +617,7 @@ async def test_agent_with_custom_state_type_with_messages():
     async def step(state):  # noqa: ARG001
         return {"custom_field": "updated"}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -658,7 +642,7 @@ async def test_agent_with_custom_state_type_without_messages():
     async def step(state):  # noqa: ARG001
         return {"custom_field": "updated"}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -678,7 +662,7 @@ async def test_agent_with_none_state_type_and_chat():
     async def step(state):  # noqa: ARG001
         return {"custom_field": "updated"}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -710,7 +694,7 @@ async def test_llm_step_with_prompt_template_formatting():
         input_data: str
         step_count: int
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = AsyncMock()
         mock_llm.ainvoke.return_value = AIMessage(content="Test response")
         mock_chat_openai.return_value = mock_llm
@@ -740,7 +724,7 @@ async def test_llm_step_with_prompt_template_formatting():
 @pytest.mark.asyncio
 async def test_llm_step_with_system_prompt_only():
     """Test that LLM step works with only system prompt."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -759,7 +743,7 @@ async def test_llm_step_with_system_prompt_only():
 @pytest.mark.asyncio
 async def test_llm_step_with_no_prompts():
     """Test that LLM step works without any prompts."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -773,7 +757,7 @@ async def test_llm_step_with_no_prompts():
 @pytest.mark.asyncio
 async def test_llm_step_with_empty_messages():
     """Test that LLM step handles empty messages correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -787,7 +771,7 @@ async def test_llm_step_with_empty_messages():
 @pytest.mark.asyncio
 async def test_llm_step_with_missing_messages_key():
     """Test that LLM step handles missing messages key correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -802,7 +786,7 @@ async def test_llm_step_with_missing_messages_key():
 @pytest.mark.asyncio
 async def test_llm_step_async():
     """Test that async LLM step works correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         # Return a real AIMessage for both sync and async
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
@@ -831,7 +815,7 @@ async def test_llm_step_with_custom_llm_instance():
 @pytest.mark.asyncio
 async def test_llm_step_with_custom_config():
     """Test that LLM step works with custom config."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -847,7 +831,7 @@ async def test_llm_step_with_custom_config():
 @pytest.mark.asyncio
 async def test_llm_step_with_default_config():
     """Test that LLM step uses default config when none provided."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -870,24 +854,9 @@ async def test_llm_step_with_unsupported_provider():
 
 
 @pytest.mark.asyncio
-async def test_agent_with_memory_load_step():
-    """Test that memory load step works correctly."""
-    mock_memory = Mock()
-    mock_memory.load_memory_variables.return_value = {"memory_key": "memory_value"}
-
-    async def step(state):  # noqa: ARG001
-        return {"processed": True}
-
-    agent = AgentFactory(SimpleState).add(step).with_memory(mock_memory).build()
-
-    result = await agent.arun({})
-    assert result["processed"] is True
-
-
-@pytest.mark.asyncio
 async def test_agent_build_with_multiple_llm_steps():
     """Test that building agent with multiple LLM steps works correctly."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -905,7 +874,7 @@ async def test_agent_build_with_mixed_steps():
     async def regular_step(state):  # noqa: ARG001
         return {"processed": True}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
@@ -1000,7 +969,7 @@ async def test_chat_step_builder_with_multiple_chat_steps():
 @pytest.mark.asyncio
 async def test_llm_step_prompt_template_missing_key():
     """Test that a helpful ValueError is raised if the prompt template references a missing key."""
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = AsyncMock()
         mock_llm.ainvoke.return_value = AIMessage(content="Test response")
         mock_chat_openai.return_value = mock_llm
@@ -1175,7 +1144,7 @@ async def test_dynamic_state_type_cache():
     async def step(_state):
         return {"custom_field": "updated"}
 
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
         mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
