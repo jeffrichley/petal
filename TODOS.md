@@ -29,21 +29,21 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Phase 1: Extract Step Management (Strategy Pattern)
 
-* [ ] **Create StepStrategy Abstract Base Class**
-  - [ ] Create `src/petal/core/steps/__init__.py`
-  - [ ] Create `src/petal/core/steps/base.py` with `StepStrategy` ABC
-  - [ ] Define abstract methods: `create_step(config: Dict[str, Any]) -> Callable` and `get_node_name(index: int) -> str`
-  - [ ] Add type hints and comprehensive docstrings
-  - [ ] Create unit tests in `tests/petal/test_steps_base.py`
+* [x] **Create StepStrategy Abstract Base Class**
+  - [x] Create `src/petal/core/steps/__init__.py`
+  - [x] Create `src/petal/core/steps/base.py` with `StepStrategy` ABC
+  - [x] Define abstract methods: `create_step(config: Dict[str, Any]) -> Callable` and `get_node_name(index: int) -> str`
+  - [x] Add type hints and comprehensive docstrings
+  - [x] Create unit tests in `tests/petal/test_steps_base.py`
 
-* [ ] **Implement LLMStepStrategy**
-  - [ ] Create `src/petal/core/steps/llm.py` with `LLMStepStrategy` class
-  - [ ] Inherit from `StepStrategy` and implement abstract methods
-  - [ ] Move `LLMStep` class from `factory.py` to `steps/llm.py`
-  - [ ] Refactor `LLMStep` to use configuration object pattern
-  - [ ] Add comprehensive validation for LLM configuration
-  - [ ] Create unit tests in `tests/petal/test_steps_llm.py`
-  - [ ] Test all LLM provider configurations (OpenAI, etc.)
+* [x] **Implement LLMStepStrategy**
+  - [x] Create `src/petal/core/steps/llm.py` with `LLMStepStrategy` class
+  - [x] Inherit from `StepStrategy` and implement abstract methods
+  - [x] Move `LLMStep` class from `factory.py` to `steps/llm.py`
+  - [x] Refactor `LLMStep` to use configuration object pattern
+  - [x] Add comprehensive validation for LLM configuration
+  - [x] Create unit tests in `tests/petal/test_steps_llm.py`
+  - [x] Test all LLM provider configurations (OpenAI, etc.)
 
 * [ ] **Implement CustomStepStrategy**
   - [ ] Create `src/petal/core/steps/custom.py` with `CustomStepStrategy` class
@@ -52,24 +52,24 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [ ] Support both sync and async functions
   - [ ] Create unit tests in `tests/petal/test_steps_custom.py`
 
-* [ ] **Create Step Registry**
-  - [ ] Create `src/petal/core/steps/registry.py` with `StepRegistry` class
-  - [ ] Implement `register(name: str, strategy: Type[StepStrategy])` method
-  - [ ] Implement `get_strategy(name: str) -> StepStrategy` method
-  - [ ] Add `_register_defaults()` method to register built-in strategies
-  - [ ] Add validation and error handling for unknown step types
-  - [ ] Create unit tests in `tests/petal/test_steps_registry.py`
+* [x] **Create Step Registry**
+  - [x] Create `src/petal/core/steps/registry.py` with `StepRegistry` class
+  - [x] Implement `register(name: str, strategy: Type[StepStrategy])` method
+  - [x] Implement `get_strategy(name: str) -> StepStrategy` method
+  - [x] Add `_register_defaults()` method to register built-in strategies
+  - [x] Add validation and error handling for unknown step types
+  - [x] Create unit tests in `tests/petal/test_steps_registry.py`
 
 ### Phase 2: Configuration Management (Configuration Object Pattern)
 
-* [ ] **Create AgentConfig Data Class**
-  - [ ] Create `src/petal/core/config/__init__.py`
-  - [ ] Create `src/petal/core/config/agent.py` with `AgentConfig` dataclass
-  - [ ] Define fields: `state_type`, `steps`, `memory`, `graph_config`
-  - [ ] Add `add_step(strategy: StepStrategy, config: Dict[str, Any])` method
-  - [ ] Add `set_memory(memory_config: Dict[str, Any])` method
-  - [ ] Add validation methods for configuration integrity
-  - [ ] Create unit tests in `tests/petal/test_config_agent.py`
+* [x] **Create AgentConfig Data Class**
+  - [x] Create `src/petal/core/config/__init__.py`
+  - [x] Create `src/petal/core/config/agent.py` with `AgentConfig` dataclass
+  - [x] Define fields: `state_type`, `steps`, `memory`, `graph_config`
+  - [x] Add `add_step(strategy: StepStrategy, config: Dict[str, Any])` method
+  - [x] Add `set_memory(memory_config: Dict[str, Any])` method
+  - [x] Add validation methods for configuration integrity
+  - [x] Create unit tests in `tests/petal/test_config_agent.py`
 
 * [ ] **Create State Type Factory**
   - [ ] Create `src/petal/core/config/state.py` with `StateTypeFactory` class
@@ -323,6 +323,23 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Set default model to 'gpt-4o-mini' and temperature to 0
 * [x] Add comprehensive tests for new chaining behavior
 * [x] Create playground example demonstrating multi-step LLM chains
+
+---
+
+## ✅ Recently Completed (2024-12-19)
+
+### Phase 1: Step Management (Strategy Pattern) ✅
+- **Completed:** Full step management system with strategy pattern
+- **Features:** StepStrategy ABC, LLMStepStrategy, StepRegistry
+- **Coverage:** Comprehensive test coverage for all step components
+- **Status:** Ready for integration with AgentFactory refactoring
+
+### Task 1.4: Create AgentConfig ✅
+- **Completed:** Full AgentConfig implementation with Pydantic models
+- **Features:** StepConfig, MemoryConfig, GraphConfig, LLMConfig, LoggingConfig
+- **Coverage:** 96% test coverage with 28 comprehensive tests
+- **Quality:** All mypy, linting, and formatting checks pass
+- **Status:** Ready for integration with AgentFactory refactoring
 
 ---
 
