@@ -108,14 +108,14 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] Integration with AgentBuilder complete
   - [x] All tests passing with 100% coverage
 
-* [ ] **Create Step Configuration Handlers** (Not yet implemented)
-  - [ ] Create `src/petal/core/builders/handlers/__init__.py`
-  - [ ] Create `src/petal/core/builders/handlers/base.py` with `StepConfigHandler` ABC
-  - [ ] Implement Chain of Responsibility pattern for step configuration
-  - [ ] Create `src/petal/core/builders/handlers/llm.py` with `LLMConfigHandler`
-  - [ ] Create `src/petal/core/builders/handlers/custom.py` with `CustomConfigHandler`
-  - [ ] Add comprehensive error handling and validation
-  - [ ] Create unit tests in `tests/petal/test_builders_handlers.py`
+* [x] **Create Step Configuration Handlers** ✅ (Completed 2024-06-22)
+  - [x] Create `src/petal/core/builders/handlers/__init__.py`
+  - [x] Create `src/petal/core/builders/handlers/base.py` with `StepConfigHandler` ABC
+  - [x] Implement Chain of Responsibility pattern for step configuration
+  - [x] Create `src/petal/core/builders/handlers/llm.py` with `LLMConfigHandler`
+  - [x] Create `src/petal/core/builders/handlers/custom.py` with `CustomConfigHandler`
+  - [x] Add comprehensive error handling and validation
+  - [x] Create unit tests in `tests/petal/test_builders_handlers.py`
 
 ### Phase 4: Refactor Existing Factory
 
