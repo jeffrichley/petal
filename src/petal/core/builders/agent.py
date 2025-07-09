@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, Optional, Type
 
+from petal.core.builders.director import AgentBuilderDirector
 from petal.core.config.agent import (
     AgentConfig,
     GraphConfig,
@@ -159,19 +160,13 @@ class AgentBuilder:
 
     def build(self) -> Any:
         """
-        Build the agent from configuration.
+        Build the agent from configuration using AgentBuilderDirector (MCP-compliant).
 
         Returns:
             The built agent
-
-        Raises:
-            NotImplementedError: This method is a placeholder for now
         """
-        # This is a placeholder implementation
-        # In later tasks, this will use AgentBuilderDirector to build the agent
-        raise NotImplementedError(
-            "build() method not yet implemented - will be implemented in Task 1.7"
-        )
+        director = AgentBuilderDirector(self._config, self._registry)
+        return director.build()
 
     def get_config(self) -> AgentConfig:
         """

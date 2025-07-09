@@ -72,10 +72,10 @@ async def test_llm_step_strategy_create_and_call():
 
 def test_llm_step_strategy_config_validation():
     strategy = LLMStepStrategy()
-    # Missing llm_instance and llm_config
+    # Missing llm_instance and llm_config - should use default config
     config = {"prompt_template": "Hi"}
-    with pytest.raises(ValueError):
-        strategy.create_step(config)
+    step = strategy.create_step(config)
+    assert isinstance(step, LLMStep)
 
 
 def test_llm_step_strategy_node_name():

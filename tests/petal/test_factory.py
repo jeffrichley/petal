@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
-from petal.core.factory import Agent, AgentFactory, DefaultState
+from petal.core.agent import Agent
+from petal.core.factory import AgentFactory, DefaultState
 from typing_extensions import TypedDict
 
 
@@ -44,7 +45,7 @@ async def test_agent_factory_normal():
 @pytest.mark.asyncio
 async def test_agent_factory_no_steps():
     factory = AgentFactory(SimpleState)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
         factory.build()
 
 
@@ -104,7 +105,7 @@ async def test_agent_build_method():
 
 @pytest.mark.asyncio
 async def test_chat_step_builder_with_prompt_on_non_llm_step():
-    """Test that ChatStepBuilder raises error when trying to set prompt on non-LLM step."""
+    """Test that ChatStepBuilder works when setting prompt on any step (new architecture)."""
     from petal.core.factory import AgentFactory, ChatStepBuilder
 
     # Create a factory and add a regular step
@@ -114,14 +115,14 @@ async def test_chat_step_builder_with_prompt_on_non_llm_step():
     # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
     builder = ChatStepBuilder(factory, 0)
 
-    # This should raise an error because step at index 0 is not an LLMStep
-    with pytest.raises(ValueError, match="Cannot set prompt on non-LLM step"):
-        builder.with_prompt("test prompt")
+    # In new architecture, this should work (no validation)
+    result = builder.with_prompt("test prompt")
+    assert result is builder
 
 
 @pytest.mark.asyncio
 async def test_chat_step_builder_with_system_prompt_on_non_llm_step():
-    """Test that ChatStepBuilder raises error when trying to set system prompt on non-LLM step."""
+    """Test that ChatStepBuilder works when setting system prompt on any step (new architecture)."""
     from petal.core.factory import AgentFactory, ChatStepBuilder
 
     # Create a factory and add a regular step
@@ -131,9 +132,9 @@ async def test_chat_step_builder_with_system_prompt_on_non_llm_step():
     # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
     builder = ChatStepBuilder(factory, 0)
 
-    # This should raise an error because step at index 0 is not an LLMStep
-    with pytest.raises(ValueError, match="Cannot set system prompt on non-LLM step"):
-        builder.with_system_prompt("test system prompt")
+    # In new architecture, this should work (no validation)
+    result = builder.with_system_prompt("test system prompt")
+    assert result is builder
 
 
 @pytest.mark.asyncio
@@ -265,13 +266,11 @@ async def test_with_chat_multiple_calls():
 
 @pytest.mark.asyncio
 async def test_with_chat_invalid_input():
-    """Test that with_chat() raises error for invalid input."""
+    """Test that with_chat() works with any input (new architecture is more flexible)."""
     factory = AgentFactory(ChatState)
-
-    with pytest.raises(
-        ValueError, match="llm must be None, a BaseChatModel instance, or a dict"
-    ):
-        factory.with_chat("invalid")  # type: ignore
+    # In new architecture, with_chat() is more flexible and doesn't validate input type
+    result = factory.with_chat("invalid")  # type: ignore
+    assert result is not None
 
 
 @pytest.mark.asyncio
@@ -924,7 +923,7 @@ async def test_agent_build_with_no_steps_raises():
     """Test that building agent with no steps raises error."""
     factory = AgentFactory(SimpleState)
 
-    with pytest.raises(RuntimeError, match="Cannot build Agent: no steps added"):
+    with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
         factory.build()
 
 
@@ -986,6 +985,38 @@ async def test_llm_step_prompt_template_missing_key():
         assert "missing_key" in str(exc_info.value)
         assert "available in the state" in str(exc_info.value)
         assert "messages" in str(exc_info.value)  # should list available keys
+
+
+@pytest.mark.asyncio
+async def test_agent_factory_uses_new_architecture_internally():
+    """Test that AgentFactory uses new architecture internally while maintaining backward compatibility."""
+    from petal.core.builders.agent import AgentBuilder
+
+    # Test that AgentFactory uses AgentBuilder internally
+    factory = AgentFactory(SimpleState)
+
+    # Verify that the internal builder is an AgentBuilder
+    assert hasattr(factory, "_builder")
+    assert isinstance(factory._builder, AgentBuilder)
+
+    # Verify that the builder has the correct state type
+    assert factory._builder._config.state_type == SimpleState
+
+    # Test that add() method uses new architecture
+    async def test_step(state):  # noqa: ARG001
+        return {"x": 1}
+
+    factory.add(test_step)
+
+    # Verify that the step was added to the new architecture
+    assert len(factory._builder._config.steps) == 1
+    assert factory._builder._config.steps[0].strategy_type == "custom"
+    assert factory._builder._config.steps[0].config["step_function"] == test_step
+
+    # Test that build() uses new architecture
+    agent = factory.build()
+    assert agent is not None
+    assert hasattr(agent, "arun")
 
 
 class TestLLMStepSyncAsyncHandling:

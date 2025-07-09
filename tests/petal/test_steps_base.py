@@ -201,3 +201,14 @@ class TestMyCustomStrategy:
 
         with pytest.raises(ValueError, match="step_function must be callable"):
             strategy.create_step({"step_function": "not_callable"})
+
+
+def test_custom_step_strategy_raises_valueerror_for_non_callable():
+    from petal.core.steps.custom import CustomStepStrategy
+
+    strategy = CustomStepStrategy()
+    config = {"step_function": 123}  # Not callable
+    import pytest
+
+    with pytest.raises(ValueError, match="Custom step must be callable"):
+        strategy.create_step(config)

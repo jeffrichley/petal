@@ -3,7 +3,8 @@
 from threading import Lock
 from typing import Dict, Type
 
-from petal.core.steps.base import MyCustomStrategy, StepStrategy
+from petal.core.steps.base import StepStrategy
+from petal.core.steps.custom import CustomStepStrategy
 from petal.core.steps.llm import LLMStepStrategy
 
 
@@ -57,5 +58,5 @@ class StepRegistry:
 
     def _register_defaults(self) -> None:
         """Register built-in strategies."""
-        self.register("custom", MyCustomStrategy)
+        self.register("custom", CustomStepStrategy)
         self.register("llm", LLMStepStrategy)

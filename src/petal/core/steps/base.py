@@ -9,31 +9,17 @@ class StepStrategy(ABC):
 
     @abstractmethod
     def create_step(self, config: Dict[str, Any]) -> Callable:
-        """Create a step callable from configuration.
-
-        Args:
-            config: Configuration dictionary containing step parameters.
-
-        Returns:
-            A callable step function that can be executed.
-        """
+        """Create a step callable from configuration."""
         pass
 
     @abstractmethod
     def get_node_name(self, index: int) -> str:
-        """Generate a node name for the step at the given index.
-
-        Args:
-            index: The index of the step in the sequence.
-
-        Returns:
-            A string representing the node name for this step.
-        """
+        """Generate a node name for the step at the given index."""
         pass
 
 
 class MyCustomStrategy(StepStrategy):
-    """Concrete implementation of StepStrategy for testing and example purposes."""
+    """Strategy for creating custom function steps (MCP-compliant)."""
 
     def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a custom step from configuration.
@@ -50,20 +36,11 @@ class MyCustomStrategy(StepStrategy):
         """
         if "step_function" not in config:
             raise KeyError("step_function")
-
-        step_function = config["step_function"]
-        if not callable(step_function):
+        step_func = config["step_function"]
+        if not callable(step_func):
             raise ValueError("step_function must be callable")
-
-        return step_function
+        return step_func
 
     def get_node_name(self, index: int) -> str:
-        """Generate node name for custom step.
-
-        Args:
-            index: The index of the step in the sequence.
-
-        Returns:
-            A string in the format "custom_step_{index}".
-        """
+        """Generate node name for custom step."""
         return f"custom_step_{index}"

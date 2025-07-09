@@ -3,7 +3,8 @@
 from typing import Any, Dict
 
 import pytest
-from petal.core.steps.base import MyCustomStrategy, StepStrategy
+from petal.core.steps.base import StepStrategy
+from petal.core.steps.custom import CustomStepStrategy
 from petal.core.steps.registry import StepRegistry
 
 
@@ -17,9 +18,9 @@ class DummyStrategy(StepStrategy):
 
 def test_register_and_retrieve_strategy():
     registry = StepRegistry()
-    registry.register("custom", MyCustomStrategy)
+    registry.register("custom", CustomStepStrategy)
     strategy = registry.get_strategy("custom")
-    assert isinstance(strategy, MyCustomStrategy)
+    assert isinstance(strategy, CustomStepStrategy)
     # Should be a new instance each time
     strategy2 = registry.get_strategy("custom")
     assert strategy is not strategy2
@@ -27,9 +28,9 @@ def test_register_and_retrieve_strategy():
 
 def test_register_and_retrieve_multiple_strategies():
     registry = StepRegistry()
-    registry.register("custom", MyCustomStrategy)
+    registry.register("custom", CustomStepStrategy)
     registry.register("dummy", DummyStrategy)
-    assert isinstance(registry.get_strategy("custom"), MyCustomStrategy)
+    assert isinstance(registry.get_strategy("custom"), CustomStepStrategy)
     assert isinstance(registry.get_strategy("dummy"), DummyStrategy)
 
 
@@ -41,7 +42,7 @@ def test_error_on_unknown_strategy():
 
 def test_register_overwrites_existing():
     registry = StepRegistry()
-    registry.register("custom", MyCustomStrategy)
+    registry.register("custom", CustomStepStrategy)
     registry.register("custom", DummyStrategy)
     # Should now return DummyStrategy
     assert isinstance(registry.get_strategy("custom"), DummyStrategy)
@@ -51,16 +52,16 @@ def test_register_defaults_stub():
     registry = StepRegistry()
     # _register_defaults is called in __init__, should not raise
     # For now, just check that registry is usable
-    registry.register("custom", MyCustomStrategy)
-    assert isinstance(registry.get_strategy("custom"), MyCustomStrategy)
+    registry.register("custom", CustomStepStrategy)
+    assert isinstance(registry.get_strategy("custom"), CustomStepStrategy)
 
 
 def test_default_strategy_is_registered():
-    """Test that MyCustomStrategy is registered as a default strategy."""
+    """Test that CustomStepStrategy is registered as a default strategy."""
     registry = StepRegistry()
-    # MyCustomStrategy should be available as "custom" by default
+    # CustomStepStrategy should be available as "custom" by default
     strategy = registry.get_strategy("custom")
-    assert isinstance(strategy, MyCustomStrategy)
+    assert isinstance(strategy, CustomStepStrategy)
 
 
 def test_thread_safety():
@@ -70,7 +71,7 @@ def test_thread_safety():
 
     def register_custom():
         for _ in range(100):
-            registry.register("custom", MyCustomStrategy)
+            registry.register("custom", CustomStepStrategy)
 
     threads = [threading.Thread(target=register_custom) for _ in range(10)]
     for t in threads:
@@ -78,13 +79,13 @@ def test_thread_safety():
     for t in threads:
         t.join()
     # Should not raise, and should be retrievable
-    assert isinstance(registry.get_strategy("custom"), MyCustomStrategy)
+    assert isinstance(registry.get_strategy("custom"), CustomStepStrategy)
 
 
 def test_validate_strategy_success():
     """Test that validate_strategy succeeds for registered strategies."""
     registry = StepRegistry()
-    registry.register("custom", MyCustomStrategy)
+    registry.register("custom", CustomStepStrategy)
 
     # Should not raise
     registry.validate_strategy("custom")

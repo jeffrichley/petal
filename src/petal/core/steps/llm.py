@@ -78,13 +78,26 @@ class LLMStepStrategy(StepStrategy):
     def create_step(self, config: Dict[str, Any]) -> LLMStep:
         prompt_template = config.get("prompt_template", "")
         system_prompt = config.get("system_prompt", "")
-        llm_config = config.get("llm_config")
-        llm_instance = config.get("llm_instance")
-        if llm_instance is None and llm_config is None:
-            # At least one must be provided
-            raise ValueError(
-                "Either 'llm_instance' or 'llm_config' must be provided in config."
-            )
+
+        # Handle different config formats for backward compatibility
+        llm_config = None
+        llm_instance = None
+
+        # Check for llm_instance first (direct instance)
+        if "llm_instance" in config:
+            llm_instance = config["llm_instance"]
+        # Check for llm_config (separate config dict)
+        elif "llm_config" in config:
+            llm_config = config["llm_config"]
+        # Check for provider-based config (new format)
+        elif "provider" in config or any(
+            key in config for key in ["model", "temperature", "api_key"]
+        ):
+            llm_config = config
+        # If no LLM config provided, use default OpenAI config
+        else:
+            llm_config = {"provider": "openai", "model": "gpt-4o-mini"}
+
         return LLMStep(prompt_template, system_prompt, llm_config, llm_instance)
 
     def get_node_name(self, index: int) -> str:

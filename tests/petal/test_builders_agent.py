@@ -168,12 +168,12 @@ class TestAgentBuilder:
         with pytest.raises(ValueError, match="Unknown step type"):
             builder.with_step("unknown_strategy", prompt_template="Hello")
 
-    def test_build_method_placeholder(self):
-        """Test that build method exists (placeholder for now)."""
+    def test_build_method_validation(self):
+        """Test that build method validates configuration properly."""
         builder = AgentBuilder(BuilderTestState)
 
-        # For now, build should raise NotImplementedError
-        with pytest.raises(NotImplementedError):
+        # Build should raise ValueError when no steps are configured
+        with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
             builder.build()
 
     def test_builder_state_consistency(self):
