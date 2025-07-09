@@ -141,13 +141,13 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Phase 5: Extensibility and Advanced Features
 
-* [ ] **Add Plugin System for Step Types** (Not yet implemented)
-  - [ ] Create `src/petal/core/plugins/__init__.py`
-  - [ ] Create `src/petal/core/plugins/base.py` with plugin interface
-  - [ ] Implement automatic discovery of step type plugins
-  - [ ] Add plugin registration and management system
-  - [ ] Create example plugins for common step types
-  - [ ] Create unit tests in `tests/petal/test_plugins.py`
+* [x] **Add Plugin System for Step Types** (Completed 2024-06-22)
+  - [x] Create `src/petal/core/plugins/__init__.py`
+  - [x] Create `src/petal/core/plugins/base.py` with plugin interface
+  - [x] Implement automatic discovery of step type plugins
+  - [x] Add plugin registration and management system
+  - [x] Create example plugins for common step types
+  - [x] Create unit tests in `tests/petal/test_plugins.py`
 
 * [ ] **Add Configuration Validation**
   - [ ] Create `src/petal/core/validation/__init__.py`

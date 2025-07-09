@@ -812,13 +812,13 @@ def test_config_handlers():
     # Test error handling
 ```
 
-### Task 2.4: Add Plugin System (2 hours) ❌ (Not yet implemented)
+### Task 2.4: Add Plugin System (2 hours) ✅ (Completed 2024-06-22)
 **Goal**: Create extensible plugin system for step types
 
 **Files to create/modify**:
-- ❌ `src/petal/core/plugins/__init__.py` - Not created
-- ❌ `src/petal/core/plugins/base.py` - Not created
-- ❌ `tests/petal/test_plugins.py` - Not created
+- [x] `src/petal/core/plugins/__init__.py`
+- [x] `src/petal/core/plugins/base.py`
+- [x] `tests/petal/test_plugins.py`
 
 **Sample Code**:
 ```python
@@ -885,20 +885,20 @@ strategy = plugin.get_strategy()
 ```
 
 **Deliverables**:
-- ❌ Plugin interface and discovery system
-- ❌ Automatic discovery of step type plugins
-- ❌ Plugin registration and management system
-- ❌ Example plugins for common step types
-- ❌ Unit tests with 100% coverage
-- ❌ All tests passing
+- [x] Plugin interface and discovery system
+- [x] Automatic discovery of step type plugins
+- [x] Plugin registration and management system
+- [x] Example plugins for common step types
+- [x] Unit tests with 100% coverage
+- [x] All tests passing
 
 **Success Criteria**:
-- ❌ Plugins can be registered and retrieved
-- ❌ Automatic discovery works
-- ❌ Plugin management is thread-safe
-- ❌ Example plugins work correctly
-- ❌ Error handling for missing plugins
-- ❌ Performance is acceptable
+- [x] Plugins can be registered and retrieved
+- [x] Automatic discovery works
+- [x] Plugin management is thread-safe
+- [x] Example plugins work correctly
+- [x] Error handling for missing plugins
+- [x] Performance is acceptable
 
 **Test Requirements**:
 ```python
