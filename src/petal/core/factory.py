@@ -1,10 +1,9 @@
-import asyncio
 from typing import Any, Callable, Dict, List, Optional, Union, get_type_hints
 
 from langchain.chat_models.base import BaseChatModel
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import add_messages
+from langgraph.graph.message import MessagesState, add_messages
 from typing_extensions import Annotated, TypedDict
 
 
@@ -12,12 +11,13 @@ class DefaultState(TypedDict):
     """Default state schema for agents."""
 
     messages: Annotated[list, add_messages]
+    name: str
 
 
-class FlexibleState(TypedDict, total=False):
-    """Flexible state schema that allows any keys while supporting message accumulation."""
+class NonChatState(TypedDict, total=False):
+    """State for non-chat agents that allows any fields."""
 
-    messages: Annotated[list, add_messages]
+    pass
 
 
 class MergeableState(TypedDict, total=False):
@@ -27,23 +27,94 @@ class MergeableState(TypedDict, total=False):
     # We'll use a simple dict approach for now
 
 
+class LLMStep:
+    """
+    Encapsulates the configuration and logic for an LLM step.
+    """
+
+    def __init__(self, prompt_template, system_prompt, llm_config, llm_instance):
+        self.prompt_template = prompt_template
+        self.system_prompt = system_prompt
+        self.llm_config = llm_config
+        self.llm_instance = llm_instance
+
+    async def __call__(self, state):
+        llm = self._create_llm_instance()
+        llm_messages, user_prompt = self._build_llm_messages(state)
+        response = await llm.ainvoke(llm_messages)
+        return self._format_llm_response(response, user_prompt)
+
+    def _build_llm_messages(self, state):
+        original_messages = state.get("messages", [])
+        llm_messages = []
+        if self.system_prompt:
+            llm_messages.append({"role": "system", "content": self.system_prompt})
+        llm_messages.extend(original_messages)
+        user_prompt = None
+        if self.prompt_template:
+            try:
+                user_prompt = self.prompt_template.format(**state)
+            except KeyError as e:
+                missing_key = str(e).strip("'")
+                raise ValueError(
+                    f"Prompt template '{self.prompt_template}' requires key '{missing_key}' "
+                    f"but it's not available in the state. Available keys: {list(state.keys())}"
+                ) from e
+            llm_messages.append({"role": "user", "content": user_prompt})
+        return llm_messages, user_prompt
+
+    def _create_llm_instance(self):
+        if self.llm_instance is not None:
+            return self.llm_instance
+        config = self.llm_config or {}
+        provider = config.get("provider", "openai")
+        openai_config = {k: v for k, v in config.items() if k != "provider"}
+        if "model" not in openai_config:
+            openai_config["model"] = "gpt-4o-mini"
+        if "temperature" not in openai_config:
+            openai_config["temperature"] = 0
+        if provider == "openai":
+            return ChatOpenAI(**openai_config)
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+
+    def _format_llm_response(self, response, user_prompt):
+        # Return the complete state with messages added
+        # This ensures the messages field is always present in the final state
+        if user_prompt:
+            return {"messages": [{"role": "user", "content": user_prompt}, response]}
+        else:
+            return {"messages": [response]}
+
+
 class Agent:
     """
     The runnable agent object, composed of a LangGraph StateGraph.
     """
 
-    def __init__(self, graph: StateGraph, state_type: Optional[type] = None):
+    def __init__(self):
+        self.graph = None
+        self.state_type = None
+        self.built = False
+
+    def build(self, graph: Any, state_type: Optional[type] = None) -> "Agent":
+        """
+        Build the agent with the given graph and state type.
+
+        Args:
+            graph: The compiled StateGraph
+            state_type: The state type for the agent
+
+        Returns:
+            self: For method chaining
+        """
         self.graph = graph
         self.state_type = state_type or DefaultState
         self.built = True
-
-    def run(self, state: dict) -> dict:
-        if not getattr(self, "built", False):
-            raise RuntimeError("Agent.run() called before build()")
-        return self.graph.invoke(state)
+        return self
 
     async def arun(self, state: dict) -> dict:
-        if not getattr(self, "built", False):
+        if not self.built:
             raise RuntimeError("Agent.arun() called before build()")
         return await self.graph.ainvoke(state)
 
@@ -53,19 +124,24 @@ class AgentFactory:
     Builder and fluent interface for constructing Agent objects as LangGraph StateGraphs.
     """
 
+    _dynamic_state_type_cache: Dict[tuple, type] = {}
+
     def __init__(self, state_type: type):
-        self._steps: List[Callable[[Any], Any]] = []
+        if state_type is None:
+            raise TypeError("state_type is required and cannot be None")
+
+        self._steps: List[Callable[..., Any]] = []
         self._memory: Optional[Any] = None
         self._built = False
         self._state_type = state_type
         self._node_names: List[str] = []
-        self._has_chat_model = False
+        self._has_chat_model: bool = False
 
     def add(
-        self, step: Callable[[Any], Any], node_name: Optional[str] = None
+        self, step: Callable[..., Any], node_name: Optional[str] = None
     ) -> "AgentFactory":
         """
-        Add a step to the agent. If no node_name is provided, one will be auto-generated.
+        Add an async step to the agent. If no node_name is provided, one will be auto-generated.
         """
         if node_name is None:
             node_name = f"step_{len(self._steps)}"
@@ -74,7 +150,7 @@ class AgentFactory:
         self._node_names.append(node_name)
         return self
 
-    def with_memory(self, memory: Optional[Any] = None, **kwargs) -> "AgentFactory":
+    def with_memory(self, memory: Optional[Any] = None) -> "AgentFactory":
         """
         Add memory support to the agent.
         """
@@ -101,17 +177,11 @@ class AgentFactory:
         else:
             raise ValueError("llm must be None, a BaseChatModel instance, or a dict")
 
-        # Create a placeholder step that will be replaced in build()
-        def _llm_step_placeholder(state):
-            raise RuntimeError("LLM step not built yet")
-
-        _llm_step_placeholder._llm_config = config
-        _llm_step_placeholder._llm_instance = instance
-        _llm_step_placeholder._prompt_template = ""
-        _llm_step_placeholder._system_prompt = ""
+        # Create LLMStep instance directly
+        llm_step = LLMStep("", "", config, instance)
 
         node_name = f"llm_step_{len(self._steps)}"
-        self._steps.append(_llm_step_placeholder)
+        self._steps.append(llm_step)
         self._node_names.append(node_name)
 
         # Return a ChatStepBuilder that can configure this specific LLM step
@@ -119,41 +189,27 @@ class AgentFactory:
 
     def _create_state_type(self) -> type:
         """
-        Create the state type, adding messages field with add_messages reducer if needed.
-        For non-chat agents, use the provided state_type or dict.
+        Create the appropriate state type based on user input and chat model presence.
         """
-        if self._state_type is not None:
-            # User provided a custom state type
-            if self._has_chat_model:
-                # Check if the state type already has a messages field
-                type_hints = get_type_hints(self._state_type, include_extras=True)
-                has_messages = "messages" in type_hints
-                if has_messages:
-                    # State type already has messages, use as-is
-                    return self._state_type
-
-                # Need to add messages field with add_messages reducer
-                # Create a new TypedDict that inherits from the original
-                class DynamicState(self._state_type):
-                    messages: Annotated[list, add_messages]
-
-                return DynamicState
-            else:
-                # No chat model, use the provided state type as-is
+        if self._has_chat_model:
+            type_hints = get_type_hints(self._state_type, include_extras=True)
+            if "messages" in type_hints:
                 return self._state_type
-        else:
-            # No state type provided
-            if self._has_chat_model:
-                # Use flexible state with messages
-                return FlexibleState
             else:
-                # For non-chat agents, create a flexible state type that allows any fields
-                # This allows partial updates to work properly
-                class FlexibleNonChatState(TypedDict, total=False):
-                    # Allow any fields to be added dynamically
-                    pass
-
-                return FlexibleNonChatState
+                # Use a cache to avoid recreating the same combined type
+                base_name = self._state_type.__name__
+                dynamic_name = f"{base_name}WithMessagesAddedByPetal"
+                cache_key = (base_name, tuple(sorted(type_hints.items())))
+                if cache_key in self._dynamic_state_type_cache:
+                    return self._dynamic_state_type_cache[cache_key]
+                # Use multiple inheritance to combine user type and MessagesState
+                combined_type = type(
+                    dynamic_name, (self._state_type, MessagesState), {}
+                )
+                self._dynamic_state_type_cache[cache_key] = combined_type
+                return combined_type
+        else:
+            return self._state_type
 
     def build(self) -> Agent:
         if not self._steps:
@@ -163,25 +219,14 @@ class AgentFactory:
         final_state_type = self._create_state_type()
 
         # Create the StateGraph
-        graph_builder = StateGraph(final_state_type)
+        graph_builder: StateGraph = StateGraph(final_state_type)
 
         # Add nodes to the graph
         for i, (step, node_name) in enumerate(
             zip(self._steps, self._node_names, strict=False)
         ):
-            if hasattr(step, "_llm_config") or hasattr(step, "_llm_instance"):
-                # Build LLM step
-                built_step = self._make_llm_step(
-                    getattr(step, "_prompt_template", ""),
-                    getattr(step, "_system_prompt", ""),
-                    getattr(step, "_llm_config", None),
-                    getattr(step, "_llm_instance", None),
-                )
-            else:
-                built_step = step
-
-            # Add node to graph
-            graph_builder.add_node(node_name, built_step)
+            # Add node to graph using node_name and step
+            graph_builder.add_node(node_name, step)
 
             # Add edges to connect nodes in sequence
             if i == 0:
@@ -200,124 +245,9 @@ class AgentFactory:
         compiled_graph = graph_builder.compile()
 
         # Create and return the agent
-        agent = Agent(compiled_graph, final_state_type)
+        agent = Agent().build(compiled_graph, final_state_type)
         self._built = True
         return agent
-
-    @staticmethod
-    def _make_memory_load_step(memory):
-        def load_memory(state: Dict) -> Dict:
-            # Load memory variables and update state
-            mem_vars = memory.load_memory_variables(state)
-            state.update(mem_vars)
-            return state
-
-        return load_memory
-
-    @staticmethod
-    def _make_llm_step(prompt_template, system_prompt, llm_config, llm_instance):
-        def llm_step(state):
-            llm = llm_instance
-            if llm is None:
-                config = llm_config or {}
-                provider = config.get("provider", "openai")
-                openai_config = {k: v for k, v in config.items() if k != "provider"}
-                if "model" not in openai_config:
-                    openai_config["model"] = "gpt-4o-mini"
-                if "temperature" not in openai_config:
-                    openai_config["temperature"] = 0
-                if provider == "openai":
-                    llm = ChatOpenAI(**openai_config)
-                else:
-                    raise ValueError(f"Unsupported LLM provider: {provider}")
-
-            # Get the original messages
-            original_messages = state.get("messages", [])
-
-            # Build the messages for LLM invocation (temporary)
-            llm_messages = []
-
-            # Add system prompt at the top if provided
-            if system_prompt:
-                llm_messages.append({"role": "system", "content": system_prompt})
-
-            # Add original messages
-            llm_messages.extend(original_messages)
-
-            # Add user prompt at the end if provided
-            if prompt_template:
-                user_prompt = prompt_template.format(**state)
-                llm_messages.append({"role": "user", "content": user_prompt})
-
-            # Get response from LLM
-            response = llm.invoke(llm_messages)
-
-            # Return user prompt + response - LangGraph will merge it using add_messages reducer
-            if prompt_template:
-                user_prompt = prompt_template.format(**state)
-                return {
-                    "messages": [{"role": "user", "content": user_prompt}, response]
-                }
-            else:
-                return {"messages": [response]}
-
-        async def llm_step_async(state):
-            llm = llm_instance
-            if llm is None:
-                config = llm_config or {}
-                provider = config.get("provider", "openai")
-                openai_config = {k: v for k, v in config.items() if k != "provider"}
-                if "model" not in openai_config:
-                    openai_config["model"] = "gpt-4o-mini"
-                if "temperature" not in openai_config:
-                    openai_config["temperature"] = 0
-                if provider == "openai":
-                    llm = ChatOpenAI(**openai_config)
-                else:
-                    raise ValueError(f"Unsupported LLM provider: {provider}")
-
-            # Get the original messages
-            original_messages = state.get("messages", [])
-
-            # Build the messages for LLM invocation (temporary)
-            llm_messages = []
-
-            # Add system prompt at the top if provided
-            if system_prompt:
-                llm_messages.append({"role": "system", "content": system_prompt})
-
-            # Add original messages
-            llm_messages.extend(original_messages)
-
-            # Add user prompt at the end if provided
-            if prompt_template:
-                user_prompt = prompt_template.format(**state)
-                llm_messages.append({"role": "user", "content": user_prompt})
-
-            # Get response from LLM
-            response = await llm.ainvoke(llm_messages)
-
-            # Return user prompt + response - LangGraph will merge it using add_messages reducer
-            if prompt_template:
-                user_prompt = prompt_template.format(**state)
-                return {
-                    "messages": [{"role": "user", "content": user_prompt}, response]
-                }
-            else:
-                return {"messages": [response]}
-
-        # Return a function that dispatches sync/async
-        def step(state):
-            if asyncio.iscoroutinefunction(llm_step_async) and getattr(
-                state, "__async__", False
-            ):
-                return llm_step_async(state)
-            return llm_step(state)
-
-        step._is_llm_step = True
-        step._llm_sync = llm_step
-        step._llm_async = llm_step_async
-        return step
 
 
 class ChatStepBuilder:
@@ -331,12 +261,20 @@ class ChatStepBuilder:
 
     def with_prompt(self, prompt_template: str) -> "ChatStepBuilder":
         """Set the prompt template for this specific LLM step."""
-        self.factory._steps[self.step_index]._prompt_template = prompt_template
+        step = self.factory._steps[self.step_index]
+        if isinstance(step, LLMStep):
+            step.prompt_template = prompt_template
+        else:
+            raise ValueError("Cannot set prompt on non-LLM step")
         return self
 
     def with_system_prompt(self, system_prompt: str) -> "ChatStepBuilder":
         """Set the system prompt for this specific LLM step."""
-        self.factory._steps[self.step_index]._system_prompt = system_prompt
+        step = self.factory._steps[self.step_index]
+        if isinstance(step, LLMStep):
+            step.system_prompt = system_prompt
+        else:
+            raise ValueError("Cannot set system prompt on non-LLM step")
         return self
 
     def add(self, step: Callable[[Dict], Dict]) -> "AgentFactory":

@@ -8,7 +8,7 @@ class TestState(TypedDict):
     messages: list
 
 
-def step1(state):
+def step1(state):  # noqa: ARG001
     return {"x": 1}
 
 

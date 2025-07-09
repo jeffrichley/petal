@@ -98,11 +98,9 @@ async def test_wait_for_mcp_and_resolve_tool_not_found() -> None:
     # Try to resolve a tool that doesn't exist
     with pytest.raises(
         KeyError,
-        match="Tool 'mcp:test_server:nonexistent' not found after MCP loading completed.",
+        match="MCP tool 'mcp:test_server:nonexistent' is still loading. Please wait for it to complete.",
     ):
-        await tf._wait_for_mcp_and_resolve(
-            "mcp:test_server:nonexistent", tf._mcp_loaded["mcp:test_server"]
-        )
+        tf.resolve("mcp:test_server:nonexistent")
 
 
 @pytest.mark.asyncio
@@ -163,3 +161,181 @@ async def test_add_mcp_tools_missing_config_raises() -> None:
         ValueError, match="mcp_config is required when resolver is None"
     ):
         tf.add_mcp("test_server")  # No resolver, no config
+
+
+def test_tool_factory_init():
+    """Test ToolFactory initialization."""
+    tf = ToolFactory()
+    # Test that a fresh factory has no tools
+    assert tf.list() == []
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_add_mcp_fluent_interface():
+    """Test that add_mcp() returns self for fluent interface."""
+    tf = ToolFactory()
+
+    async def resolver():
+        return []
+
+    result = tf.add_mcp("test_server", resolver)
+    assert result is tf
+
+
+def test_tool_factory_list_empty():
+    """Test that list() returns empty list when no tools registered."""
+    tf = ToolFactory()
+    assert tf.list() == []
+
+
+def test_tool_factory_list_sorted():
+    """Test that list() returns tools in sorted order."""
+    tf = ToolFactory()
+    tf.add("zebra", lambda: "zebra")
+    tf.add("alpha", lambda: "alpha")
+    tf.add("beta", lambda: "beta")
+
+    assert tf.list() == ["alpha", "beta", "zebra"]
+
+
+def test_tool_factory_resolve_regular_tool():
+    """Test that resolve() works for regular (non-MCP) tools."""
+    tf = ToolFactory()
+    tf.add("test", lambda x: x * 2)
+
+    tool = tf.resolve("test")
+    assert tool(5) == 10
+
+
+def test_tool_factory_resolve_mcp_tool_not_registered():
+    """Test that resolve() raises error for MCP tool when server not registered."""
+    tf = ToolFactory()
+
+    with pytest.raises(
+        KeyError,
+        match="MCP tool 'mcp:test_server:tool' not found. Server 'test_server' has not been registered.",
+    ):
+        tf.resolve("mcp:test_server:tool")
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_resolve_mcp_tool_loading():
+    """Test that resolve() raises error for MCP tool while loading."""
+    tf = ToolFactory()
+
+    async def slow_resolver():
+        await asyncio.sleep(0.1)
+        return []
+
+    tf.add_mcp("test_server", slow_resolver)
+
+    with pytest.raises(
+        KeyError,
+        match="MCP tool 'mcp:test_server:tool' is still loading. Please wait for it to complete.",
+    ):
+        tf.resolve("mcp:test_server:tool")
+
+
+@pytest.mark.asyncio
+async def test_await_mcp_loaded_not_registered():
+    """Test that await_mcp_loaded() works when server not registered."""
+    tf = ToolFactory()
+    # Should not raise when server not registered
+    await tf.await_mcp_loaded("nonexistent_server")
+
+
+@pytest.mark.asyncio
+async def test_await_mcp_loaded_registered():
+    """Test that await_mcp_loaded() waits for registered server."""
+    tf = ToolFactory()
+
+    async def fast_resolver():
+        return []
+
+    tf.add_mcp("test_server", fast_resolver)
+    await tf.await_mcp_loaded("test_server")
+    # Should complete without error
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_add_mcp_with_resolver_and_config():
+    """Test that add_mcp() works with both resolver and config (resolver takes precedence)."""
+    tf = ToolFactory()
+
+    async def custom_resolver():
+        return []
+
+    # Should not raise even though both resolver and config are provided
+    # (resolver takes precedence)
+    tf.add_mcp("test_server", custom_resolver, {"test": "config"})
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_mcp_task_cleanup():
+    """Test that MCP tasks are properly tracked and tools are added."""
+    tf = ToolFactory()
+
+    # Create a simple tool with a name attribute
+    class SimpleTool:
+        def __init__(self, name):
+            self.name = name
+
+        def __call__(self, x):
+            return x
+
+    async def resolver():
+        # Return tools with proper name attributes
+        return [SimpleTool("test_tool")]
+
+    tf.add_mcp("test_server", resolver)
+    # Test that we can await the server to load
+    await tf.await_mcp_loaded("test_server")
+    # Verify that tools were added
+    assert len(tf.list()) > 0
+    assert "mcp:test_server:test_tool" in tf.list()
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_mcp_event_setting():
+    """Test that MCP events are set when loading completes."""
+    tf = ToolFactory()
+
+    async def fast_resolver():
+        return []
+
+    tf.add_mcp("test_server", fast_resolver)
+    # Test that we can await the server to load
+    await tf.await_mcp_loaded("test_server")
+
+
+def test_tool_factory_registry_immutability():
+    """Test that the registry is not shared between instances."""
+    tf1 = ToolFactory()
+    tf2 = ToolFactory()
+
+    tf1.add("test", lambda: "test1")
+    tf2.add("test", lambda: "test2")
+
+    # Test that each instance maintains its own tools
+    assert tf1.resolve("test")() == "test1"
+    assert tf2.resolve("test")() == "test2"
+
+
+@pytest.mark.asyncio
+async def test_tool_factory_mcp_namespace_isolation():
+    """Test that MCP namespaces are isolated between instances."""
+    tf1 = ToolFactory()
+    tf2 = ToolFactory()
+
+    async def resolver1():
+        return []
+
+    async def resolver2():
+        return []
+
+    tf1.add_mcp("server", resolver1)
+    tf2.add_mcp("server", resolver2)
+
+    # Test that each instance can await its own server independently
+    await tf1.await_mcp_loaded("server")
+    await tf2.await_mcp_loaded("server")

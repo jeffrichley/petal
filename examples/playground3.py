@@ -25,7 +25,7 @@ def chatbot(state: State):
     return {"messages": [llm.invoke(state["messages"])]}
 
 
-def last_node(state: State):
+def last_node(state: State):  # noqa: ARG001
     return {"x": 42}
 
 

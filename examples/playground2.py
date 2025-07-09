@@ -37,7 +37,7 @@ async def main():
             "processed_response": f"Processed: {state.get('llm_response', 'No response')}",
         }
 
-    def step3(state):
+    def step3(state):  # noqa: ARG001
         # state["final_topic"] = second_topic
         # return state
 

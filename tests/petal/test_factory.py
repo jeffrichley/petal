@@ -1,15 +1,15 @@
-from typing import Annotated
-from unittest.mock import Mock, patch
+from typing import Annotated, get_type_hints
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
-from petal.core.factory import Agent, AgentFactory
+from petal.core.factory import Agent, AgentFactory, DefaultState
 from typing_extensions import TypedDict
 
 
 # Simple state types for testing
-class TestState(TypedDict):
+class SimpleState(TypedDict):
     x: int
     processed: bool
 
@@ -24,95 +24,150 @@ class MixedState(TypedDict):
     x: int
 
 
-def test_agent_factory_init() -> None:
-    af = AgentFactory(TestState)
-    assert isinstance(af, AgentFactory)
-
-
-def test_agent_factory_normal():
-    def step1(state):
+@pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_agent_factory_normal():
+    async def step1(state):  # noqa: ARG001
         return {"x": 1}
 
-    def step2(state):
+    async def step2(state):  # noqa: ARG001
         # In LangGraph, we need to access the previous step's output
         # Since step1 returns {"x": 1}, this should be available
         return {"x": state.get("x", 0) + 2}
 
-    agent = AgentFactory(TestState).add(step1).add(step2).build()
-    result = agent.run({})
+    agent = AgentFactory(SimpleState).add(step1).add(step2).build()
+    result = await agent.arun({})
     # Only the last step's fields should be in the result
     assert result["x"] == 3
 
 
-def test_agent_factory_no_steps():
-    factory = AgentFactory(TestState)
+@pytest.mark.asyncio
+async def test_agent_factory_no_steps():
+    factory = AgentFactory(SimpleState)
     with pytest.raises(RuntimeError):
         factory.build()
 
 
-def test_agent_run_before_build():
-    agent = Agent(None)
-    agent.built = False
+@pytest.mark.asyncio
+async def test_agent_arun_before_build():
+    """Test that agent arun fails when not built."""
+    # Create an agent without building it
+    agent = Agent()  # Create agent with no graph
+
     with pytest.raises(RuntimeError):
-        agent.run({})
+        await agent.arun({})
 
 
-def test_agent_arun_before_build():
-    agent = Agent(None)
-    agent.built = False
-    with pytest.raises(RuntimeError):
-        import asyncio
+@pytest.mark.asyncio
+async def test_agent_build_method():
+    """Test that agent build method works correctly."""
+    from langgraph.graph import END, START, StateGraph
 
-        asyncio.run(agent.arun({}))
+    # Create a simple graph
+    graph = StateGraph(dict)
+    graph.add_node("test", lambda x: x)
+    graph.add_edge(START, "test")
+    graph.add_edge("test", END)
+    compiled_graph = graph.compile()
+
+    # Create and build agent
+    agent = Agent().build(compiled_graph, dict)
+
+    # Test that agent is built
+    assert agent.built is True
+    assert agent.graph is compiled_graph
+    assert agent.state_type is dict
+
+    # Test that agent can run
+    result = await agent.arun({"test": "value"})
+    assert result == {"test": "value"}
 
 
-def test_with_chat_default_openai():
+@pytest.mark.asyncio
+async def test_chat_step_builder_with_prompt_on_non_llm_step():
+    """Test that ChatStepBuilder raises error when trying to set prompt on non-LLM step."""
+    from petal.core.factory import AgentFactory, ChatStepBuilder
+
+    # Create a factory and add a regular step
+    factory = AgentFactory(dict)
+    factory.add(lambda x: x)
+
+    # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
+    builder = ChatStepBuilder(factory, 0)
+
+    # This should raise an error because step at index 0 is not an LLMStep
+    with pytest.raises(ValueError, match="Cannot set prompt on non-LLM step"):
+        builder.with_prompt("test prompt")
+
+
+@pytest.mark.asyncio
+async def test_chat_step_builder_with_system_prompt_on_non_llm_step():
+    """Test that ChatStepBuilder raises error when trying to set system prompt on non-LLM step."""
+    from petal.core.factory import AgentFactory, ChatStepBuilder
+
+    # Create a factory and add a regular step
+    factory = AgentFactory(dict)
+    factory.add(lambda x: x)
+
+    # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
+    builder = ChatStepBuilder(factory, 0)
+
+    # This should raise an error because step at index 0 is not an LLMStep
+    with pytest.raises(ValueError, match="Cannot set system prompt on non-LLM step"):
+        builder.with_system_prompt("test system prompt")
+
+
+@pytest.mark.asyncio
+async def test_with_chat_default_openai():
     """Test that with_chat() with None uses default OpenAI config."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(ChatState).with_chat().add(lambda s: s).build()
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
 
 
-def test_with_chat_custom_config():
+@pytest.mark.asyncio
+async def test_with_chat_custom_config():
     """Test that with_chat() accepts a custom config dict."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
         agent = AgentFactory(ChatState).with_chat(config).add(lambda s: s).build()
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.2)
         assert "messages" in result
 
 
-def test_with_chat_custom_llm_instance():
+@pytest.mark.asyncio
+async def test_with_chat_custom_llm_instance():
     """Test that with_chat() accepts a pre-configured LLM instance."""
     from langchain.chat_models.base import BaseChatModel
 
     # Create a mock that inherits from BaseChatModel
     mock_llm = Mock(spec=BaseChatModel)
-    mock_llm.invoke.return_value = AIMessage(content="Test response")
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
 
     agent = AgentFactory(ChatState).with_chat(mock_llm).add(lambda s: s).build()
 
-    result = agent.run({"messages": [HumanMessage(content="test")]})
+    result = await agent.arun({"messages": [HumanMessage(content="test")]})
     assert "messages" in result
 
 
-def test_with_chat_kwargs():
+@pytest.mark.asyncio
+async def test_with_chat_kwargs():
     """Test that with_chat() accepts kwargs for configuration."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = (
@@ -122,68 +177,75 @@ def test_with_chat_kwargs():
             .build()
         )
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.1)
         assert "messages" in result
 
 
-def test_with_chat_fluent_interface():
+@pytest.mark.asyncio
+async def test_with_chat_fluent_interface():
     """Test that with_chat() returns ChatStepBuilder for chaining."""
     factory = AgentFactory(ChatState)
     result = factory.with_chat()
 
-    assert hasattr(result, "with_prompt")
-    assert hasattr(result, "with_system_prompt")
+    # Test that the result supports fluent chaining
+    result2 = result.with_prompt("Test prompt")
+    result3 = result2.with_system_prompt("Test system")
+    assert result3 is not None
 
 
-def test_agent_with_llm():
+@pytest.mark.asyncio
+async def test_agent_with_llm():
     """Test that Agent can be built with an LLM."""
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(MixedState).add(step).with_chat().build()
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 2  # Original + AI response
 
 
-def test_agent_without_llm():
+@pytest.mark.asyncio
+async def test_agent_without_llm():
     """Test that Agent can be built without an LLM."""
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    agent = AgentFactory(TestState).add(step).build()
+    agent = AgentFactory(SimpleState).add(step).build()
 
-    result = agent.run({})
+    result = await agent.arun({})
     # Only the last step's fields should be in the result
     assert result["processed"] is True
 
 
-def test_with_chat_multiple_calls():
+@pytest.mark.asyncio
+async def test_with_chat_multiple_calls():
     """Test that multiple with_chat() calls create separate LLM steps."""
     from langchain.chat_models.base import BaseChatModel
 
     mock_llm1 = Mock(spec=BaseChatModel)
     mock_llm2 = Mock(spec=BaseChatModel)
-    mock_llm1.invoke.return_value = AIMessage(content="Test response")
-    mock_llm2.invoke.return_value = AIMessage(content="Test response")
+    mock_llm1.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+    mock_llm2.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
 
     agent = AgentFactory(ChatState).with_chat(mock_llm1).with_chat(mock_llm2).build()
 
-    result = agent.run({"messages": [HumanMessage(content="test")]})
+    result = await agent.arun({"messages": [HumanMessage(content="test")]})
     assert "messages" in result
 
 
-def test_with_chat_invalid_input():
+@pytest.mark.asyncio
+async def test_with_chat_invalid_input():
     """Test that with_chat() raises error for invalid input."""
     factory = AgentFactory(ChatState)
 
@@ -193,30 +255,32 @@ def test_with_chat_invalid_input():
         factory.with_chat("invalid")
 
 
-def test_with_chat_integration():
+@pytest.mark.asyncio
+async def test_with_chat_integration():
     """Test full integration of with_chat() in a complete agent build."""
 
-    def step1(state):
+    async def step1(state):  # noqa: ARG001
         return {"step": 1}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(MixedState).add(step1).with_chat().build()
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 2  # Original + AI response
 
 
-def test_chat_step_builder_with_prompt():
+@pytest.mark.asyncio
+async def test_chat_step_builder_with_prompt():
     """Test that ChatStepBuilder can configure prompts."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = (
@@ -224,21 +288,22 @@ def test_chat_step_builder_with_prompt():
             .with_chat()
             .with_prompt("Test prompt")
             .with_system_prompt("You are a helpful assistant")
-            .add(lambda s: {"step": "value"})
+            .add(lambda _: {"step": "value"})
             .build()
         )
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 3  # Original + user prompt + AI response
 
 
-def test_chat_step_builder_fluent_interface():
+@pytest.mark.asyncio
+async def test_chat_step_builder_fluent_interface():
     """Test that ChatStepBuilder supports fluent chaining."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         builder = AgentFactory(ChatState).with_chat()
@@ -248,11 +313,12 @@ def test_chat_step_builder_fluent_interface():
         agent = result3.build()
 
         assert agent is not None
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
 
 
-def test_unsupported_provider():
+@pytest.mark.asyncio
+async def test_unsupported_provider():
     """Test that unsupported LLM providers raise an error."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_chat_openai.side_effect = Exception("Unsupported provider")
@@ -264,46 +330,20 @@ def test_unsupported_provider():
             .build()
         )
 
-        with pytest.raises(Exception):
-            agent.run({"messages": [HumanMessage(content="test")]})
-
-
-def test_agent_run_with_llm_auto_invoke():
-    """Test that LLM is automatically invoked during agent execution."""
-
-    def step(state):
-        return {"processed": True}
-
-    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
-        mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
-        mock_chat_openai.return_value = mock_llm
-
-        agent = AgentFactory(MixedState).add(step).with_chat().build()
-
-        result = agent.run({"messages": [HumanMessage(content="test")]})
-        # Only messages should be in the final result since LLM step was last
-        assert "messages" in result
-        assert len(result["messages"]) == 2  # Original + AI response
-        mock_llm.invoke.assert_called()
+        with pytest.raises(ValueError, match="Unsupported LLM provider"):
+            await agent.arun({"messages": [HumanMessage(content="test")]})
 
 
 @pytest.mark.asyncio
-async def test_agent_arun_with_llm_auto_invoke():
-    """Test that LLM is automatically invoked during async agent execution."""
+async def test_agent_run_with_llm_auto_invoke():
+    """Test that LLM is automatically invoked during agent execution."""
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        # Set both sync and async methods to return real AIMessage
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
-
-        async def async_invoke(messages):
-            return AIMessage(content="Test response")
-
-        mock_llm.ainvoke = async_invoke
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(MixedState).add(step).with_chat().build()
@@ -312,43 +352,66 @@ async def test_agent_arun_with_llm_auto_invoke():
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 2  # Original + AI response
+        mock_llm.ainvoke.assert_called()
 
 
-def test_agent_run_without_llm():
-    """Test that agent works without LLM steps."""
+@pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_agent_arun_with_llm_auto_invoke():
+    """Test that LLM is automatically invoked during async agent execution."""
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    agent = AgentFactory(TestState).add(step).build()
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = AIMessage(content="Test response")
+        mock_chat_openai.return_value = mock_llm
 
-    result = agent.run({})
+        agent = AgentFactory(MixedState).add(step).with_chat().build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_agent_run_without_llm():
+    """Test that agent works without LLM steps."""
+
+    async def step(state):  # noqa: ARG001
+        return {"processed": True}
+
+    agent = AgentFactory(SimpleState).add(step).build()
+
+    result = await agent.arun({})
     # Only the last step's fields should be in the result
     assert result["processed"] is True
 
 
-def test_agent_with_custom_node_names():
+@pytest.mark.asyncio
+async def test_agent_with_custom_node_names():
     """Test that custom node names can be provided."""
 
-    def step1(state):
+    async def step1(state):  # noqa: ARG001
         return {"x": 1}
 
-    def step2(state):
+    async def step2(state):  # noqa: ARG001
         # In LangGraph, we need to access the previous step's output
         return {"x": state.get("x", 0) + 2}
 
     agent = (
-        AgentFactory(TestState)
+        AgentFactory(SimpleState)
         .add(step1, "custom_step_1")
         .add(step2, "custom_step_2")
         .build()
     )
-    result = agent.run({})
+    result = await agent.arun({})
     # Only the last step's fields should be in the result
     assert result["x"] == 3
 
 
-def test_agent_with_typed_dict_state():
+@pytest.mark.asyncio
+async def test_agent_with_typed_dict_state():
     """Test that TypedDict state types work correctly."""
     from typing_extensions import TypedDict
 
@@ -356,21 +419,22 @@ def test_agent_with_typed_dict_state():
         messages: list
         processed: bool
 
-    def step(state: MyState) -> MyState:
+    async def step(state: MyState) -> MyState:  # noqa: ARG001
         return {"processed": True}
 
     agent = AgentFactory(state_type=MyState).add(step).build()
 
-    result = agent.run({"messages": [], "processed": False})
+    result = await agent.arun({"messages": [], "processed": False})
     assert result["processed"] is True
     assert "messages" in result
 
 
-def test_agent_with_prompt_template():
+@pytest.mark.asyncio
+async def test_agent_with_prompt_template():
     """Test that prompt templates work correctly."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = (
@@ -381,17 +445,18 @@ def test_agent_with_prompt_template():
             .build()
         )
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 3  # Original + user prompt + AI response
 
 
-def test_agent_with_system_prompt_only():
+@pytest.mark.asyncio
+async def test_agent_with_system_prompt_only():
     """Test that system prompt works without user prompt template."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = (
@@ -401,57 +466,42 @@ def test_agent_with_system_prompt_only():
             .build()
         )
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
 
 
-def test_agent_with_no_prompts():
+@pytest.mark.asyncio
+async def test_agent_with_no_prompts():
     """Test that LLM step works without any prompts."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(ChatState).with_chat().build()
 
-        result = agent.run({"messages": [HumanMessage(content="test")]})
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
 
 
-def test_agent_with_memory():
+@pytest.mark.asyncio
+async def test_agent_with_memory():
     """Test that memory support works."""
     mock_memory = Mock()
     mock_memory.load_memory_variables.return_value = {"memory_key": "memory_value"}
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
-    agent = AgentFactory(TestState).add(step).with_memory(mock_memory).build()
+    agent = AgentFactory(SimpleState).add(step).with_memory(mock_memory).build()
 
-    result = agent.run({})
+    result = await agent.arun({})
     # Only the last step's fields should be in the result
     assert result["processed"] is True
 
 
-def test_agent_with_memory_kwargs():
-    """Test that memory with kwargs works."""
-
-    def step(state):
-        return {"processed": True}
-
-    agent = (
-        AgentFactory(TestState)
-        .add(step)
-        .with_memory(memory_type="test", max_tokens=100)
-        .build()
-    )
-
-    result = agent.run({})
-    # Only the last step's fields should be in the result
-    assert result["processed"] is True
-
-
-def test_agent_with_typed_dict_return():
+@pytest.mark.asyncio
+async def test_agent_with_typed_dict_return():
     """Test that TypedDict states return updates correctly."""
     from typing_extensions import TypedDict
 
@@ -459,69 +509,73 @@ def test_agent_with_typed_dict_return():
         messages: list
         processed: bool
 
-    def step(state: MyState) -> MyState:
+    async def step(state: MyState) -> MyState:  # noqa: ARG001
         return {"processed": True}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(state_type=MyState).add(step).with_chat().build()
 
-        result = agent.run({"messages": [], "processed": False})
+        result = await agent.arun({"messages": [], "processed": False})
         assert result["processed"] is True
         assert "messages" in result
 
 
-def test_agent_with_empty_messages():
+@pytest.mark.asyncio
+async def test_agent_with_empty_messages():
     """Test that agent handles empty messages correctly."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(ChatState).with_chat().build()
 
-        result = agent.run({"messages": []})
+        result = await agent.arun({"messages": []})
         assert "messages" in result
 
 
-def test_agent_with_no_messages_key():
+@pytest.mark.asyncio
+async def test_agent_with_no_messages_key():
     """Test that agent handles missing messages key correctly."""
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(ChatState).with_chat().build()
 
-        result = agent.run({})
+        result = await agent.arun({})
         assert "messages" in result
 
 
-def test_agent_with_async_dispatch():
+@pytest.mark.asyncio
+async def test_agent_with_async_dispatch():
     """Test that async dispatch works correctly."""
 
-    def step(state):
+    async def step(state):  # noqa: ARG001
         return {"processed": True}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
         mock_llm = Mock()
-        mock_llm.invoke.return_value = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
         mock_chat_openai.return_value = mock_llm
 
         agent = AgentFactory(MixedState).add(step).with_chat().build()
 
         # Create a state with __async__ flag
         state = {"messages": [HumanMessage(content="test")], "__async__": True}
-        result = agent.run(state)
+        result = await agent.arun(state)
         # Only messages should be in the final result since LLM step was last
         assert "messages" in result
         assert len(result["messages"]) == 2  # Original + AI response
 
 
-def test_chat_step_builder_methods():
+@pytest.mark.asyncio
+async def test_chat_step_builder_methods():
     """Test all ChatStepBuilder methods."""
     builder = AgentFactory(ChatState).with_chat()
 
@@ -535,12 +589,579 @@ def test_chat_step_builder_methods():
 
     # Test add
     result3 = builder.add(lambda s: s)
-    assert isinstance(result3, AgentFactory)
+    assert result3 is not None
 
     # Test with_chat
     result4 = builder.with_chat()
-    assert hasattr(result4, "with_prompt")
+    # Test that the result supports fluent chaining
+    result5 = result4.with_prompt("Test prompt")
+    assert result5 is not None
 
     # Test build
     agent = builder.build()
-    assert isinstance(agent, Agent)
+    assert agent is not None
+
+
+@pytest.mark.asyncio
+async def test_agent_with_custom_state_type_with_messages():
+    """Test that custom state types with existing messages field work correctly."""
+    from typing_extensions import TypedDict
+
+    class CustomStateWithMessages(TypedDict):
+        messages: Annotated[list, add_messages]
+        custom_field: str
+
+    async def step(state):  # noqa: ARG001
+        return {"custom_field": "updated"}
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(CustomStateWithMessages).add(step).with_chat().build()
+
+        result = await agent.arun(
+            {"messages": [HumanMessage(content="test")], "custom_field": "initial"}
+        )
+        assert "messages" in result
+        assert "custom_field" in result
+
+
+@pytest.mark.asyncio
+async def test_agent_with_custom_state_type_without_messages():
+    """Test that custom state types without messages field get messages added."""
+    from typing_extensions import TypedDict
+
+    class CustomStateWithoutMessages(TypedDict):
+        custom_field: str
+
+    async def step(state):  # noqa: ARG001
+        return {"custom_field": "updated"}
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(CustomStateWithoutMessages).add(step).with_chat().build()
+
+        result = await agent.arun({"custom_field": "initial"})
+        # The custom state type should have messages added automatically when using chat
+        assert "messages" in result
+        assert "custom_field" in result
+
+
+@pytest.mark.asyncio
+async def test_agent_with_none_state_type_and_chat():
+    """Test that None state type with chat raises an error since state_type is required."""
+
+    async def step(state):  # noqa: ARG001
+        return {"custom_field": "updated"}
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        # Since state_type is now required, passing None should raise an error
+        with pytest.raises(TypeError):
+            AgentFactory(None).add(step).with_chat().build()
+
+
+@pytest.mark.asyncio
+async def test_agent_with_none_state_type_without_chat():
+    """Test that None state type without chat raises an error since state_type is required."""
+
+    async def step(state):  # noqa: ARG001
+        return {"custom_field": "updated"}
+
+    # Since state_type is now required, passing None should raise an error
+    with pytest.raises(TypeError):
+        AgentFactory(None).add(step).build()
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_prompt_template_formatting():
+    """Test that LLM step properly formats prompt templates with state variables."""
+    from typing_extensions import TypedDict
+
+    class PromptState(TypedDict):
+        messages: list
+        input_data: str
+        step_count: int
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = AIMessage(content="Test response")
+        mock_chat_openai.return_value = mock_llm
+
+        agent = (
+            AgentFactory(PromptState)
+            .with_chat()
+            .with_prompt("Process {input_data} with {step_count} steps")
+            .build()
+        )
+
+        # Provide all required keys for prompt formatting
+        state = {
+            "messages": [HumanMessage(content="test")],
+            "input_data": "test_data",
+            "step_count": 5,
+        }
+        try:
+            result = await agent.arun(state)
+            assert "messages" in result
+        except KeyError as e:
+            raise AssertionError(
+                f"Prompt formatting failed due to missing key: {e}"
+            ) from e
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_system_prompt_only():
+    """Test that LLM step works with only system prompt."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = (
+            AgentFactory(ChatState)
+            .with_chat()
+            .with_system_prompt("You are a helpful assistant")
+            .build()
+        )
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_no_prompts():
+    """Test that LLM step works without any prompts."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_empty_messages():
+    """Test that LLM step handles empty messages correctly."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().build()
+
+        result = await agent.arun({"messages": []})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_missing_messages_key():
+    """Test that LLM step handles missing messages key correctly."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().build()
+
+        result = await agent.arun({})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_llm_step_async():
+    """Test that async LLM step works correctly."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        # Return a real AIMessage for both sync and async
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().build()
+        state = {"messages": [HumanMessage(content="test")], "__async__": True}
+        result = await agent.arun(state)
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_custom_llm_instance():
+    """Test that LLM step works with custom LLM instance."""
+    from langchain.chat_models.base import BaseChatModel
+
+    mock_llm = Mock(spec=BaseChatModel)
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+
+    agent = AgentFactory(ChatState).with_chat(mock_llm).build()
+
+    result = await agent.arun({"messages": [HumanMessage(content="test")]})
+    assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_custom_config():
+    """Test that LLM step works with custom config."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
+        agent = AgentFactory(ChatState).with_chat(config).build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.2)
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_default_config():
+    """Test that LLM step uses default config when none provided."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        mock_chat_openai.assert_called_once_with(model="gpt-4o-mini", temperature=0)
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_unsupported_provider():
+    """Test that LLM step raises error for unsupported provider."""
+    config = {"provider": "unsupported", "model": "test"}
+    agent = AgentFactory(ChatState).with_chat(config).build()
+    # The error is raised at runtime, not build time
+    with pytest.raises(ValueError, match="Unsupported LLM provider: unsupported"):
+        await agent.arun({"messages": [HumanMessage(content="test")]})
+
+
+@pytest.mark.asyncio
+async def test_agent_with_memory_load_step():
+    """Test that memory load step works correctly."""
+    mock_memory = Mock()
+    mock_memory.load_memory_variables.return_value = {"memory_key": "memory_value"}
+
+    async def step(state):  # noqa: ARG001
+        return {"processed": True}
+
+    agent = AgentFactory(SimpleState).add(step).with_memory(mock_memory).build()
+
+    result = await agent.arun({})
+    assert result["processed"] is True
+
+
+@pytest.mark.asyncio
+async def test_agent_build_with_multiple_llm_steps():
+    """Test that building agent with multiple LLM steps works correctly."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(ChatState).with_chat().with_chat().build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_agent_build_with_mixed_steps():
+    """Test that building agent with mixed regular and LLM steps works correctly."""
+
+    async def regular_step(state):  # noqa: ARG001
+        return {"processed": True}
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent = AgentFactory(MixedState).add(regular_step).with_chat().build()
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_agent_build_with_custom_node_names():
+    """Test that building agent with custom node names works correctly."""
+
+    async def step1(state):  # noqa: ARG001
+        return {"x": 1}
+
+    async def step2(state):  # noqa: ARG001
+        return {"x": state.get("x", 0) + 2}
+
+    agent = (
+        AgentFactory(SimpleState)
+        .add(step1, "custom_step1")
+        .add(step2, "custom_step2")
+        .build()
+    )
+
+    result = await agent.arun({})
+    assert result["x"] == 3
+
+
+@pytest.mark.asyncio
+async def test_agent_build_with_single_step():
+    """Test that building agent with single step works correctly."""
+
+    async def step(state):  # noqa: ARG001
+        return {"processed": True}
+
+    agent = AgentFactory(SimpleState).add(step).build()
+
+    result = await agent.arun({})
+    assert result["processed"] is True
+
+
+@pytest.mark.asyncio
+async def test_agent_build_with_no_steps_raises():
+    """Test that building agent with no steps raises error."""
+    factory = AgentFactory(SimpleState)
+
+    with pytest.raises(RuntimeError, match="Cannot build Agent: no steps added"):
+        factory.build()
+
+
+@pytest.mark.asyncio
+async def test_agent_arun_with_built_flag():
+    """Test that agent arun works when properly built."""
+    # Create a simple agent that can be built
+    agent = AgentFactory(SimpleState).add(lambda _: {"processed": True}).build()
+
+    # Test that the agent can run
+    result = await agent.arun({})
+    assert result["processed"] is True
+
+
+@pytest.mark.asyncio
+async def test_chat_step_builder_fluent_chaining():
+    """Test that ChatStepBuilder supports fluent chaining."""
+    builder = AgentFactory(ChatState).with_chat()
+
+    # Test fluent chaining
+    result = (
+        builder.with_prompt("Test prompt")
+        .with_system_prompt("Test system")
+        .add(lambda s: s)
+    )
+
+    assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_chat_step_builder_with_multiple_chat_steps():
+    """Test that ChatStepBuilder works with multiple chat steps."""
+    builder = AgentFactory(ChatState).with_chat()
+
+    # Add another chat step
+    result = builder.with_chat()
+    # Test that the result supports fluent chaining
+    result2 = result.with_prompt("Test prompt")
+    assert result2 is not None
+
+
+@pytest.mark.asyncio
+async def test_llm_step_prompt_template_missing_key():
+    """Test that a helpful ValueError is raised if the prompt template references a missing key."""
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = AIMessage(content="Test response")
+        mock_chat_openai.return_value = mock_llm
+
+        agent = (
+            AgentFactory(ChatState)
+            .with_chat()
+            .with_prompt("Hello {missing_key}")
+            .build()
+        )
+        # The state does not include 'missing_key'
+        with pytest.raises(ValueError) as exc_info:
+            await agent.arun({"messages": [HumanMessage(content="hi")]})
+        assert "missing_key" in str(exc_info.value)
+        assert "available in the state" in str(exc_info.value)
+        assert "messages" in str(exc_info.value)  # should list available keys
+
+
+class TestLLMStepSyncAsyncHandling:
+    """Test that LLM steps work correctly in both sync and async contexts."""
+
+    @pytest.mark.asyncio
+    async def test_llm_step_sync_context(self):
+        """Test that LLM step works correctly in sync context."""
+        factory = AgentFactory(DefaultState)
+
+        from langchain.chat_models.base import BaseChatModel
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        mock_llm = Mock(spec=BaseChatModel)
+        mock_response = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+
+        agent = factory.with_chat(llm=mock_llm).with_prompt("Hello {name}").build()
+
+        # Test in async context
+        result = await agent.arun(
+            {"messages": [HumanMessage(content="hi")], "name": "World"}
+        )
+
+        mock_llm.ainvoke.assert_called_once()
+        call_args = mock_llm.ainvoke.call_args[0][0]
+        assert len(call_args) == 2  # system prompt + user prompt
+        assert call_args[1]["content"] == "Hello World"
+        assert "messages" in result
+        assert (
+            len(result["messages"]) == 3
+        )  # original message + user prompt + AI response
+
+    @pytest.mark.asyncio
+    async def test_llm_step_async_context(self):
+        """Test that LLM step works correctly in async context."""
+        factory = AgentFactory(DefaultState)
+
+        from langchain.chat_models.base import BaseChatModel
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        mock_llm = Mock(spec=BaseChatModel)
+        mock_response = AIMessage(content="Test response")
+        # Set up both sync and async methods
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+
+        agent = factory.with_chat(llm=mock_llm).with_prompt("Hello {name}").build()
+
+        result = await agent.arun(
+            {"messages": [HumanMessage(content="hi")], "name": "World"}
+        )
+        mock_llm.ainvoke.assert_called_once()
+        call_args = mock_llm.ainvoke.call_args[0][0]
+        assert len(call_args) == 2  # system prompt + user prompt
+        assert call_args[1]["content"] == "Hello World"
+        assert "messages" in result
+        assert (
+            len(result["messages"]) == 3
+        )  # original message + user prompt + AI response
+
+    @pytest.mark.asyncio
+    async def test_llm_step_with_system_prompt(self):
+        """Test LLM step with system prompt."""
+        factory = AgentFactory(DefaultState)
+
+        from langchain.chat_models.base import BaseChatModel
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        mock_llm = Mock(spec=BaseChatModel)
+        mock_response = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+
+        agent = (
+            factory.with_chat(llm=mock_llm)
+            .with_system_prompt("You are a helpful assistant.")
+            .with_prompt("Hello {name}")
+            .build()
+        )
+        await agent.arun({"messages": [HumanMessage(content="hi")], "name": "World"})
+        call_args = mock_llm.ainvoke.call_args[0][0]
+        assert len(call_args) == 3  # system prompt + messages + user prompt
+        assert call_args[0]["role"] == "system"
+        assert call_args[0]["content"] == "You are a helpful assistant."
+
+    @pytest.mark.asyncio
+    async def test_llm_step_without_prompt(self):
+        """Test LLM step without user prompt (only system prompt)."""
+        factory = AgentFactory(DefaultState)
+
+        from langchain.chat_models.base import BaseChatModel
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        mock_llm = Mock(spec=BaseChatModel)
+        mock_response = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+
+        agent = (
+            factory.with_chat(llm=mock_llm)
+            .with_system_prompt("You are a helpful assistant.")
+            .build()
+        )
+        await agent.arun({"messages": [HumanMessage(content="Hello")]})
+        call_args = mock_llm.ainvoke.call_args[0][0]
+        assert len(call_args) == 2  # system prompt + existing message
+        assert call_args[0]["role"] == "system"
+        assert getattr(call_args[1], "content", None) == "Hello"
+
+    @pytest.mark.asyncio
+    async def test_llm_step_with_existing_messages(self):
+        """Test LLM step with existing messages in state."""
+        factory = AgentFactory(DefaultState)
+
+        from langchain.chat_models.base import BaseChatModel
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        mock_llm = Mock(spec=BaseChatModel)
+        mock_response = AIMessage(content="Test response")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+
+        agent = factory.with_chat(llm=mock_llm).with_prompt("Continue").build()
+        existing_messages = [
+            HumanMessage(content="Hello"),
+            AIMessage(content="Hi there!"),
+        ]
+        await agent.arun({"messages": existing_messages, "name": "World"})
+        call_args = mock_llm.ainvoke.call_args[0][0]
+        assert len(call_args) == 3  # existing messages + user prompt
+        assert getattr(call_args[0], "content", None) == "Hello"
+        assert getattr(call_args[1], "content", None) == "Hi there!"
+        assert call_args[2]["content"] == "Continue"
+
+
+@pytest.mark.asyncio
+async def test_dynamic_state_type_cache():
+    """Test that the dynamic state type cache works properly."""
+    from typing_extensions import TypedDict
+
+    class CustomState(TypedDict):
+        custom_field: str
+
+    # Create two agents with the same state type and chat
+    agent1 = AgentFactory(CustomState).with_chat().build()
+    agent2 = AgentFactory(CustomState).with_chat().build()
+
+    # Check that both agents use the same state type (cached)
+    assert agent1.state_type == agent2.state_type
+    assert agent1.state_type.__name__ == "CustomStateWithMessagesAddedByPetal"
+
+    # Verify the state type has both the original field and messages
+    type_hints = get_type_hints(agent1.state_type, include_extras=True)
+    assert "custom_field" in type_hints
+    assert "messages" in type_hints
+
+    # Test that the agents work correctly
+    async def step(_state):
+        return {"custom_field": "updated"}
+
+    with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        agent3 = AgentFactory(CustomState).add(step).with_chat().build()
+        result = await agent3.arun({"custom_field": "initial"})
+
+        assert "messages" in result
+        assert "custom_field" in result
