@@ -166,7 +166,9 @@ class AgentFactory:
         graph_builder = StateGraph(final_state_type)
 
         # Add nodes to the graph
-        for i, (step, node_name) in enumerate(zip(self._steps, self._node_names, strict=False)):
+        for i, (step, node_name) in enumerate(
+            zip(self._steps, self._node_names, strict=False)
+        ):
             if hasattr(step, "_llm_config") or hasattr(step, "_llm_instance"):
                 # Build LLM step
                 built_step = self._make_llm_step(

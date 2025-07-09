@@ -1,8 +1,8 @@
 from unittest.mock import Mock, patch
-from typing_extensions import TypedDict
 
 from langchain_core.messages import AIMessage, HumanMessage
 from petal.core.factory import AgentFactory
+from typing_extensions import TypedDict
 
 
 class DebugState(TypedDict):
