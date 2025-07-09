@@ -79,3 +79,33 @@ def test_thread_safety():
         t.join()
     # Should not raise, and should be retrievable
     assert isinstance(registry.get_strategy("custom"), MyCustomStrategy)
+
+
+def test_validate_strategy_success():
+    """Test that validate_strategy succeeds for registered strategies."""
+    registry = StepRegistry()
+    registry.register("custom", MyCustomStrategy)
+
+    # Should not raise
+    registry.validate_strategy("custom")
+
+
+def test_validate_strategy_failure():
+    """Test that validate_strategy raises error for unregistered strategies."""
+    registry = StepRegistry()
+
+    with pytest.raises(ValueError, match="Unknown step type: unknown"):
+        registry.validate_strategy("unknown")
+
+
+def test_validate_strategy_with_defaults():
+    """Test that validate_strategy works with default strategies."""
+    registry = StepRegistry()
+
+    # Default strategies should be valid
+    registry.validate_strategy("custom")
+    registry.validate_strategy("llm")
+
+    # Unknown strategies should fail
+    with pytest.raises(ValueError, match="Unknown step type: unknown"):
+        registry.validate_strategy("unknown")

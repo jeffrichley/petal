@@ -42,6 +42,19 @@ class StepRegistry:
                 raise ValueError(f"Unknown step type: {name}")
             return self._strategies[name]()
 
+    def validate_strategy(self, name: str) -> None:
+        """Validate that a step strategy exists in the registry.
+
+        Args:
+            name: The name of the step type to validate.
+
+        Raises:
+            ValueError: If the step type is not registered.
+        """
+        with self._lock:
+            if name not in self._strategies:
+                raise ValueError(f"Unknown step type: {name}")
+
     def _register_defaults(self) -> None:
         """Register built-in strategies."""
         self.register("custom", MyCustomStrategy)

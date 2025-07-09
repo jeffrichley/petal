@@ -145,6 +145,25 @@ class TestLLMConfig:
         with pytest.raises(ValueError):
             LLMConfig(provider="openai", model="gpt-4o-mini", max_tokens=-1)
 
+    def test_llm_config_temperature_below_range(self):
+        """Test that LLMConfig raises error for temperature below 0.0."""
+        with pytest.raises(
+            ValueError, match="Input should be greater than or equal to 0"
+        ):
+            LLMConfig(provider="openai", model="gpt-4o", temperature=-0.1)
+
+    def test_llm_config_temperature_above_range(self):
+        """Test that LLMConfig raises error for temperature above 2.0."""
+        with pytest.raises(ValueError, match="Input should be less than or equal to 2"):
+            LLMConfig(provider="openai", model="gpt-4o", temperature=2.1)
+
+    def test_llm_config_max_tokens_below_one(self):
+        """Test that LLMConfig raises error for max_tokens below 1."""
+        with pytest.raises(
+            ValueError, match="Input should be greater than or equal to 1"
+        ):
+            LLMConfig(provider="openai", model="gpt-4o", max_tokens=0)
+
 
 class TestLoggingConfig:
     """Test LoggingConfig Pydantic model."""
@@ -251,40 +270,46 @@ class TestAgentConfig:
         )  # Test that creation works without errors
         # No need to call validate() - Pydantic handles it automatically
 
-    def test_agent_config_to_dict(self):
-        """Test converting AgentConfig to dictionary."""
-        config = AgentConfig(
-            name="test_agent", state_type=dict, memory=None, llm_config=None
-        )
+    def test_agent_config_validation_with_empty_steps(self):
+        """Test that AgentConfig validation works with empty steps."""
+        config = AgentConfig(state_type=dict, name=None, memory=None, llm_config=None)
+        # Should not raise any validation errors
+        assert config.steps == []
 
-        step_config = StepConfig(
-            strategy_type="llm", config={"prompt_template": "Hello"}, node_name=None
+    def test_agent_config_to_dict(self):
+        """Test that AgentConfig can be converted to dictionary."""
+        config = AgentConfig(
+            state_type=dict, name="test_agent", memory=None, llm_config=None
         )
-        config.add_step(step_config)
+        config.add_step(
+            StepConfig(strategy_type="llm", config={"prompt": "test"}, node_name=None)
+        )
 
         config_dict = config.to_dict()
+
         assert config_dict["name"] == "test_agent"
+        assert config_dict["state_type"] == "dict"
         assert len(config_dict["steps"]) == 1
         assert config_dict["steps"][0]["strategy_type"] == "llm"
 
     def test_agent_config_from_dict(self):
-        """Test creating AgentConfig from dictionary."""
-        config_dict = {
+        """Test that AgentConfig can be created from dictionary."""
+        data = {
             "name": "test_agent",
-            "state_type": dict,
+            "state_type": "dict",
             "steps": [
                 {
                     "strategy_type": "llm",
-                    "config": {"prompt_template": "Hello"},
+                    "config": {"prompt": "test"},
                     "node_name": None,
                 }
             ],
-            "memory": None,
-            "llm_config": None,
         }
 
-        config = AgentConfig.from_dict(config_dict)
+        config = AgentConfig.from_dict(data)
+
         assert config.name == "test_agent"
+        assert config.state_type is dict  # Should default to dict
         assert len(config.steps) == 1
         assert config.steps[0].strategy_type == "llm"
 

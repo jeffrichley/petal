@@ -180,3 +180,24 @@ class TestMyCustomStrategy:
         # Test get_node_name
         node_name = strategy.get_node_name(3)
         assert node_name == "custom_step_3"
+
+    def test_my_custom_strategy_get_node_name(self):
+        """Test that MyCustomStrategy generates correct node names."""
+        strategy = MyCustomStrategy()
+        assert strategy.get_node_name(0) == "custom_step_0"
+        assert strategy.get_node_name(5) == "custom_step_5"
+        assert strategy.get_node_name(10) == "custom_step_10"
+
+    def test_my_custom_strategy_missing_step_function(self):
+        """Test that MyCustomStrategy raises KeyError when step_function is missing."""
+        strategy = MyCustomStrategy()
+
+        with pytest.raises(KeyError, match="step_function"):
+            strategy.create_step({})
+
+    def test_my_custom_strategy_non_callable_step_function(self):
+        """Test that MyCustomStrategy raises ValueError when step_function is not callable."""
+        strategy = MyCustomStrategy()
+
+        with pytest.raises(ValueError, match="step_function must be callable"):
+            strategy.create_step({"step_function": "not_callable"})

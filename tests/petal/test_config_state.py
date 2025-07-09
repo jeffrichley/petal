@@ -198,7 +198,7 @@ def test_state_type_factory_clear_cache():
     # Create a type to populate cache
     StateTypeFactory.create_with_messages(SimpleState)
 
-    # Verify cache has entries
+    # Verify cache has entry
     assert len(StateTypeFactory._cache) > 0
 
     # Clear cache
@@ -230,3 +230,21 @@ def test_state_type_factory_typed_dict_validation_missing_total():
 
     with pytest.raises(ValueError, match="State type must be a TypedDict"):
         StateTypeFactory.create_with_messages(FakeTypedDict)
+
+
+def test_state_type_factory_error_handling_missing_annotations():
+    """Test error handling for types missing __annotations__."""
+
+    class NoAnnotations:
+        pass
+
+    with pytest.raises(ValueError, match="State type must be a TypedDict"):
+        StateTypeFactory.create_with_messages(NoAnnotations)
+
+
+def test_state_type_factory_error_handling_no_annotations_attribute():
+    """Test error handling for objects with no __annotations__ attribute."""
+    with pytest.raises(
+        ValueError, match="State type must be a TypedDict or compatible type"
+    ):
+        StateTypeFactory.create_with_messages(42)  # type: ignore[arg-type]  # int has no __annotations__

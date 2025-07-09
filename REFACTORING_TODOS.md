@@ -411,13 +411,15 @@ def test_state_type_factory():
 
 ## Phase 1C: Builder Foundation
 
-### Task 1.6: Create AgentBuilder (1.5 hours)
+### Task 1.6: Create AgentBuilder (1.5 hours) ✅ (Completed 2024-06-21)
 **Goal**: Create fluent interface using composition
 
 **Files to create/modify**:
 - `src/petal/core/builders/__init__.py`
 - `src/petal/core/builders/agent.py`
 - `tests/petal/test_builders_agent.py`
+
+**Status**: Complete. All tests pass, TDD followed, Pydantic integration verified, and fluent interface validated.
 
 **Sample Code**:
 ```python

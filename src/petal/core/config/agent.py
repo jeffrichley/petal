@@ -78,22 +78,6 @@ class LLMConfig(BaseModel):
             raise ValueError(f"provider must be one of {valid_providers}")
         return v
 
-    @field_validator("temperature")
-    @classmethod
-    def validate_temperature(cls, v: float) -> float:
-        """Validate temperature is within valid range."""
-        if v < 0.0 or v > 2.0:
-            raise ValueError("temperature must be between 0.0 and 2.0")
-        return v
-
-    @field_validator("max_tokens")
-    @classmethod
-    def validate_max_tokens(cls, v: int) -> int:
-        """Validate max_tokens is positive."""
-        if v < 1:
-            raise ValueError("max_tokens must be at least 1")
-        return v
-
 
 class LoggingConfig(BaseModel):
     """Configuration for logging settings."""
