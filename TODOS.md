@@ -22,7 +22,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
     - [x] Python Versions - ![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)
     - [x] pre-commit - ![pre-commit enabled](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)
     - [x] Security - ![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)
-* [x] Update pyproject.toml’s [tool.setuptools.packages.find] (or equivalent) to point at src
+* [x] Update pyproject.toml's [tool.setuptools.packages.find] (or equivalent) to point at src
 * [x] Create a template project
 
 ## 🧠 AgentFactory
@@ -33,7 +33,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Implement `.add(step)` for function/step registration
 * [x] Add `.with_prompt()` for f-string prompt injection
 * [x] Add `.with_system_prompt()` to define system role
-* [ ] Add `.with_chat()` to configure LLM support
+* [x] Add `.with_chat()` to configure LLM support
 * [ ] Add `.with_memory()` for memory support
 * [ ] Add `.with_logger()` for internal state logging
 * [ ] Add `.with_state()` for schema enforcement
@@ -130,6 +130,16 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Add comprehensive type definitions and state management
 * [x] Add example implementations for custom tools and agents
 * [x] Add MCP server testing fixtures and integration
+
+### AgentFactory Enhancements
+* [x] Refactor AgentFactory to use LangGraph RunnableSequence for step chaining
+* [x] Implement per-LLM-step prompt configuration with ChatStepBuilder
+* [x] Add support for multiple LLM steps with different prompts in same chain
+* [x] Implement automatic LLM invocation during agent execution
+* [x] Add both sync and async execution support
+* [x] Set default model to 'gpt-4o-mini' and temperature to 0
+* [x] Add comprehensive tests for new chaining behavior
+* [x] Create playground example demonstrating multi-step LLM chains
 
 ---
 

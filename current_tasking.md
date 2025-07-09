@@ -1,54 +1,47 @@
-Great—now that the Core AgentFactory is in place, let’s move on to the **Core ToolFactory**. Here’s our next agenda:
+1. Flesh out AgentFactory’s “pluggable behaviors”
+Complete these in roughly the order they’re listed—each builds on the previous:
 
-1. **Define the `ToolFactory` class** in `src/petal/tool_factory.py`
+.with_chat()
+Wire in your LLM client (e.g. LangChain chat wrapper), storing whatever chat-session object or model handle your Agent will invoke during .run().
 
-   * Initialize an internal registry (e.g. `Dict[str, Callable]`) and a lazy-loader map.
+.with_memory()
+Add a strategy for persisting or recalling past state (e.g. an in-memory buffer or external vector store).
 
-2. **Implement `.add(fn: Callable, name: str | None = None) → ToolFactory`**
+.with_logger()
+Hook up structured logging of inputs, outputs, and intermediate state for debugging or audit trails.
 
-   * Register a tool by its function name (or an explicit `name`), storing the callable in the registry.
+.with_state()
+Enforce a Pydantic schema (or similar) on the shared state dict before/after each step.
 
-3. **Implement `.add_lazy(name: str, resolver: Callable[[], Callable]) → ToolFactory`**
+.with_condition()
+Allow users to register a predicate so a step only runs when condition(state) is truthy.
 
-   * Allow deferred registration of a tool via a zero-arg resolver that returns the callable when first requested.
+.with_retry(n)
+Wrap a step in retry logic (exponential back-off or fixed delay).
 
-4. **Implement `.resolve(name: str) → Callable`**
+.with_timeout()
+Enforce per-step timeouts—e.g. cancel or skip if a step takes too long.
 
-   * Look up the tool by name, loading it via the resolver if needed, and raise a clear `KeyError` if not found.
+.with_tool_registry()
+Inject your ToolFactory instance so steps can lookup tools by name.
 
-5. **Implement `.list() → List[str]`**
+.with_mcp_proxy()
+Shorthand for calling tool_factory.add_mcp(...) under the covers.
 
-   * Return a sorted list of all registered tool names (including those available via lazy loaders).
+.as_node()
+Package this fully-configured Agent as a LangGraph node—returning whatever node object GraphFactory expects for .add_agent().
 
----
+Once those are in place, you can ▷
 
-### Example Usage
+Hook up GraphFactory (using .as_node()) to start wiring multi-agent flows, and
 
-```python
-from petal.tool_factory import ToolFactory
+Layer on Extras (e.g. from_config, dev-mode toggles) and ToolFactory discovery.
 
-# 1) Create the factory
-tools = ToolFactory()
+Why finish AgentFactory first?
+It’s the heart of your orchestration.
 
-# 2) Register an eager tool
-def summarize(text: str) -> str:
-    return text[:50] + "…"
+Having a fully-featured AgentFactory makes writing integration tests and example graphs much easier.
 
-tools.add(summarize)
+ToolFactory and GraphFactory both depend on .with_chat(), .with_tool_registry(), and .as_node() to integrate cleanly.
 
-# 3) Register a lazy tool
-tools.add_lazy("translate", lambda: __import__("my_translator").translate)
-
-# 4) Resolve and call
-fn = tools.resolve("summarize")
-print(fn("This is a very long text that needs shortening."))
-
-fn2 = tools.resolve("translate")
-print(fn2("bonjour", target="en"))
-
-# 5) List available tools
-print(tools.list())
-# → ['summarize', 'translate']
-```
-
-Once you’ve got these five methods wired up with type hints, docstrings, and simple unit tests, we’ll hook AgentFactory into ToolFactory for full integration. Let me know when you’ve got the first draft!
+Let me know which of these you’d like to tackle first, or if you want a deep dive—say, on wiring up the LLM client for .with_chat()!
