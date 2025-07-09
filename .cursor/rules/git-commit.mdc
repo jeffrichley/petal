@@ -3,6 +3,8 @@ alwaysApply: true
 ---
 # Git Workflow Guide
 
+If the user tells you to 'stuffit', they mean to run through this process.
+
 **IMPORTANT:**
 All commands in this guide use [`uv`](https://github.com/astral-sh/uv) to ensure they run inside your project’s virtual environment, regardless of your platform (Mac, Linux, or Windows).
 

@@ -48,5 +48,5 @@ docs-view: docs-serve  ## Alias for docs-serve
 checkit:
 	black .
 	ruff check . --fix
-	mypy src/
+	mypy src/ tests/
 	$(MAKE) test-cov-check

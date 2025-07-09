@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 from langchain.chat_models import init_chat_model
@@ -17,15 +18,15 @@ graph_builder = StateGraph(State)
 llm = init_chat_model("openai:gpt-4o-mini")
 
 
-def non_chatbot(state: State):
-    return {"messages": [llm.invoke(state["messages"])]}
+async def non_chatbot(state: State):
+    return {"messages": [await llm.ainvoke(state["messages"])]}
 
 
-def chatbot(state: State):
-    return {"messages": [llm.invoke(state["messages"])]}
+async def chatbot(state: State):
+    return {"messages": [await llm.ainvoke(state["messages"])]}
 
 
-def last_node(state: State):  # noqa: ARG001
+async def last_node(state: State):  # noqa: ARG001
     return {"x": 42}
 
 
@@ -41,5 +42,11 @@ graph_builder.add_edge("non_chatbot", "last_node")
 graph_builder.add_edge("last_node", END)
 graph = graph_builder.compile()
 
-result = graph.invoke({"messages": [{"role": "user", "content": "Hello!"}]})
-print(result)
+
+async def main():
+    result = await graph.ainvoke({"messages": [{"role": "user", "content": "Hello!"}]})
+    print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

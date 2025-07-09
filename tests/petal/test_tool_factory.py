@@ -5,17 +5,20 @@ import pytest
 from petal.core.tool_factory import ToolFactory
 
 
-def test_add_and_resolve_sync_tool() -> None:
+@pytest.mark.asyncio
+async def test_add_and_resolve_sync_tool() -> None:
     def echo(x: str) -> str:
         return x
 
     tf = ToolFactory()
     tf.add("echo", echo)
     fn = tf.resolve("echo")
-    assert fn("hello") == "hello"
+    result: str = await fn("hello")
+    assert result == "hello"
 
 
-def test_add_and_resolve_async_tool() -> None:
+@pytest.mark.asyncio
+async def test_add_and_resolve_async_tool() -> None:
     async def async_double(x: int) -> int:
         await asyncio.sleep(0.01)
         return x * 2
@@ -23,7 +26,7 @@ def test_add_and_resolve_async_tool() -> None:
     tf = ToolFactory()
     tf.add("double", async_double)
     fn = tf.resolve("double")
-    result = asyncio.run(fn(3))
+    result: int = await fn(3)
     assert result == 6
 
 
@@ -40,12 +43,14 @@ def test_resolve_missing_tool_raises() -> None:
         tf.resolve("not_found")
 
 
-def test_overwrite_tool() -> None:
+@pytest.mark.asyncio
+async def test_overwrite_tool() -> None:
     tf = ToolFactory()
     tf.add("dup", lambda: 1)
     tf.add("dup", lambda: 2)
     fn = tf.resolve("dup")
-    assert fn() == 2
+    result: int = await fn()
+    assert result == 2
 
 
 @pytest.mark.asyncio
@@ -124,11 +129,11 @@ async def test_add_mcp_tools_with_custom_resolver(
     assert "mcp:test_server:multiply" in tool_names
 
     add_tool = tf.resolve("mcp:test_server:add")
-    result = await add_tool.ainvoke({"a": 2, "b": 3})
+    result = await add_tool({"a": 2, "b": 3})
     assert int(result) == 5
 
     multiply_tool = tf.resolve("mcp:test_server:multiply")
-    result = await multiply_tool.ainvoke({"a": 2, "b": 3})
+    result = await multiply_tool({"a": 2, "b": 3})
     assert int(result) == 6
 
 
@@ -145,11 +150,11 @@ async def test_add_mcp_tools_with_default_resolver(
     assert "mcp:test_server:multiply" in tool_names
 
     add_tool = tf.resolve("mcp:test_server:add")
-    result = await add_tool.ainvoke({"a": 2, "b": 3})
+    result = await add_tool({"a": 2, "b": 3})
     assert int(result) == 5
 
     multiply_tool = tf.resolve("mcp:test_server:multiply")
-    result = await multiply_tool.ainvoke({"a": 2, "b": 3})
+    result = await multiply_tool({"a": 2, "b": 3})
     assert int(result) == 6
 
 
@@ -198,13 +203,15 @@ def test_tool_factory_list_sorted():
     assert tf.list() == ["alpha", "beta", "zebra"]
 
 
-def test_tool_factory_resolve_regular_tool():
+@pytest.mark.asyncio
+async def test_tool_factory_resolve_regular_tool():
     """Test that resolve() works for regular (non-MCP) tools."""
     tf = ToolFactory()
     tf.add("test", lambda x: x * 2)
 
     tool = tf.resolve("test")
-    assert tool(5) == 10
+    result: int = await tool(5)
+    assert result == 10
 
 
 def test_tool_factory_resolve_mcp_tool_not_registered():
@@ -267,7 +274,7 @@ async def test_tool_factory_add_mcp_with_resolver_and_config():
 
     # Should not raise even though both resolver and config are provided
     # (resolver takes precedence)
-    tf.add_mcp("test_server", custom_resolver, {"test": "config"})
+    tf.add_mcp("test_server", custom_resolver, mcp_config={"test": {"config": "value"}})
 
 
 @pytest.mark.asyncio
@@ -308,7 +315,8 @@ async def test_tool_factory_mcp_event_setting():
     await tf.await_mcp_loaded("test_server")
 
 
-def test_tool_factory_registry_immutability():
+@pytest.mark.asyncio
+async def test_tool_factory_registry_immutability():
     """Test that the registry is not shared between instances."""
     tf1 = ToolFactory()
     tf2 = ToolFactory()
@@ -317,8 +325,10 @@ def test_tool_factory_registry_immutability():
     tf2.add("test", lambda: "test2")
 
     # Test that each instance maintains its own tools
-    assert tf1.resolve("test")() == "test1"
-    assert tf2.resolve("test")() == "test2"
+    result1 = await tf1.resolve("test")()
+    result2 = await tf2.resolve("test")()
+    assert result1 == "test1"
+    assert result2 == "test2"
 
 
 @pytest.mark.asyncio

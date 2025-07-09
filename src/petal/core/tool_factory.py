@@ -1,6 +1,6 @@
 # All tools registered with ToolFactory must be async-friendly (either sync or async functions).
 import asyncio
-from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Union
+from typing import Any, Awaitable, Callable, Coroutine, Dict, List
 
 
 class ToolFactory:
@@ -12,7 +12,7 @@ class ToolFactory:
         """
         Initialize the tool registry.
         """
-        self._registry: Dict[str, Union[Callable[..., Any], Awaitable[Any]]] = {}
+        self._registry: Dict[str, Callable[..., Any]] = {}
         self._mcp_tasks: Dict[str, asyncio.Task[Any]] = {}
         self._mcp_loaded: Dict[str, asyncio.Event] = {}
 
@@ -30,7 +30,7 @@ class ToolFactory:
         self._registry[name] = fn
         return self
 
-    def resolve(self, name: str) -> Union[Callable[..., Any], Awaitable[Any]]:
+    def resolve(self, name: str) -> Callable[..., Awaitable[Any]]:
         """
         Retrieve a tool function by name.
         If the tool is an MCP tool that's still loading, wait for it to complete.
@@ -39,7 +39,7 @@ class ToolFactory:
             name (str): The name of the tool.
 
         Returns:
-            Callable | Awaitable: The registered tool function.
+            Callable[..., Awaitable[Any]]: An async function that wraps the registered tool.
 
         Raises:
             KeyError: If the tool is not found.
@@ -66,7 +66,22 @@ class ToolFactory:
 
         if name not in self._registry:
             raise KeyError(f"Tool '{name}' not found in registry.")
-        return self._registry[name]
+
+        tool = self._registry[name]
+
+        # Return an async wrapper that handles both sync and async tools
+        async def async_wrapper(*args, **kwargs) -> Any:
+            if asyncio.iscoroutinefunction(tool):
+                return await tool(*args, **kwargs)
+            elif hasattr(tool, "ainvoke"):
+                # Handle LangChain tools that have ainvoke method
+                return await tool.ainvoke(*args, **kwargs)
+            else:
+                # For sync functions, run in thread pool to avoid blocking
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, tool, *args, **kwargs)
+
+        return async_wrapper
 
     async def _wait_for_mcp_and_resolve(self, name: str, event: asyncio.Event) -> None:
         """

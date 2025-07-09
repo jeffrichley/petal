@@ -16,7 +16,7 @@ async def main():
     second_topic = "bananas"
 
     # Define steps that prepare data for the LLM
-    def step1(state):
+    async def step1(state):
         # state["topic"] = state.get("topic", "penguins")
         # state["mood"] = "silly"
         # return state
@@ -26,7 +26,7 @@ async def main():
             "mood": "silly",
         }
 
-    def step2(state):
+    async def step2(state):
         # Use the LLM response from the first chat step
         # state["processed_response"] = (
         #     f"Processed: {state.get('llm_response', 'No response')}"
@@ -37,7 +37,7 @@ async def main():
             "processed_response": f"Processed: {state.get('llm_response', 'No response')}",
         }
 
-    def step3(state):  # noqa: ARG001
+    async def step3(state):  # noqa: ARG001
         # state["final_topic"] = second_topic
         # return state
 
@@ -62,7 +62,7 @@ async def main():
 
     print("=== Synchronous Run ===")
     # Run the agent - each LLM step will be executed in order
-    result = agent.run(state)
+    result = await agent.arun(state)
     print(f"Step 1 - Topic: {result['topic']}")
     print(f"Step 1 - Mood: {result['mood']}")
     print(f"Step 1 - LLM Response: {result.get('llm_response', 'No response')}")

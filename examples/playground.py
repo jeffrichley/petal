@@ -11,14 +11,14 @@ from typing_extensions import TypedDict
 # agent = create_react_agent()
 
 
-def step1(state):
+async def step1(state):
     return {
         "topic": state.get("topic", "penguins"),
         "mood": "silly",
     }
 
 
-def step2(state):
+async def step2(state):
     messages = state.get("messages", [])
     ai_content = None
     for msg in reversed(messages):
@@ -33,7 +33,7 @@ def step2(state):
 
 
 def create_step3(second_topic: str):
-    def step3(_state):
+    async def step3(_state):
         return {
             "final_topic": second_topic,
         }

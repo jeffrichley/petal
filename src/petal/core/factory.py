@@ -93,8 +93,8 @@ class Agent:
     """
 
     def __init__(self):
-        self.graph = None
-        self.state_type = None
+        self.graph: Optional[Any] = None
+        self.state_type: Optional[type] = None
         self.built = False
 
     def build(self, graph: Any, state_type: Optional[type] = None) -> "Agent":
@@ -116,6 +116,8 @@ class Agent:
     async def arun(self, state: dict) -> dict:
         if not self.built:
             raise RuntimeError("Agent.arun() called before build()")
+        if self.graph is None:
+            raise RuntimeError("Agent.graph is None - agent was not properly built")
         return await self.graph.ainvoke(state)
 
 
@@ -130,7 +132,7 @@ class AgentFactory:
         if state_type is None:
             raise TypeError("state_type is required and cannot be None")
 
-        self._steps: List[Callable[..., Any]] = []
+        self._steps: List[Union[Callable[..., Any], "LLMStep"]] = []
         self._memory: Optional[Any] = None
         self._built = False
         self._state_type = state_type

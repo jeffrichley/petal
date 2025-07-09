@@ -1,4 +1,4 @@
-from typing import Annotated, get_type_hints
+from typing import Annotated, Any, Dict, get_type_hints
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -59,24 +59,43 @@ async def test_agent_arun_before_build():
 
 
 @pytest.mark.asyncio
+async def test_agent_arun_with_none_graph():
+    """Test that agent arun fails when graph is None but agent thinks it's built."""
+    agent = Agent()
+    # Manually set built=True but leave graph=None to test the specific error path
+    agent.built = True
+    agent.graph = None
+
+    with pytest.raises(
+        RuntimeError, match="Agent.graph is None - agent was not properly built"
+    ):
+        await agent.arun({})
+
+
+@pytest.mark.asyncio
 async def test_agent_build_method():
     """Test that agent build method works correctly."""
     from langgraph.graph import END, START, StateGraph
+    from typing_extensions import TypedDict
+
+    # Create a proper state type for the test
+    class TestState(TypedDict):
+        test: str
 
     # Create a simple graph
-    graph = StateGraph(dict)
+    graph = StateGraph(TestState)
     graph.add_node("test", lambda x: x)
     graph.add_edge(START, "test")
     graph.add_edge("test", END)
     compiled_graph = graph.compile()
 
     # Create and build agent
-    agent = Agent().build(compiled_graph, dict)
+    agent = Agent().build(compiled_graph, TestState)
 
     # Test that agent is built
     assert agent.built is True
     assert agent.graph is compiled_graph
-    assert agent.state_type is dict
+    assert agent.state_type is TestState
 
     # Test that agent can run
     result = await agent.arun({"test": "value"})
@@ -419,7 +438,7 @@ async def test_agent_with_typed_dict_state():
         messages: list
         processed: bool
 
-    async def step(state: MyState) -> MyState:  # noqa: ARG001
+    async def step(_state: MyState) -> Dict[str, Any]:
         return {"processed": True}
 
     agent = AgentFactory(state_type=MyState).add(step).build()
@@ -509,7 +528,7 @@ async def test_agent_with_typed_dict_return():
         messages: list
         processed: bool
 
-    async def step(state: MyState) -> MyState:  # noqa: ARG001
+    async def step(_state: MyState) -> Dict[str, Any]:
         return {"processed": True}
 
     with patch("petal.core.factory.ChatOpenAI") as mock_chat_openai:
@@ -666,7 +685,7 @@ async def test_agent_with_none_state_type_and_chat():
 
         # Since state_type is now required, passing None should raise an error
         with pytest.raises(TypeError):
-            AgentFactory(None).add(step).with_chat().build()
+            AgentFactory(None).add(step).with_chat().build()  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -678,7 +697,7 @@ async def test_agent_with_none_state_type_without_chat():
 
     # Since state_type is now required, passing None should raise an error
     with pytest.raises(TypeError):
-        AgentFactory(None).add(step).build()
+        AgentFactory(None).add(step).build()  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -1144,6 +1163,7 @@ async def test_dynamic_state_type_cache():
 
     # Check that both agents use the same state type (cached)
     assert agent1.state_type == agent2.state_type
+    assert agent1.state_type is not None
     assert agent1.state_type.__name__ == "CustomStateWithMessagesAddedByPetal"
 
     # Verify the state type has both the original field and messages
