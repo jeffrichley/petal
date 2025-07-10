@@ -1,10 +1,12 @@
 from typing import List, Optional
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from petal.core.steps.llm import LLMStep, LLMStepStrategy
+from pydantic import BaseModel
 
 
 class DummyLLM(BaseChatModel):
@@ -188,3 +190,72 @@ def test_environment_variables_are_restored():
     # and should still have the fake keys set
     assert os.environ.get("OPENAI_API_KEY") == "fake-openai-key-for-testing"
     assert os.environ.get("ANTHROPIC_API_KEY") == "fake-anthropic-key-for-testing"
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_structured_output_model():
+    class MyModel(BaseModel):
+        answer: str
+
+    mock_llm = DummyLLM()
+    mock_structured = Mock()
+    mock_structured.ainvoke = AsyncMock(return_value=MyModel(answer="42"))
+
+    with patch.object(DummyLLM, "with_structured_output", return_value=mock_structured):
+        step = LLMStep(
+            prompt_template="What is the answer?",
+            system_prompt="You are a helpful assistant.",
+            llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+            llm_instance=mock_llm,
+            structured_output_model=MyModel,
+            structured_output_key=None,
+        )
+        state = {"messages": [], "name": "test"}
+        result = await step(state)
+
+        print(result)
+
+        assert result == {"answer": "42"}
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_structured_output_model_and_key():
+    class MyModel(BaseModel):
+        answer: str
+
+    mock_llm = DummyLLM()
+    mock_structured = Mock()
+    mock_structured.ainvoke = AsyncMock(return_value=MyModel(answer="42"))
+
+    with patch.object(DummyLLM, "with_structured_output", return_value=mock_structured):
+        step = LLMStep(
+            prompt_template="What is the answer?",
+            system_prompt="You are a helpful assistant.",
+            llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+            llm_instance=mock_llm,
+            structured_output_model=MyModel,
+            structured_output_key="blah",
+        )
+        state = {"messages": [], "name": "test"}
+        result = await step(state)
+        assert result == {"blah": {"answer": "42"}}
+
+
+@pytest.mark.asyncio
+async def test_llm_step_without_structured_output_model_falls_back():
+    mock_llm = DummyLLM()
+    step = LLMStep(
+        prompt_template="Hello {name}",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=mock_llm,
+        structured_output_model=None,
+        structured_output_key=None,
+    )
+    state = {"name": "Jeff", "messages": []}
+    result = await step(state)
+    assert "messages" in result
+    assert isinstance(result["messages"][0], dict)
+    assert result["messages"][0]["role"] == "user"
+    assert isinstance(result["messages"][1], AIMessage)
+    assert result["messages"][1].content == "Hello!"

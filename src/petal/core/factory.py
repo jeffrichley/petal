@@ -6,6 +6,7 @@ from typing_extensions import Annotated, TypedDict
 
 from petal.core.agent import Agent
 from petal.core.builders.agent import AgentBuilder
+from petal.core.config.agent import LLMConfig
 
 
 class DefaultState(TypedDict):
@@ -41,11 +42,11 @@ class AgentFactory:
         llm: Optional[Any] = None,
         prompt_template: Optional[str] = None,
         system_prompt: Optional[str] = None,
-        llm_config: Optional[Dict[str, Any]] = None,
+        llm_config: Optional[Dict[str, Any] | LLMConfig] = None,
         **kwargs,
     ) -> "AgentFactory":
         """
-        Adds an LLM step to the chain. Accepts prompt_template, system_prompt, and llm_config as direct arguments for step configuration. Returns self for fluent chaining.
+        Adds an LLM step to the chain. Accepts prompt_template, system_prompt, and llm_config (as a dict or LLMConfig) as direct arguments for step configuration. Returns self for fluent chaining.
         """
         config: Dict[str, Any] = {}
         if llm is not None:
@@ -53,7 +54,10 @@ class AgentFactory:
                 raise ValueError(f"llm must be a BaseChatModel, not {type(llm)}")
             config["llm_instance"] = llm  # type: ignore[assignment]
         if llm_config is not None:
-            config.update(llm_config)
+            if isinstance(llm_config, LLMConfig):
+                config.update(llm_config.model_dump())
+            else:
+                config.update(llm_config)
         if prompt_template is not None:
             config["prompt_template"] = prompt_template  # type: ignore[assignment]
         if system_prompt is not None:
@@ -84,6 +88,16 @@ class AgentFactory:
         if step_config.strategy_type != "llm":
             raise ValueError("The most recent step is not an LLM step.")
         step_config.config["system_prompt"] = system_prompt
+        return self
+
+    def with_structured_output(
+        self, model: Any, key: Optional[str] = None
+    ) -> "AgentFactory":
+        """
+        Bind a structured output schema (Pydantic model) to the most recent LLM step.
+        Optionally wrap the output in a dict with the given key.
+        """
+        self._builder.with_structured_output(model, key)
         return self
 
     def build(self) -> Agent:

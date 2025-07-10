@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 from langchain.chat_models.base import BaseChatModel
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from petal.core.steps.base import StepStrategy
 
@@ -17,15 +18,37 @@ class LLMStep:
         system_prompt: str,
         llm_config: Optional[Dict[str, Any]],
         llm_instance: Optional[BaseChatModel],
+        structured_output_model: Any = None,
+        structured_output_key: Optional[str] = None,
     ):
         self.prompt_template = prompt_template
         self.system_prompt = system_prompt
         self.llm_config = llm_config
         self.llm_instance = llm_instance
+        self.structured_output_model = structured_output_model
+        self.structured_output_key = structured_output_key
 
     async def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
         llm = self._create_llm_instance()
         llm_messages, user_prompt = self._build_llm_messages(state)
+        # If structured output is configured, use it
+        if self.structured_output_model is not None:
+            # Compose the LLM with structured output
+            llm_with_structured = llm.with_structured_output(
+                self.structured_output_model
+            )
+            result = await llm_with_structured.ainvoke(llm_messages)
+            is_base_model = isinstance(result, BaseModel)
+            if self.structured_output_key:
+                # If the result is a model, convert the value to dict as well
+                if is_base_model:
+                    return {self.structured_output_key: result.model_dump()}
+                return result
+            if is_base_model:
+                return result.model_dump()
+
+            return result
+        # Default behavior
         response = await llm.ainvoke(llm_messages)
         return self._format_llm_response(response, user_prompt)
 
@@ -122,7 +145,17 @@ class LLMStepStrategy(StepStrategy):
         else:
             llm_config = {"provider": "openai", "model": "gpt-4o-mini"}
 
-        return LLMStep(prompt_template, system_prompt, llm_config, llm_instance)
+        structured_output_model = config.get("structured_output_model")
+        structured_output_key = config.get("structured_output_key")
+
+        return LLMStep(
+            prompt_template,
+            system_prompt,
+            llm_config,
+            llm_instance,
+            structured_output_model=structured_output_model,
+            structured_output_key=structured_output_key,
+        )
 
     def get_node_name(self, index: int) -> str:
         return f"llm_step_{index}"

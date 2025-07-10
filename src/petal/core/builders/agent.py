@@ -201,6 +201,25 @@ class AgentBuilder:
 
         return self
 
+    def with_structured_output(
+        self, model: Any, key: Optional[str] = None
+    ) -> "AgentBuilder":
+        """
+        Bind a structured output schema (Pydantic model) to the most recent LLM step.
+        Optionally wrap the output in a dict with the given key.
+        """
+        if not self._config.steps:
+            raise ValueError(
+                "No steps have been added to configure structured output for."
+            )
+        step_config = self._config.steps[-1]
+        if step_config.strategy_type != "llm":
+            raise ValueError("The most recent step is not an LLM step.")
+        step_config.config["structured_output_model"] = model
+        if key is not None:
+            step_config.config["structured_output_key"] = key
+        return self
+
     def build(self) -> Any:
         """
         Build the agent from configuration using AgentBuilderDirector (MCP-compliant).

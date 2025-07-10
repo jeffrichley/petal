@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from petal.core.agent import Agent
 from petal.core.factory import AgentFactory, DefaultState
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 
@@ -1185,3 +1186,101 @@ def test_with_system_prompt_non_llm_step_raises_error():
     factory.add(lambda x: x)  # Add a custom step
     with pytest.raises(ValueError, match="The most recent step is not an LLM step"):
         factory.with_system_prompt("test system prompt")
+
+
+@pytest.mark.asyncio
+async def test_with_structured_output_returns_model_instance():
+
+    class MyModel(BaseModel):
+        answer: str
+
+    class TempDefaultState(TypedDict):
+        """Default state schema for agents."""
+
+        messages: Annotated[list, add_messages]
+        name: str
+        answer: str
+
+    mock_llm = Mock()
+    mock_llm.with_structured_output = Mock(return_value=mock_llm)
+    mock_llm.ainvoke = AsyncMock(return_value=MyModel(answer="42"))
+
+    with patch(
+        "petal.core.steps.llm.LLMStep._create_llm_for_provider", return_value=mock_llm
+    ):
+        agent = (
+            AgentFactory(TempDefaultState)
+            .with_chat(prompt_template="What is the answer?", model="gpt-4o-mini")
+            .with_structured_output(MyModel)
+            .build()
+        )
+        result = await agent.arun(
+            {
+                "messages": [HumanMessage(content="test")],
+                "name": "test",
+                "answer": "old",
+                "blah": {},
+            }
+        )
+        assert isinstance(result, dict)
+        assert result["answer"] == "42"
+
+
+@pytest.mark.asyncio
+async def test_with_structured_output_with_key_returns_dict():
+    class MyModel(BaseModel):
+        answer: str
+
+    class TempDefaultState(TypedDict):
+        """Default state schema for agents."""
+
+        messages: Annotated[list, add_messages]
+        name: str
+        answer: str
+        blah: MyModel
+
+    mock_llm = Mock()
+    mock_llm.with_structured_output = Mock(return_value=mock_llm)
+    mock_llm.ainvoke = AsyncMock(return_value=MyModel(answer="42"))
+
+    with patch(
+        "petal.core.steps.llm.LLMStep._create_llm_for_provider", return_value=mock_llm
+    ):
+        agent = (
+            AgentFactory(TempDefaultState)
+            .with_chat(prompt_template="What is the answer?", model="gpt-4o-mini")
+            .with_structured_output(MyModel, key="blah")
+            .build()
+        )
+        result = await agent.arun(
+            {
+                "messages": [HumanMessage(content="test")],
+                "name": "test",
+                "answer": "old",
+                "blah": {},
+            }
+        )
+        assert isinstance(result, dict)
+        assert "blah" in result
+        assert result["blah"] == {"answer": "42"}
+
+
+def test_with_structured_output_no_llm_step_raises():
+    class MyModel(BaseModel):
+        answer: str
+
+    factory = AgentFactory(DefaultState)
+    with pytest.raises(ValueError, match="No steps have been added"):
+        factory.with_structured_output(MyModel)
+
+
+def test_with_structured_output_non_llm_step_raises():
+    class MyModel(BaseModel):
+        answer: str
+
+    async def dummy_step(state):
+        return state
+
+    factory = AgentFactory(DefaultState).add(dummy_step)
+    with pytest.raises(ValueError, match="The most recent step is not an LLM step"):
+        factory.with_structured_output(MyModel)
