@@ -61,13 +61,20 @@ class LLMStep:
             return self.llm_instance
         config = self.llm_config or {}
         provider = config.get("provider", "openai")
-        openai_config = {k: v for k, v in config.items() if k != "provider"}
-        if "model" not in openai_config:
-            openai_config["model"] = "gpt-4o-mini"
-        if "temperature" not in openai_config:
-            openai_config["temperature"] = 0
+
+        # Filter out non-LLM parameters that shouldn't be passed to the LLM instance
+        llm_params = {
+            k: v
+            for k, v in config.items()
+            if k not in ["provider", "prompt_template", "system_prompt"]
+        }
+
+        if "model" not in llm_params:
+            llm_params["model"] = "gpt-4o-mini"
+        if "temperature" not in llm_params:
+            llm_params["temperature"] = 0
         if provider == "openai":
-            return ChatOpenAI(**openai_config)
+            return ChatOpenAI(**llm_params)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 

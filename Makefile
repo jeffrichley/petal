@@ -1,4 +1,4 @@
-.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov test-cov-check build install-dev checkit
+.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov test-cov-check build install-dev checkit v
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -50,3 +50,7 @@ checkit:
 	ruff check . --fix
 	mypy src/ tests/
 	$(MAKE) test-cov-check
+
+v:  ## Activate virtual environment (Mac)
+	@echo "Starting new shell with virtual environment activated..."
+	@exec zsh -c "source .venv/bin/activate && exec zsh"
