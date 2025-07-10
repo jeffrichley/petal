@@ -265,3 +265,24 @@ class TestAgentBuilder:
         assert builder._config.graph_config is not None
         assert builder._config.graph_config.graph_type == "linear"
         assert builder._config.graph_config.allow_parallel is False
+
+    def test_with_system_prompt_adds_prompt_to_llm_step(self):
+        """Test that with_system_prompt adds the prompt to the most recent LLM step."""
+        builder = AgentBuilder(BuilderTestState)
+        builder.with_step("llm", prompt_template="Hello")
+        result = builder.with_system_prompt("System prompt here")
+        assert result is builder
+        assert builder._config.steps[-1].config["system_prompt"] == "System prompt here"
+
+    def test_with_system_prompt_raises_if_no_steps(self):
+        """Test that with_system_prompt raises ValueError if no steps exist."""
+        builder = AgentBuilder(BuilderTestState)
+        with pytest.raises(ValueError, match="no steps have been added"):
+            builder.with_system_prompt("System prompt")
+
+    def test_with_system_prompt_raises_if_not_llm(self):
+        """Test that with_system_prompt raises ValueError if last step is not LLM."""
+        builder = AgentBuilder(BuilderTestState)
+        builder.with_step("custom", some_param=123)
+        with pytest.raises(ValueError, match="most recent step is 'custom', not 'llm'"):
+            builder.with_system_prompt("System prompt")

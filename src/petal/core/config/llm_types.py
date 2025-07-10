@@ -109,7 +109,7 @@ class LLMTypes:
         """
         Return a copy of the config with a new temperature.
         """
-        return base_config.copy(update={"temperature": temperature})
+        return base_config.model_copy(update={"temperature": temperature})
 
     @classmethod
     def with_max_tokens(
@@ -118,4 +118,4 @@ class LLMTypes:
         """
         Return a copy of the config with a new max_tokens value.
         """
-        return base_config.copy(update={"max_tokens": max_tokens})
+        return base_config.model_copy(update={"max_tokens": max_tokens})
