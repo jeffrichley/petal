@@ -1,9 +1,28 @@
 # Git Workflow Guide
 
 **IMPORTANT:**
-All commands in this guide use [`uv`](https://github.com/astral-sh/uv) to ensure they run inside your project’s virtual environment, regardless of your platform (Mac, Linux, or Windows).
+All commands in this guide use [`uv`](https://github.com/astral-sh/uv) to ensure they run inside your project's virtual environment, regardless of your platform (Mac, Linux, or Windows).
 
 - No need to manually activate your virtual environment—just use `uv run <command>` as shown below.
+
+---
+
+## Project Structure
+
+The codebase follows a modular architecture with clear separation of concerns:
+
+### Core Modules
+- `src/petal/core/factory.py` - Public API (AgentFactory)
+- `src/petal/core/builders/` - Builder pattern implementation
+- `src/petal/core/config/` - Configuration management
+- `src/petal/core/steps/` - Step strategy implementations
+- `src/petal/core/plugins/` - Plugin system for extensibility
+
+### Key Design Patterns
+- **Strategy Pattern**: Step management via StepStrategy classes
+- **Builder Pattern**: Agent construction via AgentBuilder
+- **Configuration Object**: Pydantic-based configuration management
+- **Chain of Responsibility**: Step configuration handlers
 
 ---
 
@@ -56,6 +75,11 @@ uv run git add filename.py
 
 # Or stage specific directories
 uv run git add src/petal/
+
+# Stage specific modules
+uv run git add src/petal/core/builders/
+uv run git add src/petal/core/config/
+uv run git add src/petal/core/steps/
 ```
 
 ### 3. Verify Staged Changes
@@ -201,3 +225,22 @@ uv run make test
 # Check coverage
 uv run make coverage-check
 ```
+
+## Architecture-Aware Development
+
+When working with the new architecture:
+
+### Adding New Step Types
+1. Create new strategy in `src/petal/core/steps/`
+2. Register in `StepRegistry`
+3. Add tests in `tests/petal/test_steps_*.py`
+
+### Modifying Configuration
+1. Update models in `src/petal/core/config/`
+2. Update validation in `AgentConfig`
+3. Add tests in `tests/petal/test_config_*.py`
+
+### Extending Builders
+1. Add methods to `AgentBuilder`
+2. Update `AgentBuilderDirector` if needed
+3. Add tests in `tests/petal/test_builders_*.py`
