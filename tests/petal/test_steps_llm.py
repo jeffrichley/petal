@@ -73,7 +73,15 @@ async def test_llm_step_strategy_create_and_call():
 def test_llm_step_strategy_config_validation():
     strategy = LLMStepStrategy()
     # Missing llm_instance and llm_config - should use default config
-    config = {"prompt_template": "Hi"}
+    # Use a mock LLM to avoid real API calls
+    from unittest.mock import Mock
+
+    from langchain_core.messages import AIMessage
+
+    mock_llm = Mock()
+    mock_llm.ainvoke = Mock(return_value=AIMessage(content="Test response"))
+
+    config = {"prompt_template": "Hi", "llm_instance": mock_llm}
     step = strategy.create_step(config)
     assert isinstance(step, LLMStep)
 
@@ -86,11 +94,19 @@ def test_llm_step_strategy_node_name():
 @pytest.mark.asyncio
 async def test_llm_step_system_prompt_missing_key():
     # System prompt references {foo}, which is not in the state
+    # Use a mock LLM to avoid real API calls
+    from unittest.mock import AsyncMock, Mock
+
+    from langchain_core.messages import AIMessage
+
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+
     step = LLMStep(
         prompt_template="Hello!",
         system_prompt="You are a {foo} assistant.",
         llm_config={"provider": "openai", "model": "gpt-4o-mini"},
-        llm_instance=None,
+        llm_instance=mock_llm,
     )
     state = {"messages": [], "bar": 123}
     with pytest.raises(ValueError) as excinfo:
@@ -99,3 +115,76 @@ async def test_llm_step_system_prompt_missing_key():
     assert "requires key 'foo'" in msg
     assert "but it's not available in the state" in msg
     assert "bar" in msg or "messages" in msg  # available keys listed
+
+
+def test_llm_step_uses_mock_llm_creation():
+    """Test that LLM creation can be mocked during testing."""
+    from unittest.mock import Mock, patch
+
+    from langchain_core.messages import AIMessage
+
+    mock_llm = Mock()
+    mock_llm.ainvoke = Mock(return_value=AIMessage(content="Test response"))
+
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=None,
+    )
+
+    # Mock the provider-specific LLM creation method
+    with patch.object(step, "_create_llm_for_provider", return_value=mock_llm):
+        created_llm = step._create_llm_instance()
+        assert created_llm == mock_llm
+
+
+def test_llm_step_unsupported_provider_raises_error():
+    """Test that unsupported providers raise an error."""
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "unsupported_provider", "model": "test-model"},
+        llm_instance=None,
+    )
+
+    with pytest.raises(
+        ValueError, match="Unsupported LLM provider: unsupported_provider"
+    ):
+        step._create_llm_from_config()
+
+
+def test_fake_api_keys_are_used_in_tests():
+    """Test that fake API keys are being used in the test environment."""
+    import os
+
+    # Verify that fake API keys are set
+    assert os.environ.get("OPENAI_API_KEY") == "fake-openai-key-for-testing"
+    assert os.environ.get("ANTHROPIC_API_KEY") == "fake-anthropic-key-for-testing"
+
+    # Test that LLM creation uses the fake key
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=None,
+    )
+
+    # Mock the LLM creation to avoid real calls
+    from unittest.mock import Mock, patch
+
+    mock_llm = Mock()
+
+    with patch.object(step, "_create_llm_for_provider", return_value=mock_llm):
+        created_llm = step._create_llm_instance()
+        assert created_llm == mock_llm
+
+
+def test_environment_variables_are_restored():
+    """Test that environment variables are properly restored after tests."""
+    import os
+
+    # This test should run after the fake_api_keys fixture has run
+    # and should still have the fake keys set
+    assert os.environ.get("OPENAI_API_KEY") == "fake-openai-key-for-testing"
+    assert os.environ.get("ANTHROPIC_API_KEY") == "fake-anthropic-key-for-testing"

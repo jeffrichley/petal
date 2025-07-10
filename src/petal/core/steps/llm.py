@@ -59,6 +59,10 @@ class LLMStep:
     def _create_llm_instance(self):
         if self.llm_instance is not None:
             return self.llm_instance
+        return self._create_llm_from_config()
+
+    def _create_llm_from_config(self):
+        """Create LLM instance from configuration."""
         config = self.llm_config or {}
         provider = config.get("provider", "openai")
 
@@ -73,6 +77,11 @@ class LLMStep:
             llm_params["model"] = "gpt-4o-mini"
         if "temperature" not in llm_params:
             llm_params["temperature"] = 0
+
+        return self._create_llm_for_provider(provider, llm_params)
+
+    def _create_llm_for_provider(self, provider: str, llm_params: dict):
+        """Create LLM instance for the specified provider."""
         if provider == "openai":
             return ChatOpenAI(**llm_params)
         else:

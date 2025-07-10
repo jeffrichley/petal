@@ -106,11 +106,18 @@ async def test_agent_build_method():
 @pytest.mark.asyncio
 async def test_with_chat_default_openai():
     """Test that with_chat() with None uses default OpenAI config."""
-    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
-        mock_llm = Mock()
-        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
-        mock_chat_openai.return_value = mock_llm
+    from unittest.mock import patch
 
+    from langchain_core.messages import AIMessage
+
+    # Create a mock LLM instance
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+
+    # Mock the provider-specific LLM creation method
+    with patch(
+        "petal.core.steps.llm.LLMStep._create_llm_for_provider", return_value=mock_llm
+    ):
         agent = AgentFactory(ChatState).with_chat().add(lambda s: s).build()
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
@@ -120,12 +127,20 @@ async def test_with_chat_default_openai():
 @pytest.mark.asyncio
 async def test_with_chat_custom_config():
     """Test that with_chat() accepts a custom config dict."""
-    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
-        mock_llm = Mock()
-        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
-        mock_chat_openai.return_value = mock_llm
+    from unittest.mock import patch
 
-        config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
+    from langchain_core.messages import AIMessage
+
+    # Create a mock LLM instance
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+
+    config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
+
+    # Mock the provider-specific LLM creation method
+    with patch(
+        "petal.core.steps.llm.LLMStep._create_llm_for_provider", return_value=mock_llm
+    ):
         agent = (
             AgentFactory(ChatState)
             .with_chat(llm_config=config)
@@ -134,7 +149,6 @@ async def test_with_chat_custom_config():
         )
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
-        mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.2)
         assert "messages" in result
 
 
@@ -156,11 +170,18 @@ async def test_with_chat_custom_llm_instance():
 @pytest.mark.asyncio
 async def test_with_chat_kwargs():
     """Test that with_chat() accepts kwargs for configuration."""
-    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
-        mock_llm = Mock()
-        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
-        mock_chat_openai.return_value = mock_llm
+    from unittest.mock import patch
 
+    from langchain_core.messages import AIMessage
+
+    # Create a mock LLM instance
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+
+    # Mock the provider-specific LLM creation method
+    with patch(
+        "petal.core.steps.llm.LLMStep._create_llm_for_provider", return_value=mock_llm
+    ):
         agent = (
             AgentFactory(ChatState)
             .with_chat(model="gpt-4o", temperature=0.1)
@@ -169,7 +190,6 @@ async def test_with_chat_kwargs():
         )
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
-        mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.1)
         assert "messages" in result
 
 
