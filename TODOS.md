@@ -149,12 +149,12 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] Create example plugins for common step types
   - [x] Create unit tests in `tests/petal/test_plugins.py`
 
-* [ ] **Add Configuration Validation**
-  - [ ] Create `src/petal/core/validation/__init__.py`
-  - [ ] Create `src/petal/core/validation/config.py` with validation schemas
-  - [ ] Use Pydantic for configuration validation
-  - [ ] Add comprehensive validation for all configuration objects
-  - [ ] Create unit tests in `tests/petal/test_validation.py`
+* [x] **Add Configuration Validation**
+  - [x] Create `src/petal/core/validation/__init__.py`
+  - [x] Create `src/petal/core/validation/config.py` with validation schemas
+  - [x] Use Pydantic for configuration validation
+  - [x] Add comprehensive validation for all configuration objects
+  - [x] Create unit tests in `tests/petal/test_validation.py`
 
 * [ ] **Add Advanced Graph Building**
   - [ ] Create `src/petal/core/graph/__init__.py`
