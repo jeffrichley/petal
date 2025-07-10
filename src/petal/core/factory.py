@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional
 
 from langchain.chat_models.base import BaseChatModel
 from langgraph.graph.message import add_messages
@@ -48,66 +48,59 @@ class AgentFactory:
         """
         Add an async step to the agent. If no node_name is provided, one will be auto-generated.
         """
-        # Use new architecture internally
         self._builder.with_step("custom", step_function=step, node_name=node_name)
         return self
 
     def with_chat(
-        self, llm: Optional[Union[BaseChatModel, Dict[str, Any]]] = None, **kwargs
-    ) -> "ChatStepBuilder":
+        self,
+        llm: Optional[Any] = None,
+        prompt_template: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        llm_config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> "AgentFactory":
         """
-        Adds an LLM step to the chain. Returns a ChatStepBuilder for configuring this specific LLM step.
+        Adds an LLM step to the chain. Accepts prompt_template, system_prompt, and llm_config as direct arguments for step configuration. Returns self for fluent chaining.
         """
-        # Convert to new architecture format
-        config = {}
+        config: Dict[str, Any] = {}
         if llm is not None:
-            if isinstance(llm, BaseChatModel):
-                config["llm_instance"] = llm
-            elif isinstance(llm, dict):
-                config.update(llm)
+            if not isinstance(llm, BaseChatModel):
+                raise ValueError(f"llm must be a BaseChatModel, not {type(llm)}")
+            config["llm_instance"] = llm  # type: ignore[assignment]
+        if llm_config is not None:
+            config.update(llm_config)
+        if prompt_template is not None:
+            config["prompt_template"] = prompt_template  # type: ignore[assignment]
+        if system_prompt is not None:
+            config["system_prompt"] = system_prompt  # type: ignore[assignment]
         config.update(kwargs)
-
         self._builder.with_step("llm", node_name=None, **config)
-        return ChatStepBuilder(self, len(self._builder._config.steps) - 1)
+        return self
+
+    def with_prompt(self, prompt_template: str) -> "AgentFactory":
+        """
+        Set the prompt template for the most recently added LLM step.
+        """
+        if not self._builder._config.steps:
+            raise ValueError("No steps have been added to configure prompt for.")
+        step_config = self._builder._config.steps[-1]
+        if step_config.strategy_type != "llm":
+            raise ValueError("The most recent step is not an LLM step.")
+        step_config.config["prompt_template"] = prompt_template
+        return self
+
+    def with_system_prompt(self, system_prompt: str) -> "AgentFactory":
+        """
+        Set the system prompt for the most recently added LLM step.
+        """
+        if not self._builder._config.steps:
+            raise ValueError("No steps have been added to configure system prompt for.")
+        step_config = self._builder._config.steps[-1]
+        if step_config.strategy_type != "llm":
+            raise ValueError("The most recent step is not an LLM step.")
+        step_config.config["system_prompt"] = system_prompt
+        return self
 
     def build(self) -> Agent:
         """Build the agent using new architecture."""
         return self._builder.build()
-
-
-class ChatStepBuilder:
-    """
-    Builder for configuring a specific LLM step in the chain.
-    """
-
-    def __init__(self, factory: AgentFactory, step_index: int):
-        self.factory = factory
-        self.step_index = step_index
-
-    def with_prompt(self, prompt_template: str) -> "ChatStepBuilder":
-        """Set the prompt template for this specific LLM step."""
-        # Update the step configuration in the builder
-        step_config = self.factory._builder._config.steps[self.step_index]
-        step_config.config["prompt_template"] = prompt_template
-        return self
-
-    def with_system_prompt(self, system_prompt: str) -> "ChatStepBuilder":
-        """Set the system prompt for this specific LLM step."""
-        # Update the step configuration in the builder
-        step_config = self.factory._builder._config.steps[self.step_index]
-        step_config.config["system_prompt"] = system_prompt
-        return self
-
-    def add(self, step: Callable[[Dict], Dict]) -> "AgentFactory":
-        """Add another step to the factory."""
-        return self.factory.add(step)
-
-    def with_chat(
-        self, llm: Optional[Union[BaseChatModel, Dict[str, Any]]] = None, **kwargs
-    ) -> "ChatStepBuilder":
-        """Add another LLM step to the factory."""
-        return self.factory.with_chat(llm, **kwargs)
-
-    def build(self) -> Agent:
-        """Build the agent."""
-        return self.factory.build()

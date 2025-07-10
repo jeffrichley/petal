@@ -104,40 +104,6 @@ async def test_agent_build_method():
 
 
 @pytest.mark.asyncio
-async def test_chat_step_builder_with_prompt_on_non_llm_step():
-    """Test that ChatStepBuilder works when setting prompt on any step (new architecture)."""
-    from petal.core.factory import AgentFactory, ChatStepBuilder
-
-    # Create a factory and add a regular step
-    factory = AgentFactory(dict)
-    factory.add(lambda x: x)
-
-    # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
-    builder = ChatStepBuilder(factory, 0)
-
-    # In new architecture, this should work (no validation)
-    result = builder.with_prompt("test prompt")
-    assert result is builder
-
-
-@pytest.mark.asyncio
-async def test_chat_step_builder_with_system_prompt_on_non_llm_step():
-    """Test that ChatStepBuilder works when setting system prompt on any step (new architecture)."""
-    from petal.core.factory import AgentFactory, ChatStepBuilder
-
-    # Create a factory and add a regular step
-    factory = AgentFactory(dict)
-    factory.add(lambda x: x)
-
-    # Manually create a ChatStepBuilder pointing to a non-LLM step (index 0)
-    builder = ChatStepBuilder(factory, 0)
-
-    # In new architecture, this should work (no validation)
-    result = builder.with_system_prompt("test system prompt")
-    assert result is builder
-
-
-@pytest.mark.asyncio
 async def test_with_chat_default_openai():
     """Test that with_chat() with None uses default OpenAI config."""
     with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
@@ -160,7 +126,12 @@ async def test_with_chat_custom_config():
         mock_chat_openai.return_value = mock_llm
 
         config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
-        agent = AgentFactory(ChatState).with_chat(config).add(lambda s: s).build()
+        agent = (
+            AgentFactory(ChatState)
+            .with_chat(llm_config=config)
+            .add(lambda s: s)
+            .build()
+        )
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
         mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.2)
@@ -266,11 +237,10 @@ async def test_with_chat_multiple_calls():
 
 @pytest.mark.asyncio
 async def test_with_chat_invalid_input():
-    """Test that with_chat() works with any input (new architecture is more flexible)."""
+    """Test that with_chat() raises ValueError for invalid input types."""
     factory = AgentFactory(ChatState)
-    # In new architecture, with_chat() is more flexible and doesn't validate input type
-    result = factory.with_chat("invalid")  # type: ignore
-    assert result is not None
+    with pytest.raises(ValueError, match="llm must be a BaseChatModel"):
+        factory.with_chat("invalid")
 
 
 @pytest.mark.asyncio
@@ -343,7 +313,7 @@ async def test_unsupported_provider():
 
         agent = (
             AgentFactory(ChatState)
-            .with_chat({"provider": "unsupported"})
+            .with_chat(llm_config={"provider": "unsupported"})
             .add(lambda s: s)
             .build()
         )
@@ -577,34 +547,6 @@ async def test_agent_with_async_dispatch():
 
 
 @pytest.mark.asyncio
-async def test_chat_step_builder_methods():
-    """Test all ChatStepBuilder methods."""
-    builder = AgentFactory(ChatState).with_chat()
-
-    # Test with_prompt
-    result1 = builder.with_prompt("Test prompt")
-    assert result1 is builder
-
-    # Test with_system_prompt
-    result2 = builder.with_system_prompt("Test system")
-    assert result2 is builder
-
-    # Test add
-    result3 = builder.add(lambda s: s)
-    assert result3 is not None
-
-    # Test with_chat
-    result4 = builder.with_chat()
-    # Test that the result supports fluent chaining
-    result5 = result4.with_prompt("Test prompt")
-    assert result5 is not None
-
-    # Test build
-    agent = builder.build()
-    assert agent is not None
-
-
-@pytest.mark.asyncio
 async def test_agent_with_custom_state_type_with_messages():
     """Test that custom state types with existing messages field work correctly."""
     from typing_extensions import TypedDict
@@ -820,7 +762,7 @@ async def test_llm_step_with_custom_config():
         mock_chat_openai.return_value = mock_llm
 
         config = {"provider": "openai", "model": "gpt-4o", "temperature": 0.2}
-        agent = AgentFactory(ChatState).with_chat(config).build()
+        agent = AgentFactory(ChatState).with_chat(llm_config=config).build()
 
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
         mock_chat_openai.assert_called_once_with(model="gpt-4o", temperature=0.2)
@@ -846,7 +788,7 @@ async def test_llm_step_with_default_config():
 async def test_llm_step_with_unsupported_provider():
     """Test that LLM step raises error for unsupported provider."""
     config = {"provider": "unsupported", "model": "test"}
-    agent = AgentFactory(ChatState).with_chat(config).build()
+    agent = AgentFactory(ChatState).with_chat(llm_config=config).build()
     # The error is raised at runtime, not build time
     with pytest.raises(ValueError, match="Unsupported LLM provider: unsupported"):
         await agent.arun({"messages": [HumanMessage(content="test")]})
@@ -936,33 +878,6 @@ async def test_agent_arun_with_built_flag():
     # Test that the agent can run
     result = await agent.arun({})
     assert result["processed"] is True
-
-
-@pytest.mark.asyncio
-async def test_chat_step_builder_fluent_chaining():
-    """Test that ChatStepBuilder supports fluent chaining."""
-    builder = AgentFactory(ChatState).with_chat()
-
-    # Test fluent chaining
-    result = (
-        builder.with_prompt("Test prompt")
-        .with_system_prompt("Test system")
-        .add(lambda s: s)
-    )
-
-    assert result is not None
-
-
-@pytest.mark.asyncio
-async def test_chat_step_builder_with_multiple_chat_steps():
-    """Test that ChatStepBuilder works with multiple chat steps."""
-    builder = AgentFactory(ChatState).with_chat()
-
-    # Add another chat step
-    result = builder.with_chat()
-    # Test that the result supports fluent chaining
-    result2 = result.with_prompt("Test prompt")
-    assert result2 is not None
 
 
 @pytest.mark.asyncio
@@ -1185,3 +1100,68 @@ async def test_dynamic_state_type_cache():
 
         assert "messages" in result
         assert "custom_field" in result
+
+
+@pytest.mark.asyncio
+async def test_with_chat_direct_methods():
+    """Test that with_chat() accepts prompt configuration directly without ChatStepBuilder."""
+    with patch("petal.core.steps.llm.ChatOpenAI") as mock_chat_openai:
+        mock_llm = Mock()
+        mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+        mock_chat_openai.return_value = mock_llm
+
+        # Test direct configuration in with_chat()
+        agent = (
+            AgentFactory(ChatState)
+            .with_chat(prompt_template="Hello", system_prompt="You are helpful")
+            .build()
+        )
+
+        result = await agent.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result
+
+        # Test fluent chaining with convenience methods
+        agent2 = (
+            AgentFactory(ChatState)
+            .with_chat()
+            .with_prompt("Hello")
+            .with_system_prompt("You are helpful")
+            .build()
+        )
+
+        result2 = await agent2.arun({"messages": [HumanMessage(content="test")]})
+        assert "messages" in result2
+
+
+def test_with_prompt_no_steps_raises_error():
+    """Test that with_prompt() raises ValueError when no steps have been added."""
+    factory = AgentFactory(ChatState)
+    with pytest.raises(
+        ValueError, match="No steps have been added to configure prompt for"
+    ):
+        factory.with_prompt("test prompt")
+
+
+def test_with_prompt_non_llm_step_raises_error():
+    """Test that with_prompt() raises ValueError when the most recent step is not an LLM step."""
+    factory = AgentFactory(ChatState)
+    factory.add(lambda x: x)  # Add a custom step
+    with pytest.raises(ValueError, match="The most recent step is not an LLM step"):
+        factory.with_prompt("test prompt")
+
+
+def test_with_system_prompt_no_steps_raises_error():
+    """Test that with_system_prompt() raises ValueError when no steps have been added."""
+    factory = AgentFactory(ChatState)
+    with pytest.raises(
+        ValueError, match="No steps have been added to configure system prompt for"
+    ):
+        factory.with_system_prompt("test system prompt")
+
+
+def test_with_system_prompt_non_llm_step_raises_error():
+    """Test that with_system_prompt() raises ValueError when the most recent step is not an LLM step."""
+    factory = AgentFactory(ChatState)
+    factory.add(lambda x: x)  # Add a custom step
+    with pytest.raises(ValueError, match="The most recent step is not an LLM step"):
+        factory.with_system_prompt("test system prompt")

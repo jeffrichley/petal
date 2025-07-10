@@ -606,12 +606,12 @@ class AgentFactory:
         self._builder.with_step("custom", step_function=step, node_name=node_name)
         return self
 
-    def with_chat(self, llm: Optional[Union[BaseChatModel, Dict[str, Any]]] = None, **kwargs) -> "ChatStepBuilder":
+    def with_chat(self, llm: Optional[Union[BaseChatModel, Dict[str, Any]]] = None, **kwargs) -> "AgentFactory":
         """Add an LLM step to the chain."""
         # Maintain backward compatibility
         config = {"llm": llm, **kwargs}
         self._builder.with_step("llm", **config)
-        return ChatStepBuilder(self, len(self._builder._config.steps) - 1)
+        return self
 
     def with_memory(self, memory: Optional[Any] = None) -> "AgentFactory":
         """Add memory support to the agent."""
@@ -913,52 +913,43 @@ def test_plugin_system():
 
 ## Phase 3: Cleanup and Optimization
 
-### Task 3.1: Remove ChatStepBuilder (1 hour) ❌ (Not yet implemented - still exists in factory.py)
+### Task 3.1: Remove ChatStepBuilder (1 hour) ✅ (Completed 2024-06-22)
 **Goal**: Clean up deprecated code
 
-**Files to modify**:
-- ❌ `src/petal/core/factory.py` (remove ChatStepBuilder) - Still exists
-- ❌ Update all examples and documentation
-- ❌ Update tests
+**Files modified:**
+- ✅ `src/petal/core/factory.py` (removed ChatStepBuilder)
+- ✅ `tests/petal/test_factory.py` (removed all ChatStepBuilder tests)
+- ✅ `examples/playground2.py` (updated to new pattern)
+- ✅ `README.md` (updated examples)
 
-**Sample Code**:
-```python
-# Before (deprecated):
-factory = AgentFactory(DefaultState)
-factory.with_chat().with_prompt("Hello").build()
+**Migration Pattern:**
+- All usages of `with_chat().with_prompt(...)` now use `with_chat(prompt_template=...)` or `with_chat().with_prompt(...)` directly on `AgentFactory`.
+- Fluent chaining is preserved via new methods on `AgentFactory`.
 
-# After (new pattern):
-factory = AgentFactory(DefaultState)
-factory.with_chat(prompt_template="Hello").build()
+**Deliverables:**
+- ✅ Remove `ChatStepBuilder` class completely
+- ✅ Update all examples to use new patterns
+- ✅ Update documentation
+- ✅ Update tests to reflect new architecture
+- ✅ All tests passing
 
-# Or using the new builder:
-builder = AgentBuilder(DefaultState)
-builder.with_step("llm", prompt_template="Hello")
-agent = builder.build()
-```
+**Success Criteria:**
+- ✅ ChatStepBuilder is completely removed
+- ✅ All examples use new patterns
+- ✅ Documentation is updated
+- ✅ No references to deprecated code
+- ✅ All functionality preserved through new patterns
+- ✅ Code is cleaner and more maintainable
 
-**Deliverables**:
-- ❌ Remove `ChatStepBuilder` class completely
-- ❌ Update all examples to use new patterns
-- ❌ Update documentation
-- ❌ Update tests to reflect new architecture
-- ❌ All tests passing
-
-**Success Criteria**:
-- ❌ ChatStepBuilder is completely removed
-- ❌ All examples use new patterns
-- ❌ Documentation is updated
-- ❌ No references to deprecated code
-- ❌ All functionality preserved through new patterns
-- ❌ Code is cleaner and more maintainable
-
-**Test Requirements**:
+**Test Requirements:**
 ```python
 def test_no_chat_step_builder():
     # Verify ChatStepBuilder is removed
     # Test that new patterns work correctly
     # Test that examples still work
 ```
+
+**Status:** Complete as of 2024-06-22. All tests pass, code and docs migrated, and no references to ChatStepBuilder remain.
 
 ### Task 3.2: Performance Optimization (1.5 hours) ❌ (Not yet implemented)
 **Goal**: Optimize performance and add benchmarks

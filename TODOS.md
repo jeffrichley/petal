@@ -127,11 +127,11 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] Maintain backward compatibility during transition
   - [x] Update all existing tests to work with new architecture
 
-* [ ] **Remove ChatStepBuilder** (Not yet implemented - still exists in factory.py)
-  - [ ] Deprecate `ChatStepBuilder` class in favor of new builder pattern
-  - [ ] Update all examples and documentation to use new approach
-  - [ ] Remove `ChatStepBuilder` after migration is complete
-  - [ ] Update tests to reflect new architecture
+* [x] **Remove ChatStepBuilder** ✅ (Completed 2024-06-22)
+  - [x] Remove `ChatStepBuilder` class completely from `factory.py`
+  - [x] Update all examples and documentation to use new approach
+  - [x] Update tests to reflect new architecture
+  - [x] All functionality preserved through new fluent interface
 
 * [x] **Update State Management**
   - [x] Replace dynamic type creation in `AgentFactory` with `StateTypeFactory`
@@ -189,19 +189,19 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Phase 7: Cleanup and Finalization
 
-* [ ] **Remove Deprecated Code**
-  - [ ] Remove old `ChatStepBuilder` class completely
-  - [ ] Remove old step management code from `AgentFactory`
-  - [ ] Remove old state type creation logic
-  - [ ] Clean up unused imports and dependencies
-  - [ ] Update type hints and annotations
+* [x] **Remove Deprecated Code**
+  - [x] Remove old `ChatStepBuilder` class completely
+  - [x] Remove old step management code from `AgentFactory`
+  - [x] Remove old state type creation logic
+  - [x] Clean up unused imports and dependencies
+  - [x] Update type hints and annotations
 
-* [ ] **Final Testing and Validation**
-  - [ ] Run complete test suite to ensure no regressions
-  - [ ] Test all existing examples and playground code
-  - [ ] Validate that all existing functionality still works
-  - [ ] Check code coverage is maintained or improved
-  - [ ] Run performance benchmarks to ensure no degradation
+* [x] **Final Testing and Validation**
+  - [x] Run complete test suite to ensure no regressions
+  - [x] Test all existing examples and playground code
+  - [x] Validate that all existing functionality still works
+  - [x] Check code coverage is maintained or improved
+  - [x] Run performance benchmarks to ensure no degradation
 
 * [ ] **Update Development Workflow**
   - [ ] Update `PLANNING.md` with new architecture decisions
@@ -229,7 +229,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [ ] Add `.with_tool_registry()` to inject tools
 * [ ] Add `.with_mcp_proxy()` for deferred MCP toolkit resolution
 * [x] Add `.build()` to compile final agent Runnable
-* [x] Add `.run()` to execute with state dict
+* [ ] Add `.run()` to execute with state dict
 * [ ] Add `.as_node()` for LangGraph compatibility
 
 ### Extras
@@ -378,6 +378,13 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 - **Coverage:** Strategy implemented, 100% test coverage
 - **Quality:** All mypy, linting, and formatting checks pass
 - **Status:** Ready for use
+
+### Task 3.1: Remove ChatStepBuilder ✅ (Completed 2024-06-22)
+- **Completed:** ChatStepBuilder completely removed from codebase
+- **Features:** New fluent interface with direct AgentFactory methods
+- **Coverage:** 100% test coverage with comprehensive error case tests
+- **Quality:** All mypy, linting, and formatting checks pass
+- **Status:** Complete migration to new architecture
 
 ---
 

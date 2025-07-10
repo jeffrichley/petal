@@ -55,7 +55,15 @@ async def main():
         mood: str
 
     # Build the agent with chained methods - each LLM step has its own prompts
-    agent = AgentFactory(MyState).add(step1).add(step2).add(step3).build()
+    agent = (
+        AgentFactory(MyState)
+        .add(step1)
+        .with_chat(prompt_template="Hello!")
+        .add(step2)
+        .with_chat(prompt_template="What is your favorite color?")
+        .add(step3)
+        .build()
+    )
 
     # Prepare the initial state
     state = {"topic": "boogies"}
