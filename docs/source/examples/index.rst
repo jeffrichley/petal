@@ -1,98 +1,179 @@
-Examples & Tutorials
-====================
+Examples
+========
 
-This section contains tutorials and examples showing how to use Petal for various tasks.
+This section contains examples and tutorials for using the Petal framework.
 
 .. toctree::
    :maxdepth: 2
    :caption: Examples:
 
    basic_agent
-   tool_integration
-   graph_workflows
    custom_tools
+   graph_workflows
    memory_management
+   tool_integration
 
-Basic Examples
---------------
+Quick Examples
+-------------
 
-Simple Agent
-~~~~~~~~~~~~
+Basic Agent Creation
+~~~~~~~~~~~~~~~~~~~
 
-Create a basic agent with a single tool:
-
-.. code-block:: python
-
-   from petal import AgentFactory, tool_fn
-
-   @tool_fn
-   def greet(name: str) -> str:
-       """Greet someone by name."""
-       return f"Hello, {name}!"
-
-   agent = (AgentFactory()
-       .add(greet)
-       .with_prompt("Greet {name}")
-       .with_chat()
-       .build())
-
-   result = agent.run({"name": "World"})
-   print(result)  # "Hello, World!"
-
-Tool Integration
-~~~~~~~~~~~~~~~
-
-Combine multiple tools in a single agent:
+Using AgentFactory (High-level API):
 
 .. code-block:: python
 
-   from petal import AgentFactory, tool_fn
+    from petal.core.factory import AgentFactory, DefaultState
 
-   @tool_fn
-   def get_user_info(user_id: str) -> dict:
-       """Get user information."""
-       return {"name": "John", "email": "john@example.com"}
+    agent = (
+        AgentFactory(DefaultState)
+        .with_chat(
+            prompt_template="Hello {name}! How can I help you today?",
+            system_prompt="You are a helpful assistant."
+        )
+        .build()
+    )
 
-   @tool_fn
-   def send_email(to: str, subject: str, body: str) -> bool:
-       """Send an email."""
-       return True
+    result = await agent.arun({"name": "Alice", "messages": []})
+    print(result["messages"][-1].content)
 
-   agent = (AgentFactory()
-       .add(get_user_info)
-       .add(send_email)
-       .with_prompt("Send a welcome email to user {user_id}")
-       .with_chat()
-       .build())
+Using AgentBuilder (Lower-level API):
 
-Advanced Examples
+.. code-block:: python
+
+    from petal.core.builders.agent import AgentBuilder
+    from typing import Annotated, TypedDict
+    from langgraph.graph.message import add_messages
+
+    class MyState(TypedDict):
+        messages: Annotated[list, add_messages]
+        user_input: str
+
+    builder = AgentBuilder(MyState)
+    agent = (
+        builder.with_step(
+            "llm",
+            prompt_template="User says: {user_input}. Respond helpfully."
+        )
+        .with_system_prompt("You are a helpful assistant.")
+        .with_llm(provider="openai", model="gpt-4o-mini")
+        .build()
+    )
+
+    result = await agent.arun({
+        "user_input": "Hello! How are you today?",
+        "messages": []
+    })
+    print(result["messages"][-1].content)
+
+Custom Steps
+~~~~~~~~~~~
+
+Adding custom processing steps:
+
+.. code-block:: python
+
+    from petal.core.factory import AgentFactory
+    from typing import Annotated, TypedDict
+    from langgraph.graph.message import add_messages
+
+    class CustomState(TypedDict):
+        messages: Annotated[list, add_messages]
+        name: str
+        personality: str
+
+    async def set_personality(state: dict) -> dict:
+        state["personality"] = "pirate"
+        return state
+
+    agent = (
+        AgentFactory(CustomState)
+        .add(set_personality)
+        .with_chat(
+            prompt_template="The user's name is {name}. Say something nice to them.",
+            system_prompt="You are a {personality} assistant."
+        )
+        .build()
+    )
+
+    result = await agent.arun({
+        "name": "Alice",
+        "personality": "",
+        "messages": []
+    })
+    print(result["messages"][-1].content)
+
+Advanced Configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+Using named parameters for LLM configuration:
+
+.. code-block:: python
+
+    from petal.core.builders.agent import AgentBuilder
+    from typing import Annotated, TypedDict
+    from langgraph.graph.message import add_messages
+
+    class DemoState(TypedDict):
+        messages: Annotated[list, add_messages]
+        user_input: str
+        response: str
+
+    builder = AgentBuilder(DemoState)
+    agent = (
+        builder.with_step(
+            "llm",
+            prompt_template="User says: {user_input}. Respond helpfully."
+        )
+        .with_llm(
+            provider="openai",
+            model="gpt-4o-mini",
+            temperature=0.7,  # More creative responses
+            max_tokens=150,   # Shorter responses
+        )
+        .build()
+    )
+
+    result = await agent.arun({
+        "user_input": "Hello! How are you today?",
+        "response": "",
+        "messages": []
+    })
+    print(result["messages"][-1].content)
+
+Available Examples
 -----------------
 
-Graph Workflows
-~~~~~~~~~~~~~~~
+:doc:`basic_agent`
+   Simple agent creation with both AgentFactory and AgentBuilder APIs.
 
-Create complex workflows with multiple agents:
+:doc:`custom_tools`
+   Creating custom steps and tool functions for agent workflows.
 
-.. code-block:: python
+:doc:`graph_workflows`
+   Building complex multi-agent workflows with LangGraph.
 
-   from petal import GraphFactory, AgentFactory
+:doc:`memory_management`
+   Managing conversation history and agent memory.
 
-   # Create specialized agents
-   research_agent = (AgentFactory()
-       .with_prompt("Research {topic}")
-       .with_chat()
-       .build())
+:doc:`tool_integration`
+   Integrating external tools and APIs with agents.
 
-   write_agent = (AgentFactory()
-       .with_prompt("Write about {topic} using {research}")
-       .with_chat()
-       .build())
+Running Examples
+---------------
 
-   # Compose into a workflow
-   workflow = (GraphFactory()
-       .add_agent("research", research_agent)
-       .add_agent("write", write_agent)
-       .connect("research", "write")
-       .build())
+All examples can be run from the project root:
 
-   result = workflow.run({"topic": "AI agents"})
+.. code-block:: bash
+
+    # Run basic playground
+    python examples/playground.py
+
+    # Run advanced playground with Rich logging
+    python examples/playground2.py
+
+    # Run improved API demo
+    python examples/improved_api_demo.py
+
+    # Run custom tool example
+    python examples/custom_tool.py
