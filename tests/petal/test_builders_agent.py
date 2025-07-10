@@ -83,8 +83,9 @@ class TestAgentBuilder:
         """Test that with_llm returns self for fluent chaining."""
         builder = AgentBuilder(BuilderTestState)
 
-        llm_config = {"provider": "openai", "model": "gpt-4o-mini", "temperature": 0.1}
-        result = builder.with_llm(llm_config)
+        result = builder.with_llm(
+            provider="openai", model="gpt-4o-mini", temperature=0.1
+        )
 
         assert result is builder
         assert builder._config.llm_config is not None
@@ -97,8 +98,7 @@ class TestAgentBuilder:
         builder = AgentBuilder(BuilderTestState)
 
         # Valid LLM config
-        llm_config = {"provider": "openai", "model": "gpt-4o-mini"}
-        builder.with_llm(llm_config)
+        builder.with_llm(provider="openai", model="gpt-4o-mini")
 
         assert builder._config.llm_config is not None
         assert builder._config.llm_config.provider == "openai"
@@ -110,7 +110,7 @@ class TestAgentBuilder:
 
         # Invalid provider
         with pytest.raises(ValueError, match="provider must be one of"):
-            builder.with_llm({"provider": "invalid_provider", "model": "test"})
+            builder.with_llm(provider="invalid_provider", model="test")
 
     def test_with_logging_fluent_interface(self):
         """Test that with_logging returns self for fluent chaining."""
@@ -149,7 +149,7 @@ class TestAgentBuilder:
         result = (
             builder.with_step("llm", prompt_template="Hello {name}")
             .with_memory({"memory_type": "conversation"})
-            .with_llm({"provider": "openai", "model": "gpt-4o-mini"})
+            .with_llm(provider="openai", model="gpt-4o-mini")
             .with_logging({"enabled": True})
             .with_graph_config({"graph_type": "linear"})
         )
@@ -213,7 +213,7 @@ class TestAgentBuilder:
             builder.with_memory({"memory_type": "invalid"})
 
         with pytest.raises(ValueError):
-            builder.with_llm({"provider": "invalid", "model": "test"})
+            builder.with_llm(provider="invalid", model="test")
 
         with pytest.raises(ValueError):
             builder.with_logging({"level": "INVALID"})

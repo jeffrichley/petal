@@ -95,12 +95,21 @@ class AgentBuilder:
 
         return self
 
-    def with_llm(self, llm_config: Dict[str, Any]) -> "AgentBuilder":
+    def with_llm(
+        self,
+        provider: str,
+        model: str,
+        temperature: float = 0.0,
+        max_tokens: int = 8000,
+    ) -> "AgentBuilder":
         """
         Add LLM configuration to the agent.
 
         Args:
-            llm_config: Dictionary containing LLM configuration parameters
+            provider: LLM provider (e.g., openai, anthropic, google, cohere, huggingface)
+            model: Model name
+            temperature: Sampling temperature (0.0 to 2.0, default: 0.0)
+            max_tokens: Maximum tokens to generate (default: 8000)
 
         Returns:
             self: For method chaining
@@ -109,10 +118,44 @@ class AgentBuilder:
             ValueError: If LLM configuration is invalid
         """
         try:
-            llm = LLMConfig(**llm_config)
+            llm = LLMConfig(
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
             self._config.set_llm(llm)
         except Exception as e:
             raise ValueError(f"Invalid LLM configuration: {e}") from e
+
+        return self
+
+    def with_system_prompt(self, system_prompt: str) -> "AgentBuilder":
+        """
+        Add a system prompt to the most recent LLM step.
+
+        Args:
+            system_prompt: The system prompt to add to the LLM step
+
+        Returns:
+            self: For method chaining
+
+        Raises:
+            ValueError: If no steps have been added or the most recent step is not an LLM step
+        """
+        if not self._config.steps:
+            raise ValueError("Cannot add system prompt: no steps have been added")
+
+        # Get the most recent step
+        latest_step = self._config.steps[-1]
+
+        if latest_step.strategy_type != "llm":
+            raise ValueError(
+                f"Cannot add system prompt: most recent step is '{latest_step.strategy_type}', not 'llm'"
+            )
+
+        # Add system prompt to the step configuration
+        latest_step.config["system_prompt"] = system_prompt
 
         return self
 

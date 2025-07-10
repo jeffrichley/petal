@@ -81,3 +81,21 @@ def test_llm_step_strategy_config_validation():
 def test_llm_step_strategy_node_name():
     strategy = LLMStepStrategy()
     assert strategy.get_node_name(5) == "llm_step_5"
+
+
+@pytest.mark.asyncio
+async def test_llm_step_system_prompt_missing_key():
+    # System prompt references {foo}, which is not in the state
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a {foo} assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=None,
+    )
+    state = {"messages": [], "bar": 123}
+    with pytest.raises(ValueError) as excinfo:
+        await step(state)
+    msg = str(excinfo.value)
+    assert "requires key 'foo'" in msg
+    assert "but it's not available in the state" in msg
+    assert "bar" in msg or "messages" in msg  # available keys listed

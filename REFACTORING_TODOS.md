@@ -425,7 +425,7 @@ def test_state_type_factory():
 - [x] `AgentBuilder` class with fluent interface:
   - [x] `with_step(step_type: str, **config) -> AgentBuilder`
   - [x] `with_memory(memory_config: Dict[str, Any]) -> AgentBuilder`
-  - [x] `with_llm(llm_config: Dict[str, Any]) -> AgentBuilder`
+  - [x] `with_llm(provider: str, model: str, temperature: float = 0.0, max_tokens: int = 1000) -> AgentBuilder`
   - [x] `with_logging(logging_config: Dict[str, Any]) -> AgentBuilder`
   - [x] `with_graph_config(graph_config: Dict[str, Any]) -> AgentBuilder`
   - [x] `build() -> Any` (uses AgentBuilderDirector)

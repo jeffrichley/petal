@@ -33,7 +33,15 @@ class LLMStep:
         original_messages = state.get("messages", [])
         llm_messages = []
         if self.system_prompt:
-            llm_messages.append({"role": "system", "content": self.system_prompt})
+            try:
+                formatted_system_prompt = self.system_prompt.format(**state)
+            except KeyError as e:
+                missing_key = str(e).strip("'")
+                raise ValueError(
+                    f"System prompt template '{self.system_prompt}' requires key '{missing_key}' "
+                    f"but it's not available in the state. Available keys: {list(state.keys())}"
+                ) from e
+            llm_messages.append({"role": "system", "content": formatted_system_prompt})
         llm_messages.extend(original_messages)
         user_prompt = None
         if self.prompt_template:
