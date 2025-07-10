@@ -386,6 +386,34 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 - **Quality:** All mypy, linting, and formatting checks pass
 - **Status:** Complete migration to new architecture
 
+### API Improvements and Enhancements ✅ (Completed 2024-12-22)
+- **Completed:** Improved `with_llm` method to use named parameters instead of config dict
+- **Features:** `with_llm(provider: str, model: str, temperature: float = 0.0, max_tokens: int = 1000)`
+- **Coverage:** Updated playground examples and tests to use new API
+- **Quality:** More Pythonic and type-safe API design
+- **Status:** Backward compatibility maintained, new API preferred
+
+### System Prompt Handling ✅ (Completed 2024-12-22)
+- **Completed:** Enhanced system prompt support with state variable formatting
+- **Features:** `with_system_prompt()` method, automatic state variable interpolation
+- **Coverage:** Fixed `_build_llm_messages` to format system prompts with state
+- **Quality:** Proper error handling for missing keys in system prompt templates
+- **Status:** Full integration with LLM steps and state management
+
+### Rich Logging Integration ✅ (Completed 2024-12-22)
+- **Completed:** Enhanced playground2.py with Rich logging and visual improvements
+- **Features:** Rich panels, tables, spinners, colors, and proper markup handling
+- **Coverage:** Fixed logging issues, added timing info, improved results display
+- **Quality:** Beautiful and informative console output with proper error handling
+- **Status:** Ready for production use with comprehensive logging
+
+### Error Handling and Testing ✅ (Completed 2024-12-22)
+- **Completed:** Added comprehensive error handling for missing keys in system prompts
+- **Features:** Test coverage for LLMStep error handling when system prompt references missing keys
+- **Coverage:** Async test in `test_steps_llm.py` with proper error message validation
+- **Quality:** Robust error handling with descriptive error messages
+- **Status:** Production-ready error handling with full test coverage
+
 ---
 
 End of task list.

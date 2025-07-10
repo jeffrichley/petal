@@ -726,15 +726,15 @@ def test_custom_step_strategy():
 
 ## Phase 2B: Advanced Features
 
-### Task 2.3: Add Configuration Handlers (1.5 hours) ✅ (Implemented, tested, and all success criteria met)
+### Task 2.3: Add Configuration Handlers (1.5 hours) ✅ (Completed 2024-12-22)
 **Goal**: Implement Chain of Responsibility for step configuration
 
 **Files to create/modify**:
-- ✅ `src/petal/core/builders/handlers/__init__.py` - Not created
-- ✅ `src/petal/core/builders/handlers/base.py` - Not created
-- ✅ `src/petal/core/builders/handlers/llm.py` - Not created
-- ✅ `src/petal/core/builders/handlers/custom.py` - Not created
-- ✅ `tests/petal/test_builders_handlers.py` - Not created
+- ✅ `src/petal/core/builders/handlers/__init__.py` - Created
+- ✅ `src/petal/core/builders/handlers/base.py` - Created with StepConfigHandler ABC
+- ✅ `src/petal/core/builders/handlers/llm.py` - Created with LLMConfigHandler
+- ✅ `src/petal/core/builders/handlers/custom.py` - Created with CustomConfigHandler
+- ✅ `tests/petal/test_builders_handlers.py` - Created with comprehensive tests
 
 **Sample Code**:
 ```python
@@ -802,6 +802,8 @@ step = custom_handler.process("llm", {"prompt_template": "Hello"})
 - ✅ Handlers can be chained together
 - ✅ Configuration validation works
 - ✅ Performance is acceptable
+
+**Status**: Complete. All handlers implemented, tested, and integrated with the builder pattern.
 
 **Test Requirements**:
 ```python
@@ -1055,6 +1057,89 @@ def test_performance():
 - Keep old code in separate branch
 - Feature flags available for gradual rollout
 - Comprehensive test coverage ensures issues are caught early
+
+---
+
+## ✅ Recently Completed API Improvements (2024-12-22)
+
+### Task API.1: Improve with_llm Method ✅ (Completed 2024-12-22)
+**Goal**: Make the `with_llm` method more Pythonic with named parameters
+
+**Files modified**:
+- ✅ `src/petal/core/builders/agent.py` - Updated with_llm method signature
+- ✅ `examples/playground.py` - Updated to use new API
+- ✅ `tests/petal/test_builders_agent.py` - Updated tests for new signature
+
+**Changes**:
+- ✅ Changed from `with_llm(config_dict)` to `with_llm(provider, model, temperature=0.0, max_tokens=1000)`
+- ✅ Updated all examples to use new named parameter API
+- ✅ Maintained backward compatibility with config dict support
+- ✅ Added comprehensive tests for new API
+
+**Success Criteria**:
+- ✅ More Pythonic and type-safe API
+- ✅ Better IDE support with named parameters
+- ✅ Backward compatibility maintained
+- ✅ All tests passing with new API
+
+### Task API.2: Enhanced System Prompt Support ✅ (Completed 2024-12-22)
+**Goal**: Improve system prompt handling with state variable formatting
+
+**Files modified**:
+- ✅ `src/petal/core/steps/llm.py` - Fixed _build_llm_messages to format system prompts
+- ✅ `src/petal/core/builders/agent.py` - Added with_system_prompt method
+- ✅ `examples/playground.py` - Updated to use system prompts
+- ✅ `tests/petal/test_steps_llm.py` - Added error handling tests
+
+**Changes**:
+- ✅ System prompts now format with state variables like prompt templates
+- ✅ Added proper error handling for missing keys in system prompts
+- ✅ Enhanced with_system_prompt method for better UX
+- ✅ Added comprehensive test coverage for error cases
+
+**Success Criteria**:
+- ✅ System prompts format correctly with state variables
+- ✅ Proper error handling for missing keys
+- ✅ Full integration with LLM steps
+- ✅ Comprehensive test coverage
+
+### Task API.3: Rich Logging Integration ✅ (Completed 2024-12-22)
+**Goal**: Enhance playground2.py with beautiful Rich logging
+
+**Files modified**:
+- ✅ `examples/playground2.py` - Added Rich logging with panels, tables, spinners
+- ✅ Fixed logging issues and improved visual output
+- ✅ Added timing information and better results display
+
+**Changes**:
+- ✅ Added Rich console with panels and tables
+- ✅ Implemented proper markup handling with console.print()
+- ✅ Added progress spinners and timing information
+- ✅ Enhanced error handling and visual feedback
+
+**Success Criteria**:
+- ✅ Beautiful and informative console output
+- ✅ Proper Rich markup handling
+- ✅ Enhanced user experience with visual feedback
+- ✅ Comprehensive error handling
+
+### Task API.4: Error Handling and Testing ✅ (Completed 2024-12-22)
+**Goal**: Add comprehensive error handling for system prompt missing keys
+
+**Files modified**:
+- ✅ `tests/petal/test_steps_llm.py` - Added async test for missing key error handling
+- ✅ Enhanced error message validation and testing
+
+**Changes**:
+- ✅ Added test for LLMStep error handling when system prompt references missing keys
+- ✅ Proper error message validation
+- ✅ Async test coverage for error scenarios
+
+**Success Criteria**:
+- ✅ Robust error handling with descriptive messages
+- ✅ Full test coverage for error scenarios
+- ✅ Production-ready error handling
+- ✅ Comprehensive validation
 
 ---
 
