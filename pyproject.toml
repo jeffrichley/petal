@@ -126,3 +126,8 @@ addopts = [
     "--cov-report=xml",
     "--cov-fail-under=80"
 ]
+
+[dependency-groups]
+dev = [
+    "vulture>=2.14",
+]

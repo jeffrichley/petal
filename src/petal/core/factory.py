@@ -15,19 +15,6 @@ class DefaultState(TypedDict):
     name: str
 
 
-class NonChatState(TypedDict, total=False):
-    """State for non-chat agents that allows any fields."""
-
-    pass
-
-
-class MergeableState(TypedDict, total=False):
-    """State schema that supports merging of any fields."""
-
-    # This allows any keys to be added and merged
-    # We'll use a simple dict approach for now
-
-
 class AgentFactory:
     """
     Builder and fluent interface for constructing Agent objects as LangGraph StateGraphs.
@@ -39,8 +26,6 @@ class AgentFactory:
 
         # Use new architecture internally
         self._builder = AgentBuilder(state_type)
-        self._state_type = state_type
-        self._built = False
 
     def add(
         self, step: Callable[..., Any], node_name: Optional[str] = None

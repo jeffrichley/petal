@@ -1,4 +1,4 @@
-.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov test-cov-check build install-dev checkit v
+.PHONY: help docs docs-clean docs-serve docs-linkcheck format lint test test-cov test-cov-check build install-dev checkit v vulture
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -22,6 +22,12 @@ test-cov:  ## Run tests with coverage
 
 test-cov-check:  ## Run tests with coverage and fail if below 80%
 	uv run pytest tests/ --cov=src/petal --cov-report=term-missing --cov-fail-under=80
+
+vulture:  ## Find dead code with vulture
+	uv run vulture src/ tests/ --min-confidence 80
+
+vulture-all:  ## Find all potential dead code with vulture (lower confidence)
+	uv run vulture src/ tests/ --min-confidence 60
 
 docs:  ## Build documentation
 	cd docs && make html
