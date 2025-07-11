@@ -12,8 +12,6 @@
 
 It's designed to help you create powerful, discoverable agents and tools with minimal boilerplate — combining declarative structure with fluent chaining.
 
-<!-- Test comment for pre-commit verification -->
-
 ---
 
 ## ✨ Features
