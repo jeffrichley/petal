@@ -222,15 +222,15 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Add `.with_chat()` to configure LLM support
 * [ ] Add `.with_memory()` for memory support
 * [ ] Add `.with_logger()` for internal state logging
-* [ ] Add `.with_state()` for schema enforcement
+* [x] Add `.with_state()` for schema enforcement
 * [ ] Add `.with_condition()` to guard step execution
 * [ ] Add `.with_retry(n)` for retry logic
 * [ ] Add `.with_timeout()` support
-* [ ] Add `.with_tool_registry()` to inject tools
+* [x] Add `.with_tool_registry()` to inject tools
 * [ ] Add `.with_mcp_proxy()` for deferred MCP toolkit resolution
 * [x] Add `.build()` to compile final agent Runnable
-* [ ] Add `.run()` to execute with state dict
-* [ ] Add `.as_node()` for LangGraph compatibility
+* [x] Add `.run()` to execute with state dict
+* [x] Add `.as_node()` for LangGraph compatibility
 
 ### Extras
 
@@ -413,6 +413,27 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 - **Coverage:** Async test in `test_steps_llm.py` with proper error message validation
 - **Quality:** Robust error handling with descriptive error messages
 - **Status:** Production-ready error handling with full test coverage
+
+### React Loop Testing and Tool Conversion ✅ (Completed 2024-12-22)
+- **Completed:** Fixed TypedDict instance checking issues in React loop tests
+- **Features:** Replaced isinstance checks with dict-like validation for TypedDict compatibility
+- **Coverage:** Fixed all React loop tests and added comprehensive tool conversion tests
+- **Quality:** All tests passing, proper mocking of LLM with_structured_output method
+- **Status:** React loop fully functional with proper type handling
+
+### Playground and Code Quality Improvements ✅ (Completed 2024-12-22)
+- **Completed:** Fixed playground file to use proper dict access instead of attribute access
+- **Features:** Updated examples/react_agent_framework_playground.py to use dictionary-style access
+- **Coverage:** Fixed mypy errors and improved code quality across the codebase
+- **Quality:** All linter warnings resolved, no noqa comments needed
+- **Status:** Clean codebase with all tests passing and no type errors
+
+### ReactStepStrategy Signature Fix ✅ (Completed 2024-12-22)
+- **Completed:** Fixed ReactStepStrategy.react_step function signature to match LangGraph expectations
+- **Features:** Renamed second parameter from "_" to "config" for proper LangGraph integration
+- **Coverage:** Updated all related tests and playground examples
+- **Quality:** Proper function signatures with no linter warnings
+- **Status:** Full compatibility with LangGraph framework
 
 ---
 
