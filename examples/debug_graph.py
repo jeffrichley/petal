@@ -6,9 +6,8 @@ Debug script to explore graph object methods.
 from typing import TypedDict
 
 from langgraph.graph.message import add_messages
-from typing_extensions import Annotated
-
 from petal.core.factory import AgentFactory
+from typing_extensions import Annotated
 
 
 class DemoState(TypedDict):
@@ -38,6 +37,10 @@ def main():
     print(f"Agent graph type: {type(agent.graph)}")
 
     # Get the underlying graph
+    if agent.graph is None:
+        print("Agent graph is None")
+        return
+
     graph_obj = agent.graph.get_graph()
     print(f"Graph object type: {type(graph_obj)}")
     print(f"Graph object dir: {dir(graph_obj)}")

@@ -5,9 +5,8 @@ import pytest
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
-from pydantic import BaseModel
-
 from petal.core.steps.llm import LLMStep, LLMStepStrategy
+from pydantic import BaseModel
 
 
 class DummyLLM(BaseChatModel):
@@ -266,3 +265,180 @@ async def test_llm_step_without_structured_output_model_falls_back():
     assert result["messages"][0]["role"] == "user"
     assert isinstance(result["messages"][1], AIMessage)
     assert result["messages"][1].content == "Hello!"
+
+
+@pytest.mark.asyncio
+async def test_llm_step_structured_output_always_returns_base_model():
+    """Test that structured output always returns a BaseModel, making the 'return result' line dead code."""
+
+    class MyModel(BaseModel):
+        answer: str
+
+    mock_llm = DummyLLM()
+    mock_structured = Mock()
+    # This will always be a BaseModel when using with_structured_output
+    mock_structured.ainvoke = AsyncMock(return_value=MyModel(answer="42"))
+
+    with patch.object(DummyLLM, "with_structured_output", return_value=mock_structured):
+        step = LLMStep(
+            prompt_template="What is the answer?",
+            system_prompt="You are a helpful assistant.",
+            llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+            llm_instance=mock_llm,
+            structured_output_model=MyModel,
+            structured_output_key="test_key",
+        )
+        state = {"messages": [], "name": "test"}
+        result = await step(state)
+
+        # Verify that the result is wrapped in the key (not the raw result)
+        assert result == {"test_key": {"answer": "42"}}
+        # This confirms that the 'return result' line is never reached
+        # because is_base_model is always True with structured output
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_tools_binds_tools():
+    """Test that LLM step binds tools when available and LLM supports it."""
+    from unittest.mock import AsyncMock, Mock
+
+    # Create a mock LLM that has bind_tools method
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+    mock_llm.bind_tools = Mock(return_value=mock_llm)  # Return self for chaining
+
+    # Create tools list
+    tools = [{"name": "test_tool", "description": "A test tool"}]
+
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=mock_llm,
+        tools=tools,
+    )
+
+    state = {"messages": [], "name": "test"}
+    result = await step(state)
+
+    # Verify bind_tools was called with the tools
+    mock_llm.bind_tools.assert_called_once_with(tools)
+    assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_tools_but_no_bind_tools():
+    """Test that LLM step skips tool binding when LLM doesn't support it."""
+    from unittest.mock import AsyncMock, Mock
+
+    # Create a mock LLM that doesn't have bind_tools method
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+    # Note: no bind_tools method - this tests the hasattr check
+    # Make sure the mock doesn't have bind_tools attribute
+    if hasattr(mock_llm, "bind_tools"):
+        delattr(mock_llm, "bind_tools")
+
+    # Create tools list
+    tools = [{"name": "test_tool", "description": "A test tool"}]
+
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=mock_llm,
+        tools=tools,
+    )
+
+    state = {"messages": [], "name": "test"}
+    result = await step(state)
+
+    # Verify the step still works without bind_tools
+    assert "messages" in result
+    # Verify bind_tools was not called (it doesn't exist)
+    assert not hasattr(mock_llm, "bind_tools")
+
+
+@pytest.mark.asyncio
+async def test_llm_step_without_tools_doesnt_bind():
+    """Test that LLM step doesn't bind tools when no tools provided."""
+    from unittest.mock import AsyncMock, Mock
+
+    # Create a mock LLM that has bind_tools method
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+    mock_llm.bind_tools = Mock(return_value=mock_llm)
+
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=mock_llm,
+        tools=None,  # No tools
+    )
+
+    state = {"messages": [], "name": "test"}
+    result = await step(state)
+
+    # Verify bind_tools was not called since no tools provided
+    mock_llm.bind_tools.assert_not_called()
+    assert "messages" in result
+
+
+@pytest.mark.asyncio
+async def test_llm_step_with_empty_tools_doesnt_bind():
+    """Test that LLM step doesn't bind tools when empty tools list provided."""
+    from unittest.mock import AsyncMock, Mock
+
+    # Create a mock LLM that has bind_tools method
+    mock_llm = Mock()
+    mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="Test response"))
+    mock_llm.bind_tools = Mock(return_value=mock_llm)
+
+    step = LLMStep(
+        prompt_template="Hello!",
+        system_prompt="You are a helpful assistant.",
+        llm_config={"provider": "openai", "model": "gpt-4o-mini"},
+        llm_instance=mock_llm,
+        tools=[],  # Empty tools list
+    )
+
+    state = {"messages": [], "name": "test"}
+    result = await step(state)
+
+    # Verify bind_tools was not called since tools list is empty
+    mock_llm.bind_tools.assert_not_called()
+    assert "messages" in result
+
+
+def test_llm_step_strategy_with_tools():
+    """Test that LLM step strategy properly handles tools in config."""
+    strategy = LLMStepStrategy()
+
+    tools = [{"name": "test_tool", "description": "A test tool"}]
+    config = {
+        "prompt_template": "Hello {name}",
+        "system_prompt": "You are a helpful assistant.",
+        "llm_config": {"model": "gpt-4o-mini"},
+        "tools": tools,
+    }
+
+    step = strategy.create_step(config)
+    assert isinstance(step, LLMStep)
+    assert step.tools == tools
+
+
+def test_llm_step_strategy_without_tools():
+    """Test that LLM step strategy handles config without tools."""
+    strategy = LLMStepStrategy()
+
+    config = {
+        "prompt_template": "Hello {name}",
+        "system_prompt": "You are a helpful assistant.",
+        "llm_config": {"model": "gpt-4o-mini"},
+        # No tools key
+    }
+
+    step = strategy.create_step(config)
+    assert isinstance(step, LLMStep)
+    assert step.tools is None

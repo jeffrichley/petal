@@ -1,7 +1,6 @@
 """Tests for LLMTypes preconfigured configurations."""
 
 import pytest
-
 from petal.core.config.agent import LLMConfig
 from petal.core.config.llm_types import LLMTypes
 from petal.core.factory import AgentFactory

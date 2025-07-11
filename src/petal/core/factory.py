@@ -206,7 +206,7 @@ class AgentFactory:
         except Exception as e:
             raise RuntimeError(f"Failed to generate diagram: {e}") from e
 
-    def diagram_graph(self, path: str, format: str = "png") -> None:
+    def diagram_graph(self, path: str, format: str = "png") -> Any:
         """
         Generate a diagram of the agent graph and save it to a file.
 

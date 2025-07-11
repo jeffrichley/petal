@@ -3,10 +3,9 @@ from unittest.mock import AsyncMock, Mock
 
 from langchain_core.messages import HumanMessage
 from langgraph.graph.message import add_messages
+from petal.core.factory import AgentFactory
 from pydantic import BaseModel
 from typing_extensions import Annotated, TypedDict
-
-from petal.core.factory import AgentFactory
 
 
 class MyModel(BaseModel):

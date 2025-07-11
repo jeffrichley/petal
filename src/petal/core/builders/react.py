@@ -205,10 +205,8 @@ class ReActAgentBuilder:
             for key, value in internal_state.context.items():
                 # Skip LangGraph internal keys (they start with __)
                 # Only include simple, serializable values
-                if (
-                    not key.startswith("__")
-                    and isinstance(value, (str, int, float, bool, list, dict))
-                    and not str(type(value)).startswith("<class")
+                if not key.startswith("__") and isinstance(
+                    value, (str, int, float, bool, list, dict)
                 ):
                     clean_context[key] = value
 
@@ -342,6 +340,12 @@ Return the state as a JSON object matching the schema structure.
         return decide_next_step
 
     def build(self) -> Callable:
+        # Validate that tools are provided
+        if not self.tool_names:
+            raise ValueError(
+                "ReAct agents require at least one tool. Please provide tool_names."
+            )
+
         # Resolve tools
         tools = [self.tool_factory.resolve(name) for name in self.tool_names]
 
@@ -350,18 +354,12 @@ Return the state as a JSON object matching the schema structure.
         for tool in tools:
             if hasattr(tool, "name") and hasattr(tool, "description"):
                 tool_docs.append(f"- {tool.name}: {tool.description}")
-            elif hasattr(tool, "__name__"):
-                tool_docs.append(
-                    f"- {tool.__name__}: {getattr(tool, '__doc__', 'No description')}"
-                )
 
-        tool_section = "\n".join(tool_docs) if tool_docs else "No tools available"
+        tool_section = "\n".join(tool_docs)
 
         # Bind tools to LLM if it supports it
         if hasattr(self.llm, "bind_tools"):
             self.llm_with_tools = self.llm.bind_tools(tools)
-        else:
-            self.llm_with_tools = self.llm
 
         # Compose the system prompt with tool information
         base_prompt = self.system_prompt.strip()
@@ -370,9 +368,8 @@ Return the state as a JSON object matching the schema structure.
         if tool_docs:
             base_prompt += f"\n\nAvailable tools:\n{tool_section}"
 
-        # Add ReAct instruction if not already present
-        if REACT_INSTRUCTION not in base_prompt:
-            base_prompt += "\n\n" + REACT_INSTRUCTION
+        # Note: REACT_INSTRUCTION is already added in __init__ if needed
+        # No need to check again here since base_prompt comes from self.system_prompt
 
         tool_node = ToolNode(tools)
 

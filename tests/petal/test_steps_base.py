@@ -4,7 +4,6 @@ from abc import ABC
 from typing import Any, Callable, Dict
 
 import pytest
-
 from petal.core.steps.base import MyCustomStrategy, StepStrategy
 
 

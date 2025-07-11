@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.tools import tool
 from langgraph.graph import END
-
 from petal.core.steps.tool import (
     ToolStep,
     ToolStepStrategy,

@@ -3,7 +3,6 @@
 from typing import Any, Dict
 
 import pytest
-
 from petal.core.config.agent import StepConfig
 from petal.core.steps.base import StepStrategy
 from petal.core.steps.custom import CustomStepStrategy

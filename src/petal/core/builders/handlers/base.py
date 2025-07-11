@@ -33,7 +33,6 @@ class StepConfigHandler(ABC):
         Returns:
             True if this handler can handle the step type, False otherwise
         """
-        pass
 
     @abstractmethod
     def handle(self, config: Dict[str, Any]) -> Callable:
@@ -49,7 +48,6 @@ class StepConfigHandler(ABC):
         Raises:
             ValueError: If the configuration is invalid for this handler
         """
-        pass
 
     def process(self, step_type: str, config: Dict[str, Any]) -> Callable:
         """

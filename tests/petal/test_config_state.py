@@ -10,9 +10,8 @@ from typing import TypedDict, get_type_hints
 
 import pytest
 from langgraph.graph.message import add_messages
-from typing_extensions import Annotated
-
 from petal.core.config.state import StateTypeFactory
+from typing_extensions import Annotated
 
 
 class SimpleState(TypedDict):

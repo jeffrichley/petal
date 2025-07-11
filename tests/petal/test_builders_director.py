@@ -5,12 +5,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 from langgraph.graph.message import add_messages
-from typing_extensions import Annotated
-
 from petal.core.builders.director import AgentBuilderDirector
 from petal.core.config.agent import AgentConfig, StepConfig
 from petal.core.factory import Agent
 from petal.core.steps.registry import StepRegistry
+from typing_extensions import Annotated
 
 
 class StateWithMessages(TypedDict):

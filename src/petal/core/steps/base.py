@@ -10,12 +10,10 @@ class StepStrategy(ABC):
     @abstractmethod
     def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a step callable from configuration."""
-        pass
 
     @abstractmethod
     def get_node_name(self, index: int) -> str:
         """Generate a node name for the step at the given index."""
-        pass
 
 
 class MyCustomStrategy(StepStrategy):

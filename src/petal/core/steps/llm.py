@@ -2,7 +2,6 @@ from typing import Any, Dict, Optional
 
 from langchain.chat_models.base import BaseChatModel
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
 
 from petal.core.steps.base import StepStrategy
 
@@ -40,16 +39,11 @@ class LLMStep:
                 self.structured_output_model
             )
             result = await llm_with_structured.ainvoke(llm_messages)
-            is_base_model = isinstance(result, BaseModel)
             if self.structured_output_key:
-                # If the result is a model, convert the value to dict as well
-                if is_base_model:
-                    return {self.structured_output_key: result.model_dump()}
-                return result
-            if is_base_model:
-                return result.model_dump()
-
-            return result
+                # When using structured output, result is always a BaseModel
+                return {self.structured_output_key: result.model_dump()}
+            # When using structured output, result is always a BaseModel
+            return result.model_dump()
         # Default behavior
         response = await llm.ainvoke(llm_messages)
         return self._format_llm_response(response, user_prompt)

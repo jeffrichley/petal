@@ -1,7 +1,6 @@
 """Tests for AgentConfig and related configuration classes."""
 
 import pytest
-
 from petal.core.config.agent import (
     AgentConfig,
     GraphConfig,

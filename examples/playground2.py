@@ -13,13 +13,12 @@ import random
 from typing import Annotated, TypedDict
 
 from langgraph.graph.message import add_messages
+from petal.core.factory import AgentFactory
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-
-from petal.core.factory import AgentFactory
 
 # Initialize Rich console
 console = Console()

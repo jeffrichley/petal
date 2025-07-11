@@ -4,7 +4,6 @@ from typing import Any, Dict, Type
 from unittest.mock import Mock, patch
 
 import pytest
-
 from petal.core.plugins.base import PluginManager, StepPlugin
 from petal.core.steps.base import StepStrategy
 

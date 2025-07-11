@@ -55,6 +55,7 @@ checkit:
 	black .
 	ruff check . --fix
 	mypy src/ tests/
+	pre-commit run --all-files
 	$(MAKE) test-cov-check
 
 v:  ## Activate virtual environment (Mac)

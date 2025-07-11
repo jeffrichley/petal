@@ -4,12 +4,11 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
-from pydantic import BaseModel
-from typing_extensions import TypedDict
-
 from petal.core.agent import Agent
 from petal.core.factory import AgentFactory, DefaultState
 from petal.core.tool_factory import ToolFactory
+from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 
 # Simple state types for testing
@@ -1567,6 +1566,50 @@ async def test_with_react_tools_before_chat_raises_error():
 
 
 @pytest.mark.asyncio
+async def test_with_tools_non_llm_step_raises_error():
+    """Test that with_tools() when the most recent step is not an LLM step raises error."""
+    from langchain_core.tools import tool
+
+    @tool
+    def test_tool(query: str) -> str:
+        """A test tool."""
+        return f"Test: {query}"
+
+    async def custom_step(state):  # noqa: ARG001
+        """A custom step that is not an LLM step."""
+        return {"custom": "value"}
+
+    # Add a custom step first, then try to add tools
+    with pytest.raises(
+        ValueError,
+        match="The most recent step is not an LLM step. Call with_chat\\(\\) first.",
+    ):
+        AgentFactory(ChatState).add(custom_step).with_tools([test_tool])
+
+
+@pytest.mark.asyncio
+async def test_with_react_tools_non_llm_step_raises_error():
+    """Test that with_react_tools() when the most recent step is not an LLM step raises error."""
+    from langchain_core.tools import tool
+
+    @tool
+    def test_tool(query: str) -> str:
+        """A test tool."""
+        return f"Test: {query}"
+
+    async def custom_step(state):  # noqa: ARG001
+        """A custom step that is not an LLM step."""
+        return {"custom": "value"}
+
+    # Add a custom step first, then try to add tools
+    with pytest.raises(
+        ValueError,
+        match="The most recent step is not an LLM step. Call with_chat\\(\\) first.",
+    ):
+        AgentFactory(ChatState).add(custom_step).with_react_tools([test_tool])
+
+
+@pytest.mark.asyncio
 async def test_tools_are_injected_and_invoke_tool_message():
     """End-to-end: verify tools are injected, invoked, and ToolMessage is appended."""
     from langchain_core.messages import AIMessage
@@ -1609,3 +1652,424 @@ async def test_tools_are_injected_and_invoke_tool_message():
                 )
             else:
                 return AIMessage(content="Tool execution completed successfully")
+
+
+class TestDiagramAgent:
+    """Test the diagram_agent static method."""
+
+    def test_diagram_agent_success_png(self, tmp_path):
+        """Test successful diagram generation in PNG format."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock the graph object to return a mock with draw_mermaid_png
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_png = Mock(return_value=b"fake_png_data")
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        # Test diagram generation
+        output_path = tmp_path / "test_diagram.png"
+        AgentFactory.diagram_agent(agent, str(output_path), "png")
+
+        # Verify the mock was called correctly
+        mock_graph_obj.draw_mermaid_png.assert_called_once()
+        assert output_path.exists()
+
+    def test_diagram_agent_success_svg(self, tmp_path):
+        """Test successful diagram generation in SVG format."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock the graph object to return a mock with draw_mermaid_svg
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_svg = Mock(return_value=b"fake_svg_data")
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        # Test diagram generation
+        output_path = tmp_path / "test_diagram.svg"
+        AgentFactory.diagram_agent(agent, str(output_path), "svg")
+
+        # Verify the mock was called correctly
+        mock_graph_obj.draw_mermaid_svg.assert_called_once()
+        assert output_path.exists()
+
+    def test_diagram_agent_agent_not_built(self):
+        """Test that diagram_agent raises error when agent is not built."""
+        from petal.core.agent import Agent
+
+        # Create agent without building it
+        agent = Agent()
+        agent.built = False
+
+        with pytest.raises(
+            RuntimeError, match="Agent must be built before generating diagram"
+        ):
+            AgentFactory.diagram_agent(agent, "test.png")
+
+    def test_diagram_agent_graph_is_none(self):
+        """Test that diagram_agent raises error when agent.graph is None."""
+        from petal.core.agent import Agent
+
+        # Create agent with built=True but graph=None
+        agent = Agent()
+        agent.built = True
+        agent.graph = None
+
+        with pytest.raises(
+            RuntimeError, match="Agent must be built before generating diagram"
+        ):
+            AgentFactory.diagram_agent(agent, "test.png")
+
+    def test_diagram_agent_unsupported_format(self):
+        """Test that diagram_agent raises error for unsupported formats."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock the graph object
+        mock_graph_obj = Mock()
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        with pytest.raises(RuntimeError, match="Unsupported format: pdf"):
+            AgentFactory.diagram_agent(agent, "test.pdf", "pdf")
+
+    def test_diagram_agent_graph_no_mermaid_support(self):
+        """Test that diagram_agent raises error when graph doesn't support mermaid."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Create a simple object without mermaid methods
+        simple_graph_obj = object()
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=simple_graph_obj)
+
+        with pytest.raises(
+            RuntimeError,
+            match="Graph object doesn't support mermaid diagram generation",
+        ):
+            AgentFactory.diagram_agent(agent, "test.png")
+
+    def test_diagram_agent_file_write_error(self, tmp_path):
+        """Test that diagram_agent handles file write errors gracefully."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock the graph object
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_png = Mock(return_value=b"fake_png_data")
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        # Test with a path that can't be written to (directory instead of file)
+        directory_path = tmp_path / "test_dir"
+        directory_path.mkdir()
+
+        with pytest.raises(RuntimeError, match="Failed to generate diagram"):
+            AgentFactory.diagram_agent(agent, str(directory_path), "png")
+
+    def test_diagram_agent_graph_get_graph_error(self):
+        """Test that diagram_agent handles graph.get_graph() errors gracefully."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock get_graph to raise an exception
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(side_effect=Exception("Graph error"))
+
+        with pytest.raises(
+            RuntimeError, match="Failed to generate diagram: Graph error"
+        ):
+            AgentFactory.diagram_agent(agent, "test.png")
+
+    def test_diagram_agent_mermaid_method_error(self):
+        """Test that diagram_agent handles mermaid method errors gracefully."""
+        from langgraph.graph import END, START, StateGraph
+        from petal.core.agent import Agent
+        from typing_extensions import TypedDict
+
+        class TestState(TypedDict):
+            test: str
+
+        # Create a simple graph
+        graph = StateGraph(TestState)
+        graph.add_node("test", lambda x: x)
+        graph.add_edge(START, "test")
+        graph.add_edge("test", END)
+        compiled_graph = graph.compile()
+
+        # Create and build agent
+        agent = Agent().build(compiled_graph, TestState)
+
+        # Mock the graph object with a method that raises an exception
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_png = Mock(side_effect=Exception("Mermaid error"))
+        # Use setattr to properly mock the method
+        assert agent.graph is not None  # type: ignore[unreachable]
+        agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        with pytest.raises(
+            RuntimeError, match="Failed to generate diagram: Mermaid error"
+        ):
+            AgentFactory.diagram_agent(agent, "test.png")
+
+
+class TestDiagramGraph:
+    """Test the diagram_graph method."""
+
+    def test_diagram_graph_success(self, tmp_path):
+        """Test successful diagram generation with diagram_graph."""
+        from langchain_core.tools import tool
+
+        @tool
+        def test_tool(query: str) -> str:
+            """A test tool."""
+            return f"Test: {query}"
+
+        # Create factory with steps
+        factory = AgentFactory(ChatState)
+        factory.with_chat().with_tools([test_tool])
+
+        # Mock the build method to return a working agent
+        mock_agent = Mock()
+        mock_agent.built = True
+        mock_agent.graph = Mock()
+
+        # Mock the graph object
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_png = Mock(return_value=b"fake_png_data")
+        # Use setattr to properly mock the method
+        assert mock_agent.graph is not None  # type: ignore[unreachable]
+        mock_agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        factory.build = Mock(return_value=mock_agent)  # type: ignore[method-assign]
+
+        # Test diagram generation
+        output_path = tmp_path / "test_diagram.png"
+        factory.diagram_graph(str(output_path), "png")
+
+        # Verify the mocks were called correctly
+        factory.build.assert_called_once()  # type: ignore[attr-defined]
+        mock_graph_obj.draw_mermaid_png.assert_called_once()
+        assert output_path.exists()
+
+    def test_diagram_graph_no_steps_raises_error(self):
+        """Test that diagram_graph raises error when no steps are configured."""
+        factory = AgentFactory(ChatState)
+        # Don't add any steps
+
+        with pytest.raises(
+            ValueError, match="Cannot generate diagram: no steps have been configured"
+        ):
+            factory.diagram_graph("test.png")
+
+    def test_diagram_graph_build_failure_propagates(self):
+        """Test that diagram_graph propagates build failures."""
+        from langchain_core.tools import tool
+
+        @tool
+        def test_tool(query: str) -> str:
+            """A test tool."""
+            return f"Test: {query}"
+
+        # Create factory with steps
+        factory = AgentFactory(ChatState)
+        factory.with_chat().with_tools([test_tool])
+
+        # Mock build to raise an exception
+        factory.build = Mock(side_effect=Exception("Build failed"))  # type: ignore[method-assign]
+
+        with pytest.raises(Exception, match="Build failed"):
+            factory.diagram_graph("test.png")
+
+    def test_diagram_graph_diagram_agent_failure_propagates(self):
+        """Test that diagram_graph propagates diagram_agent failures."""
+        from langchain_core.tools import tool
+
+        @tool
+        def test_tool(query: str) -> str:
+            """A test tool."""
+            return f"Test: {query}"
+
+        # Create factory with steps
+        factory = AgentFactory(ChatState)
+        factory.with_chat().with_tools([test_tool])
+
+        # Mock the build method to return an agent that will fail diagram generation
+        mock_agent = Mock()
+        mock_agent.built = True
+        mock_agent.graph = Mock()
+
+        # Mock get_graph to raise an exception
+        # Use setattr to properly mock the method
+        assert mock_agent.graph is not None  # type: ignore[unreachable]
+        mock_agent.graph.get_graph = Mock(side_effect=Exception("Graph error"))
+
+        factory.build = Mock(return_value=mock_agent)  # type: ignore[method-assign]
+
+        with pytest.raises(
+            RuntimeError, match="Failed to generate diagram: Graph error"
+        ):
+            factory.diagram_graph("test.png")
+
+    def test_diagram_graph_with_different_formats(self, tmp_path):
+        """Test diagram_graph with different output formats."""
+        from langchain_core.tools import tool
+
+        @tool
+        def test_tool(query: str) -> str:
+            """A test tool."""
+            return f"Test: {query}"
+
+        # Create factory with steps
+        factory = AgentFactory(ChatState)
+        factory.with_chat().with_tools([test_tool])
+
+        # Mock the build method to return a working agent
+        mock_agent = Mock()
+        mock_agent.built = True
+        mock_agent.graph = Mock()
+
+        # Mock the graph object for SVG
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_svg = Mock(return_value=b"fake_svg_data")
+        # Use setattr to properly mock the method
+        assert mock_agent.graph is not None  # type: ignore[unreachable]
+        mock_agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        factory.build = Mock(return_value=mock_agent)  # type: ignore[method-assign]
+
+        # Test SVG diagram generation
+        output_path = tmp_path / "test_diagram.svg"
+        factory.diagram_graph(str(output_path), "svg")
+
+        # Verify the mocks were called correctly
+        factory.build.assert_called_once()  # type: ignore[attr-defined]
+        mock_graph_obj.draw_mermaid_svg.assert_called_once()
+        assert output_path.exists()
+
+    def test_diagram_graph_returns_none(self, tmp_path):
+        """Test that diagram_graph returns None (not self for fluent chaining)."""
+        from langchain_core.tools import tool
+
+        @tool
+        def test_tool(query: str) -> str:
+            """A test tool."""
+            return f"Test: {query}"
+
+        # Create factory with steps
+        factory = AgentFactory(ChatState)
+        factory.with_chat().with_tools([test_tool])
+
+        # Mock the build method to return a working agent
+        mock_agent = Mock()
+        mock_agent.built = True
+        mock_agent.graph = Mock()
+
+        # Mock the graph object
+        mock_graph_obj = Mock()
+        mock_graph_obj.draw_mermaid_png = Mock(return_value=b"fake_png_data")
+        # Use setattr to properly mock the method
+        assert mock_agent.graph is not None  # type: ignore[unreachable]
+        mock_agent.graph.get_graph = Mock(return_value=mock_graph_obj)
+
+        factory.build = Mock(return_value=mock_agent)  # type: ignore[method-assign]
+
+        # Test that diagram_graph returns None
+        output_path = tmp_path / "test_diagram.png"
+        result = factory.diagram_graph(str(output_path), "png")
+
+        # Verify it returns None (not self for fluent chaining)
+        assert result is None
+        assert output_path.exists()
