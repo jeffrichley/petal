@@ -175,7 +175,10 @@ class ReActAgentBuilder:
             original_user_state: The original user state (used for schema validation)
         """
         # Validate that we're using the correct schema
-        if not isinstance(original_user_state, self.state_schema):
+        # For TypedDict, we can't use isinstance() - check if it's a dict-like object
+        if not hasattr(original_user_state, "__getitem__") or not hasattr(
+            original_user_state, "get"
+        ):
             console.print(
                 f"[bold yellow]Warning: Original user state type {type(original_user_state)} doesn't match expected schema {self.state_schema}[/bold yellow]"
             )

@@ -205,7 +205,7 @@ class AgentBuilder:
         self, model: Any, key: Optional[str] = None
     ) -> "AgentBuilder":
         """
-        Bind a structured output schema (Pydantic model) to the most recent LLM step.
+        Bind a structured output schema (Pydantic model) to the most recent LLM or React step.
         Optionally wrap the output in a dict with the given key.
         """
         if not self._config.steps:
@@ -213,8 +213,8 @@ class AgentBuilder:
                 "No steps have been added to configure structured output for."
             )
         step_config = self._config.steps[-1]
-        if step_config.strategy_type != "llm":
-            raise ValueError("The most recent step is not an LLM step.")
+        if step_config.strategy_type not in ["llm", "react"]:
+            raise ValueError("The most recent step is not an LLM or React step.")
         step_config.config["structured_output_model"] = model
         if key is not None:
             step_config.config["structured_output_key"] = key

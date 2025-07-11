@@ -353,9 +353,9 @@ class TestReActAgentBuilder:
         )
 
         # Create a completely different type that will definitely trigger the warning
-        original_user_state = {
-            "different_field": "different"
-        }  # Use a dict instead of a Pydantic model
+        original_user_state = (
+            object()
+        )  # Use a plain object that doesn't have dict-like methods
 
         # Mock console.print to capture the warning
         with pytest.MonkeyPatch().context() as m:

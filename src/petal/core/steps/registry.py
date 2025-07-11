@@ -74,8 +74,10 @@ class StepRegistry:
 
     def _register_defaults(self) -> None:
         """Register built-in strategies."""
+        from petal.core.steps.react import ReactStepStrategy
         from petal.core.steps.tool import ToolStepStrategy
 
         self.register("llm", LLMStepStrategy)
         self.register("custom", CustomStepStrategy)
         self.register("tool", ToolStepStrategy)
+        self.register("react", ReactStepStrategy)

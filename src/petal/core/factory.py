@@ -93,6 +93,19 @@ class AgentFactory:
         """
         return self.with_tools(tools, scratchpad_key=scratchpad_key)
 
+    def with_react_loop(self, tools: List[Union[str, Any]], **config) -> "AgentFactory":
+        """
+        Add a React reasoning loop step.
+
+        Args:
+            tools: List of tool names (strings) or tool objects. String names are resolved via ToolFactory.
+            **config: Additional configuration for the React step
+        """
+        # Add state_schema to config for React step
+        config["state_schema"] = self._builder._config.state_type
+        self._builder.with_step("react", tools=tools, **config)
+        return self
+
     def with_chat(
         self,
         llm: Optional[Any] = None,
@@ -124,25 +137,25 @@ class AgentFactory:
 
     def with_prompt(self, prompt_template: str) -> "AgentFactory":
         """
-        Set the prompt template for the most recently added LLM step.
+        Set the prompt template for the most recently added LLM or React step.
         """
         if not self._builder._config.steps:
             raise ValueError("No steps have been added to configure prompt for.")
         step_config = self._builder._config.steps[-1]
-        if step_config.strategy_type != "llm":
-            raise ValueError("The most recent step is not an LLM step.")
+        if step_config.strategy_type not in ["llm", "react"]:
+            raise ValueError("The most recent step is not an LLM or React step.")
         step_config.config["prompt_template"] = prompt_template
         return self
 
     def with_system_prompt(self, system_prompt: str) -> "AgentFactory":
         """
-        Set the system prompt for the most recently added LLM step.
+        Set the system prompt for the most recently added LLM or React step.
         """
         if not self._builder._config.steps:
             raise ValueError("No steps have been added to configure system prompt for.")
         step_config = self._builder._config.steps[-1]
-        if step_config.strategy_type != "llm":
-            raise ValueError("The most recent step is not an LLM step.")
+        if step_config.strategy_type not in ["llm", "react"]:
+            raise ValueError("The most recent step is not an LLM or React step.")
         step_config.config["system_prompt"] = system_prompt
         return self
 
@@ -150,7 +163,7 @@ class AgentFactory:
         self, model: Any, key: Optional[str] = None
     ) -> "AgentFactory":
         """
-        Bind a structured output schema (Pydantic model) to the most recent LLM step.
+        Bind a structured output schema (Pydantic model) to the most recent LLM or React step.
         Optionally wrap the output in a dict with the given key.
         """
         self._builder.with_structured_output(model, key)
