@@ -20,6 +20,7 @@ class LLMStep:
         llm_instance: Optional[BaseChatModel],
         structured_output_model: Any = None,
         structured_output_key: Optional[str] = None,
+        tools: Optional[list] = None,
     ):
         self.prompt_template = prompt_template
         self.system_prompt = system_prompt
@@ -27,6 +28,7 @@ class LLMStep:
         self.llm_instance = llm_instance
         self.structured_output_model = structured_output_model
         self.structured_output_key = structured_output_key
+        self.tools = tools
 
     async def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
         llm = self._create_llm_instance()
@@ -80,9 +82,17 @@ class LLMStep:
         return llm_messages, user_prompt
 
     def _create_llm_instance(self):
-        if self.llm_instance is not None:
-            return self.llm_instance
-        return self._create_llm_from_config()
+        llm = (
+            self.llm_instance
+            if self.llm_instance is not None
+            else self._create_llm_from_config()
+        )
+
+        # Bind tools to the LLM if available and supported
+        if self.tools and hasattr(llm, "bind_tools"):
+            llm = llm.bind_tools(self.tools)
+
+        return llm
 
     def _create_llm_from_config(self):
         """Create LLM instance from configuration."""
@@ -93,7 +103,7 @@ class LLMStep:
         llm_params = {
             k: v
             for k, v in config.items()
-            if k not in ["provider", "prompt_template", "system_prompt"]
+            if k not in ["provider", "prompt_template", "system_prompt", "tools"]
         }
 
         if "model" not in llm_params:
@@ -147,6 +157,7 @@ class LLMStepStrategy(StepStrategy):
 
         structured_output_model = config.get("structured_output_model")
         structured_output_key = config.get("structured_output_key")
+        tools = config.get("tools")
 
         return LLMStep(
             prompt_template,
@@ -155,6 +166,7 @@ class LLMStepStrategy(StepStrategy):
             llm_instance,
             structured_output_model=structured_output_model,
             structured_output_key=structured_output_key,
+            tools=tools,
         )
 
     def get_node_name(self, index: int) -> str:

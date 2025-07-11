@@ -5,8 +5,9 @@ import pytest
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
-from petal.core.steps.llm import LLMStep, LLMStepStrategy
 from pydantic import BaseModel
+
+from petal.core.steps.llm import LLMStep, LLMStepStrategy
 
 
 class DummyLLM(BaseChatModel):

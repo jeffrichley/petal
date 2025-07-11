@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from langchain.chat_models.base import BaseChatModel
 from langgraph.graph.message import add_messages
@@ -7,6 +7,7 @@ from typing_extensions import Annotated, TypedDict
 from petal.core.agent import Agent
 from petal.core.builders.agent import AgentBuilder
 from petal.core.config.agent import LLMConfig
+from petal.core.tool_factory import ToolFactory
 
 
 class DefaultState(TypedDict):
@@ -28,6 +29,9 @@ class AgentFactory:
         # Use new architecture internally
         self._builder = AgentBuilder(state_type)
 
+        # Initialize tool factory
+        self._tool_factory = ToolFactory()
+
     def add(
         self, step: Callable[..., Any], node_name: Optional[str] = None
     ) -> "AgentFactory":
@@ -36,6 +40,52 @@ class AgentFactory:
         """
         self._builder.with_step("custom", step_function=step, node_name=node_name)
         return self
+
+    def with_tools(
+        self, tools: List[Union[str, Any]], scratchpad_key: Optional[str] = None
+    ) -> "AgentFactory":
+        """
+        Add tools to the most recent LLM step with optional scratchpad support.
+
+        Args:
+            tools: List of tool names (strings) or tool objects. String names are resolved via ToolFactory.
+            scratchpad_key: Optional key for storing tool observations in state
+        """
+        if not self._builder._config.steps:
+            raise ValueError("No steps have been added. Call with_chat() first.")
+
+        last_step = self._builder._config.steps[-1]
+        if last_step.strategy_type != "llm":
+            raise ValueError(
+                "The most recent step is not an LLM step. Call with_chat() first."
+            )
+
+        # Resolve tools
+        resolved_tools = []
+        for tool in tools:
+            if isinstance(tool, str):
+                resolved_tools.append(self._tool_factory.resolve(tool))
+            else:
+                resolved_tools.append(tool)
+
+        # Add tools to the most recent LLM step
+        last_step.config["tools"] = resolved_tools
+        if scratchpad_key:
+            last_step.config["scratchpad_key"] = scratchpad_key
+
+        return self
+
+    def with_react_tools(
+        self, tools: List[Union[str, Any]], scratchpad_key: str = "scratchpad"
+    ) -> "AgentFactory":
+        """
+        Add tools with ReAct-style scratchpad for persistent tool observation history.
+
+        Args:
+            tools: List of tool names (strings) or tool objects. String names are resolved via ToolFactory.
+            scratchpad_key: Key for storing tool observations in state (defaults to "scratchpad")
+        """
+        return self.with_tools(tools, scratchpad_key=scratchpad_key)
 
     def with_chat(
         self,
@@ -102,4 +152,74 @@ class AgentFactory:
 
     def build(self) -> Agent:
         """Build the agent using new architecture."""
+        # Add tool steps for each LLM step that has tools
+        for step_config in self._builder._config.steps:
+            if step_config.strategy_type == "llm" and "tools" in step_config.config:
+                # Create tool step for this LLM step
+                tool_config = {
+                    "tools": step_config.config["tools"],
+                    "scratchpad_key": step_config.config.get("scratchpad_key"),
+                }
+                self._builder.with_step("tool", **tool_config)
+
         return self._builder.build()
+
+    @staticmethod
+    def diagram_agent(agent: "Agent", path: str, format: str = "png") -> None:
+        """
+        Generate a diagram of an agent's graph and save it to a file.
+
+        Args:
+            agent: The built Agent instance
+            path: File path where the diagram should be saved
+            format: Output format (png, svg, pdf, etc.)
+
+        Raises:
+            RuntimeError: If diagram generation fails
+        """
+        if not agent.built or agent.graph is None:
+            raise RuntimeError("Agent must be built before generating diagram")
+
+        try:
+            # The compiled graph has a get_graph() method that returns a Graph object
+            graph_obj = agent.graph.get_graph()
+            if hasattr(graph_obj, "draw_mermaid_png"):
+                if format.lower() == "png":
+                    img_bytes = graph_obj.draw_mermaid_png()
+                elif format.lower() == "svg":
+                    img_bytes = graph_obj.draw_mermaid_svg()
+                else:
+                    raise RuntimeError(f"Unsupported format: {format}")
+
+                with open(path, "wb") as f:
+                    f.write(img_bytes)
+            else:
+                raise RuntimeError(
+                    "Graph object doesn't support mermaid diagram generation"
+                )
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate diagram: {e}") from e
+
+    def diagram_graph(self, path: str, format: str = "png") -> None:
+        """
+        Generate a diagram of the agent graph and save it to a file.
+
+        This method builds the agent and generates a visualization using LangGraph's
+        built-in diagram capabilities.
+
+        Args:
+            path: File path where the diagram should be saved
+            format: Output format (png, svg, pdf, etc.)
+
+        Raises:
+            ValueError: If no steps have been configured
+            RuntimeError: If diagram generation fails
+        """
+        if not self._builder._config.steps:
+            raise ValueError("Cannot generate diagram: no steps have been configured")
+
+        # Build the agent
+        agent = self.build()
+
+        # Generate diagram using the static method
+        AgentFactory.diagram_agent(agent, path, format)

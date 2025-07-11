@@ -5,11 +5,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 from langgraph.graph.message import add_messages
+from typing_extensions import Annotated
+
 from petal.core.builders.director import AgentBuilderDirector
 from petal.core.config.agent import AgentConfig, StepConfig
 from petal.core.factory import Agent
 from petal.core.steps.registry import StepRegistry
-from typing_extensions import Annotated
 
 
 class StateWithMessages(TypedDict):
@@ -285,3 +286,63 @@ class TestAgentBuilderDirector:
         agent = director.build()
         assert isinstance(agent, Agent)
         assert agent.built is True
+
+    def test_build_graph_react_loop_llm_tool(self, sample_registry):
+        """Test that LLM -> ToolStep -> LLM loop is created in the graph."""
+        from langchain_core.tools import tool
+
+        from petal.core.steps.tool import tools_condition
+
+        @tool
+        def dummy_tool(query: str) -> str:
+            """A dummy tool for testing."""
+            return f"Echo: {query}"
+
+        config = AgentConfig(
+            state_type=StateWithMessages,
+            steps=[
+                StepConfig(
+                    strategy_type="llm",
+                    config={"prompt_template": "Hello", "llm_config": llm_config()},
+                    **default_step_kwargs(),
+                ),
+                StepConfig(
+                    strategy_type="tool",
+                    config={"tools": [dummy_tool]},
+                    **default_step_kwargs(),
+                ),
+            ],
+            **default_agent_config_kwargs(),
+        )
+        director = AgentBuilderDirector(config, sample_registry)
+        with patch("petal.core.builders.director.StateGraph") as mock_state_graph:
+            mock_graph = Mock()
+            mock_state_graph.return_value = mock_graph
+            director._build_graph(StateWithMessages)
+            # Should add nodes for both steps
+            assert mock_graph.add_node.call_count == 2
+            # Should add edge from START to LLM, LLM to Tool, Tool to LLM, and LLM to Tool via conditional, Tool to LLM, Tool to END
+            # But let's check the conditional edge and loop
+            add_conditional_edges_calls = (
+                mock_graph.add_conditional_edges.call_args_list
+            )
+            assert add_conditional_edges_calls
+            found = False
+            for call in add_conditional_edges_calls:
+                node, cond = call[0]
+                if (
+                    node == mock_graph.add_node.call_args_list[0][0][0]
+                    and cond == tools_condition
+                ):
+                    found = True
+            assert (
+                found
+            ), "Conditional edge from LLM to ToolStep using tools_condition not found"
+            # Check that an edge from ToolStep back to LLM exists
+            add_edge_calls = [c[0] for c in mock_graph.add_edge.call_args_list]
+            llm_node = mock_graph.add_node.call_args_list[0][0][0]
+            tool_node = mock_graph.add_node.call_args_list[1][0][0]
+            assert (
+                tool_node,
+                llm_node,
+            ) in add_edge_calls, "Edge from ToolStep back to LLM not found"

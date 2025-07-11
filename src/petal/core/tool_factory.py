@@ -69,8 +69,19 @@ class ToolFactory:
 
         tool = self._registry[name]
 
-        # Return an async wrapper that handles both sync and async tools
-        async def async_wrapper(*args, **kwargs) -> Any:
+        # Create a proper async wrapper that preserves the original tool's signature
+        import inspect
+        from functools import wraps
+
+        # Get the original tool's signature
+        sig = inspect.signature(tool)
+
+        # Create a wrapper that preserves the signature
+        @wraps(tool)
+        async def async_wrapper(*args, **kwargs):
+            """
+            Async wrapper for tool execution.
+            """
             if asyncio.iscoroutinefunction(tool):
                 return await tool(*args, **kwargs)
             elif hasattr(tool, "ainvoke"):
@@ -79,7 +90,18 @@ class ToolFactory:
             else:
                 # For sync functions, run in thread pool to avoid blocking
                 loop = asyncio.get_event_loop()
-                return await loop.run_in_executor(None, tool, *args, **kwargs)
+                from functools import partial
+
+                return await loop.run_in_executor(None, partial(tool, *args, **kwargs))
+
+        # Preserve original tool's metadata and signature
+        async_wrapper.__signature__ = sig
+        async_wrapper.name = getattr(tool, "name", tool.__name__)
+        async_wrapper.description = getattr(
+            tool, "description", tool.__doc__ or "No description"
+        )
+        async_wrapper.__doc__ = tool.__doc__
+        async_wrapper.__name__ = tool.__name__
 
         return async_wrapper
 

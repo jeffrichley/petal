@@ -3,8 +3,9 @@
 import asyncio
 
 from langgraph.graph.message import add_messages
-from petal.core import AgentFactory, LLMTypes
 from typing_extensions import Annotated, TypedDict
+
+from petal.core import AgentFactory, LLMTypes
 
 
 # Define state types

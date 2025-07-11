@@ -250,6 +250,38 @@ def test_llm_step_strategy():
     # Test all LLM provider configurations
 ```
 
+### Task TOOL.1: Implement ToolStepStrategy (2 hours) ✅
+**Goal**: Implement a pluggable tool step strategy for agent workflows, supporting LangChain tools and ReAct-style scratchpad.
+
+**Files to create/modify**:
+- [x] `src/petal/core/steps/tool.py`
+- [x] `tests/petal/test_steps_tool.py`
+
+**Status:** Complete. ToolStep and ToolStepStrategy are implemented and tested. All tests pass. ReAct-style scratchpad and conditional routing are supported. TDD followed.
+
+**Deliverables**:
+- [x] `ToolStep` class for tool execution logic
+- [x] `ToolStepStrategy` for step creation
+- [x] decide_next_step and tools_condition for routing
+- [x] Comprehensive tests for all functionality
+- [x] 100% test pass rate
+
+**Success Criteria**:
+- [x] ToolStep and ToolStepStrategy are implemented
+- [x] ReAct-style scratchpad and conditional routing supported
+- [x] Tests cover all major and edge cases
+- [x] LangChain tool compatibility
+- [x] No regressions or errors in new code
+
+**Test Requirements**:
+```python
+def test_tool_step_strategy():
+    # Test ToolStep creation and execution
+    # Test scratchpad handling
+    # Test conditional routing
+    # Test LangChain tool compatibility
+```
+
 ---
 
 ## Phase 1B: Configuration Objects
