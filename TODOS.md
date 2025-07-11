@@ -187,6 +187,20 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [ ] Add performance benchmarks and monitoring
   - [ ] Create performance regression tests
 
+## 🎯 YAML Node Loading Implementation
+
+### Phase 1: Core YAML Loading Infrastructure
+
+* [x] **Create YAML Configuration Models** ✅ (Completed 2024-12-19)
+  - [x] Create `src/petal/core/config/yaml.py` with Pydantic models
+  - [x] Define `BaseNodeConfig` with common fields (type, name, description, enabled)
+  - [x] Define `LLMNodeConfig` with provider, model, temperature, max_tokens, prompt, system_prompt
+  - [x] Define `ReactNodeConfig` with tools, reasoning_prompt, system_prompt, max_iterations
+  - [x] Add comprehensive validation and error handling
+  - [x] Create unit tests in `tests/petal/test_config_yaml.py` (100% coverage)
+  - [x] All 39 tests passing with comprehensive validation
+  - [x] No regressions in existing functionality
+
 ### Phase 7: Cleanup and Finalization
 
 * [x] **Remove Deprecated Code**
@@ -239,6 +253,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [ ] Add `.enable_dev_mode()`
 * [ ] Add `.freeze()` to lock config
 * [ ] Add `.set_logger()`
+* [ ] Add `.node_from_yaml(path)` to load nodes from YAML with automatic type detection (see YAML_NODE_IMPLEMENTATION.md for detailed plan)
 
 ---
 
