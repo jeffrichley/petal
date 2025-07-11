@@ -1,8 +1,9 @@
 """Registry for step creation strategies."""
 
 from threading import Lock
-from typing import Dict, Type
+from typing import Callable, Dict, Type
 
+from petal.core.config.agent import StepConfig
 from petal.core.steps.base import StepStrategy
 from petal.core.steps.custom import CustomStepStrategy
 from petal.core.steps.llm import LLMStepStrategy
@@ -42,6 +43,21 @@ class StepRegistry:
             if name not in self._strategies:
                 raise ValueError(f"Unknown step type: {name}")
             return self._strategies[name]()
+
+    def create_step(self, step_config: StepConfig) -> Callable:
+        """Create a step callable from a step configuration.
+
+        Args:
+            step_config: The step configuration containing strategy type and config.
+
+        Returns:
+            A callable step function.
+
+        Raises:
+            ValueError: If the step type is not registered.
+        """
+        strategy = self.get_strategy(step_config.strategy_type)
+        return strategy.create_step(step_config.config)
 
     def validate_strategy(self, name: str) -> None:
         """Validate that a step strategy exists in the registry.

@@ -1453,13 +1453,13 @@ async def test_with_tools_fluent_chaining():
         return f"Chained: {query}"
 
     factory = AgentFactory(ChatState)
-    result = factory.with_tools([chained_tool])
+    result = factory.with_chat().with_tools([chained_tool])
 
     # Verify fluent chaining returns self
     assert result is factory
 
     # Verify the agent can still be built
-    agent = factory.with_chat().build()
+    agent = factory.build()
     assert agent is not None
     assert agent.built is True
 
@@ -1475,13 +1475,13 @@ async def test_with_react_tools_fluent_chaining():
         return f"ReAct Chained: {query}"
 
     factory = AgentFactory(ChatState)
-    result = factory.with_react_tools([react_chained_tool])
+    result = factory.with_chat().with_react_tools([react_chained_tool])
 
     # Verify fluent chaining returns self
     assert result is factory
 
     # Verify the agent can still be built
-    agent = factory.with_chat().build()
+    agent = factory.build()
     assert agent is not None
     assert agent.built is True
 
@@ -1518,22 +1518,52 @@ async def test_tool_factory_resolution_error():
 
 @pytest.mark.asyncio
 async def test_with_tools_empty_list():
-    """Test with_tools() with empty tool list."""
-    agent = AgentFactory(ChatState).with_chat().with_tools([]).build()
-
-    # Verify the agent was built successfully
-    assert agent is not None
-    assert agent.built is True
+    """Test with_tools() with empty tool list raises error."""
+    with pytest.raises(
+        ValueError, match="Tools list cannot be empty. Provide at least one tool."
+    ):
+        AgentFactory(ChatState).with_chat().with_tools([]).build()
 
 
 @pytest.mark.asyncio
 async def test_with_react_tools_empty_list():
-    """Test with_react_tools() with empty tool list."""
-    agent = AgentFactory(ChatState).with_chat().with_react_tools([]).build()
+    """Test with_react_tools() with empty tool list raises error."""
+    with pytest.raises(
+        ValueError, match="Tools list cannot be empty. Provide at least one tool."
+    ):
+        AgentFactory(ChatState).with_chat().with_react_tools([]).build()
 
-    # Verify the agent was built successfully
-    assert agent is not None
-    assert agent.built is True
+
+@pytest.mark.asyncio
+async def test_with_tools_before_chat_raises_error():
+    """Test that with_tools() before with_chat() raises error."""
+    from langchain_core.tools import tool
+
+    @tool
+    def test_tool(query: str) -> str:
+        """A test tool."""
+        return f"Test: {query}"
+
+    with pytest.raises(
+        ValueError, match="No steps have been added. Call with_chat\\(\\) first."
+    ):
+        AgentFactory(ChatState).with_tools([test_tool])
+
+
+@pytest.mark.asyncio
+async def test_with_react_tools_before_chat_raises_error():
+    """Test that with_react_tools() before with_chat() raises error."""
+    from langchain_core.tools import tool
+
+    @tool
+    def test_tool(query: str) -> str:
+        """A test tool."""
+        return f"Test: {query}"
+
+    with pytest.raises(
+        ValueError, match="No steps have been added. Call with_chat\\(\\) first."
+    ):
+        AgentFactory(ChatState).with_react_tools([test_tool])
 
 
 @pytest.mark.asyncio
@@ -1563,7 +1593,7 @@ async def test_tools_are_injected_and_invoke_tool_message():
         def __init__(self):
             self._call_count = 0
 
-        async def ainvoke(self, input, config=None, **kwargs):  # noqa: ARG002
+        async def ainvoke(self, _, config=None, **kwargs):  # noqa: ARG002
 
             self._call_count += 1
             if self._call_count == 1:

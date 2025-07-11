@@ -164,6 +164,9 @@ def test_fake_api_keys_are_used_in_tests():
     # Verify that fake API keys are set
     assert os.environ.get("OPENAI_API_KEY") == "fake-openai-key-for-testing"
     assert os.environ.get("ANTHROPIC_API_KEY") == "fake-anthropic-key-for-testing"
+    assert os.environ.get("GOOGLE_API_KEY") == "fake-google-key-for-testing"
+    assert os.environ.get("COHERE_API_KEY") == "fake-cohere-key-for-testing"
+    assert os.environ.get("HUGGINGFACE_API_KEY") == "fake-huggingface-key-for-testing"
 
     # Test that LLM creation uses the fake key
     step = LLMStep(
@@ -191,6 +194,9 @@ def test_environment_variables_are_restored():
     # and should still have the fake keys set
     assert os.environ.get("OPENAI_API_KEY") == "fake-openai-key-for-testing"
     assert os.environ.get("ANTHROPIC_API_KEY") == "fake-anthropic-key-for-testing"
+    assert os.environ.get("GOOGLE_API_KEY") == "fake-google-key-for-testing"
+    assert os.environ.get("COHERE_API_KEY") == "fake-cohere-key-for-testing"
+    assert os.environ.get("HUGGINGFACE_API_KEY") == "fake-huggingface-key-for-testing"
 
 
 @pytest.mark.asyncio

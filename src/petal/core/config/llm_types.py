@@ -15,7 +15,7 @@ class LLMTypes:
 
     Usage:
         AgentFactory(MyState).with_chat(
-            llm_config=LLMTypes.OPENAI_GPT4O_MINI.dict(),
+            llm_config=LLMTypes.OPENAI_GPT4O_MINI.model_dump(),
             prompt_template="Your prompt here"
         )
     """

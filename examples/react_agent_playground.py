@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from rich.console import Console
@@ -12,7 +13,7 @@ from rich.table import Table
 from petal.core.builders.react import ReActAgentBuilder
 from petal.core.tool_factory import ToolFactory
 
-logging.getLogger("httpx").setLevel(logging.WARNING)
+# logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Set up rich console
 console = Console()
@@ -40,6 +41,7 @@ class CustomState(BaseModel):
 tool_factory = ToolFactory()
 
 
+@tool
 def get_weather(city: str) -> str:
     """Get weather for a given city."""
     console.print(f"[bold blue]🌤️  Calling get_weather with city: {city}[/bold blue]")

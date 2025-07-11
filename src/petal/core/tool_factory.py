@@ -69,39 +69,33 @@ class ToolFactory:
 
         tool = self._registry[name]
 
+        # If it's already a LangChain tool (has invoke or ainvoke), return it directly
+        # LangGraph can handle LangChain tools natively
+        if hasattr(tool, "invoke") or hasattr(tool, "ainvoke"):
+            return tool
+
         # Create a proper async wrapper that preserves the original tool's signature
         import inspect
         from functools import wraps
 
-        # Get the original tool's signature
         sig = inspect.signature(tool)
 
-        # Create a wrapper that preserves the signature
         @wraps(tool)
         async def async_wrapper(*args, **kwargs):
-            """
-            Async wrapper for tool execution.
-            """
             if asyncio.iscoroutinefunction(tool):
                 return await tool(*args, **kwargs)
-            elif hasattr(tool, "ainvoke"):
-                # Handle LangChain tools that have ainvoke method
-                return await tool.ainvoke(*args, **kwargs)
             else:
-                # For sync functions, run in thread pool to avoid blocking
                 loop = asyncio.get_event_loop()
                 from functools import partial
 
                 return await loop.run_in_executor(None, partial(tool, *args, **kwargs))
 
-        # Preserve original tool's metadata and signature
-        async_wrapper.__signature__ = sig
-        async_wrapper.name = getattr(tool, "name", tool.__name__)
-        async_wrapper.description = getattr(
-            tool, "description", tool.__doc__ or "No description"
-        )
-        async_wrapper.__doc__ = tool.__doc__
-        async_wrapper.__name__ = tool.__name__
+        async_wrapper.__signature__ = sig  # type: ignore
+        # Manually set metadata for LangChain/LangGraph compatibility
+        async_wrapper.name = getattr(tool, "__name__", "unknown")  # type: ignore
+        async_wrapper.__name__ = getattr(tool, "__name__", "unknown")
+        async_wrapper.description = getattr(tool, "__doc__", "No description")  # type: ignore
+        async_wrapper.__doc__ = getattr(tool, "__doc__", None)
 
         return async_wrapper
 

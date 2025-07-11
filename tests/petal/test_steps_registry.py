@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import pytest
 
+from petal.core.config.agent import StepConfig
 from petal.core.steps.base import StepStrategy
 from petal.core.steps.custom import CustomStepStrategy
 from petal.core.steps.registry import StepRegistry
@@ -111,3 +112,50 @@ def test_validate_strategy_with_defaults():
     # Unknown strategies should fail
     with pytest.raises(ValueError, match="Unknown step type: unknown"):
         registry.validate_strategy("unknown")
+
+
+def test_create_step_with_valid_config():
+    """Test that create_step creates a callable from StepConfig."""
+    registry = StepRegistry()
+    registry.register("dummy", DummyStrategy)
+
+    step_config = StepConfig(
+        strategy_type="dummy", config={"test": "value"}, node_name="test_node"
+    )
+
+    step = registry.create_step(step_config)
+    assert callable(step)
+
+    # Test that the step can be called
+    result = step({"input": "test"})
+    assert result == {"input": "test"}
+
+
+def test_create_step_with_unknown_strategy():
+    """Test that create_step raises error for unknown strategy type."""
+    registry = StepRegistry()
+
+    step_config = StepConfig(
+        strategy_type="unknown", config={}, node_name="unknown_node"
+    )
+
+    with pytest.raises(ValueError, match="Unknown step type: unknown"):
+        registry.create_step(step_config)
+
+
+def test_create_step_with_custom_strategy():
+    """Test that create_step works with CustomStepStrategy."""
+    registry = StepRegistry()
+
+    step_config = StepConfig(
+        strategy_type="custom",
+        config={"step_function": lambda x: {"result": x["input"] * 2}},
+        node_name="custom_node",
+    )
+
+    step = registry.create_step(step_config)
+    assert callable(step)
+
+    # Test that the step can be called
+    result = step({"input": 5})
+    assert result == {"result": 10}

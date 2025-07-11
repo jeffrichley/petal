@@ -1,5 +1,6 @@
 """Tests for tool step strategy."""
 
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -150,7 +151,7 @@ class TestToolStepStrategy:
 
     def test_create_step_with_tools(self, strategy, mock_tool):
         """Test creating a step with tools."""
-        config = {"tools": [mock_tool]}
+        config: Dict[str, Any] = {"tools": [mock_tool]}
         step = strategy.create_step(config)
 
         assert isinstance(step, ToolStep)
@@ -159,7 +160,7 @@ class TestToolStepStrategy:
 
     def test_create_step_with_scratchpad(self, strategy, mock_tool):
         """Test creating a step with scratchpad key."""
-        config = {"tools": [mock_tool], "scratchpad_key": "scratchpad"}
+        config: Dict[str, Any] = {"tools": [mock_tool], "scratchpad_key": "scratchpad"}
         step = strategy.create_step(config)
 
         assert isinstance(step, ToolStep)
@@ -168,14 +169,14 @@ class TestToolStepStrategy:
 
     def test_create_step_no_tools(self, strategy):
         """Test creating a step without tools raises error."""
-        config = {"tools": []}
+        config: Dict[str, Any] = {"tools": []}
 
         with pytest.raises(ValueError, match="Tool step requires at least one tool"):
             strategy.create_step(config)
 
     def test_create_step_missing_tools(self, strategy):
         """Test creating a step with missing tools raises error."""
-        config = {}
+        config: Dict[str, Any] = {}
 
         with pytest.raises(ValueError, match="Tool step requires at least one tool"):
             strategy.create_step(config)
@@ -195,7 +196,7 @@ class TestDecideNextStep:
         mock_message = MagicMock()
         mock_message.tool_calls = [MagicMock()]
 
-        state = {"messages": [mock_message]}
+        state: Dict[str, Any] = {"messages": [mock_message]}
         result = decide_next_step(state)
 
         assert result == "tools"
@@ -205,21 +206,21 @@ class TestDecideNextStep:
         mock_message = MagicMock()
         mock_message.tool_calls = None
 
-        state = {"messages": [mock_message]}
+        state: Dict[str, Any] = {"messages": [mock_message]}
         result = decide_next_step(state)
 
         assert result == END
 
     def test_decide_next_step_empty_messages(self):
         """Test decide_next_step with empty messages."""
-        state = {"messages": []}
+        state: Dict[str, Any] = {"messages": []}
         result = decide_next_step(state)
 
         assert result == END
 
     def test_decide_next_step_no_messages_key(self):
         """Test decide_next_step with no messages key."""
-        state = {}
+        state: Dict[str, Any] = {}
         result = decide_next_step(state)
 
         assert result == END
@@ -229,7 +230,7 @@ class TestDecideNextStep:
         mock_message = MagicMock()
         del mock_message.tool_calls
 
-        state = {"messages": [mock_message]}
+        state: Dict[str, Any] = {"messages": [mock_message]}
         result = decide_next_step(state)
 
         assert result == END
@@ -260,7 +261,7 @@ class TestToolsCondition:
 
     def test_tools_condition_empty_messages(self):
         """Test tools_condition with empty messages."""
-        state = {"messages": []}
+        state: Dict[str, Any] = {"messages": []}
         result = tools_condition(state)
 
         assert result == END

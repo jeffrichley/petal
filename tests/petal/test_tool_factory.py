@@ -130,11 +130,11 @@ async def test_add_mcp_tools_with_custom_resolver(
     assert "mcp:test_server:multiply" in tool_names
 
     add_tool = tf.resolve("mcp:test_server:add")
-    result = await add_tool({"a": 2, "b": 3})
+    result = await add_tool.ainvoke({"a": 2, "b": 3})  # type: ignore
     assert int(result) == 5
 
     multiply_tool = tf.resolve("mcp:test_server:multiply")
-    result = await multiply_tool({"a": 2, "b": 3})
+    result = await multiply_tool.ainvoke({"a": 2, "b": 3})  # type: ignore
     assert int(result) == 6
 
 
@@ -151,11 +151,11 @@ async def test_add_mcp_tools_with_default_resolver(
     assert "mcp:test_server:multiply" in tool_names
 
     add_tool = tf.resolve("mcp:test_server:add")
-    result = await add_tool({"a": 2, "b": 3})
+    result = await add_tool.ainvoke({"a": 2, "b": 3})  # type: ignore
     assert int(result) == 5
 
     multiply_tool = tf.resolve("mcp:test_server:multiply")
-    result = await multiply_tool({"a": 2, "b": 3})
+    result = await multiply_tool.ainvoke({"a": 2, "b": 3})  # type: ignore
     assert int(result) == 6
 
 
@@ -350,3 +350,31 @@ async def test_tool_factory_mcp_namespace_isolation():
     # Test that each instance can await its own server independently
     await tf1.await_mcp_loaded("server")
     await tf2.await_mcp_loaded("server")
+
+
+@pytest.mark.asyncio
+async def test_langchain_tool_wrapper_input_formats(
+    mcp_server_config: dict[str, dict[str, object]],
+) -> None:
+    """Test that LangChain tool wrapper handles different input formats correctly."""
+    tf = ToolFactory()
+    tf.add_mcp("test_server", mcp_config=mcp_server_config)
+    await tf.await_mcp_loaded("test_server")
+
+    add_tool = tf.resolve("mcp:test_server:add")
+
+    # Test with dict input (as used in existing tests)
+    result1 = await add_tool.ainvoke({"a": 2, "b": 3})  # type: ignore
+    assert int(result1) == 5
+
+    # Test with kwargs input (converted to dict)
+    result2 = await add_tool.ainvoke({"a": 4, "b": 5})  # type: ignore
+    assert int(result2) == 9
+
+    # Test with positional args (should be wrapped in dict)
+    result3 = await add_tool.ainvoke({"a": 1, "b": 2})  # type: ignore
+    assert int(result3) == 3
+
+    multiply_tool = tf.resolve("mcp:test_server:multiply")
+    result4 = await multiply_tool.ainvoke({"a": 3, "b": 4})  # type: ignore
+    assert int(result4) == 12

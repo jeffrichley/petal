@@ -50,6 +50,9 @@ class AgentFactory:
         Args:
             tools: List of tool names (strings) or tool objects. String names are resolved via ToolFactory.
             scratchpad_key: Optional key for storing tool observations in state
+
+        Raises:
+            ValueError: If no steps have been added, the most recent step is not an LLM step, or tools list is empty
         """
         if not self._builder._config.steps:
             raise ValueError("No steps have been added. Call with_chat() first.")
@@ -59,6 +62,9 @@ class AgentFactory:
             raise ValueError(
                 "The most recent step is not an LLM step. Call with_chat() first."
             )
+
+        if not tools:
+            raise ValueError("Tools list cannot be empty. Provide at least one tool.")
 
         # Resolve tools
         resolved_tools = []
