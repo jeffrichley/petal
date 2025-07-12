@@ -174,16 +174,18 @@ class BaseNodeConfig(BaseModel):
         ..., description="Type of node (llm, react)"
     )
     name: str = Field(..., description="Name of the node")
-    description: Optional[str] = Field(None, description="Description of the node")
+    description: Optional[str] = Field(
+        default=None, description="Description of the node"
+    )
     enabled: bool = Field(default=True, description="Whether the node is enabled")
     state_schema: Optional[StateSchemaConfig] = Field(
-        None, description="State schema definition for this node"
+        default=None, description="State schema definition for this node"
     )
     input_schema: Optional[StateSchemaConfig] = Field(
-        None, description="Input validation schema"
+        default=None, description="Input validation schema"
     )
     output_schema: Optional[StateSchemaConfig] = Field(
-        None, description="Output validation schema"
+        default=None, description="Output validation schema"
     )
 
     @field_validator("name")
@@ -208,8 +210,8 @@ class LLMNodeConfig(BaseNodeConfig):
     max_tokens: Annotated[int, AfterValidator(validate_max_tokens)] = Field(
         default=1000, description="Maximum tokens to generate"
     )
-    prompt: Optional[str] = Field(None, description="User prompt template")
-    system_prompt: Optional[str] = Field(None, description="System prompt")
+    prompt: Optional[str] = Field(default=None, description="User prompt template")
+    system_prompt: Optional[str] = Field(default=None, description="System prompt")
 
     @field_validator("model")
     @classmethod
@@ -241,13 +243,17 @@ class ReactNodeConfig(BaseNodeConfig):
 
     tools: List[str] = Field(default_factory=list, description="List of tool names")
     reasoning_prompt: Optional[str] = Field(
-        None, description="Reasoning prompt for the agent"
+        default=None, description="Reasoning prompt for the agent"
     )
     system_prompt: Optional[str] = Field(
-        None, description="System prompt for the agent"
+        default=None, description="System prompt for the agent"
     )
     max_iterations: Annotated[int, AfterValidator(validate_max_iterations)] = Field(
         default=5, description="Maximum reasoning iterations"
+    )
+    mcp_servers: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="MCP server configurations for tool registry integration",
     )
 
     @field_validator("tools")

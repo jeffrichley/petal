@@ -154,3 +154,53 @@ def test_handler_factory_unknown_type():
     factory = HandlerFactory()
     with pytest.raises(ValueError, match="Unknown node type"):
         factory.get_handler("unknown")
+
+
+def test_react_node_handler_with_mcp_tools(monkeypatch):
+    """Test: ReactNodeHandler should register MCP servers from YAML config using generic resolver."""
+    from petal.core.config.yaml import ReactNodeConfig
+    from petal.core.tool_factory import ToolFactory
+    from petal.core.yaml.handlers.react import ReactNodeHandler
+
+    # Simulate MCP server config in YAML
+    mcp_servers = {
+        "math_server": {
+            "config": {
+                "servers": {
+                    "math_tools": {
+                        "command": "npx -y @modelcontextprotocol/server-math"
+                    }
+                }
+            }
+        }
+    }
+    config = ReactNodeConfig(
+        type="react",
+        name="test_mcp_react",
+        description="Test React node with MCP tools",
+        tools=["mcp:math_server:add", "mcp:math_server:multiply"],
+        reasoning_prompt="Test reasoning",
+        system_prompt="Test system",
+        max_iterations=3,
+        mcp_servers=mcp_servers,
+    )
+    # Patch ToolFactory.add_mcp to track calls
+    called = {}
+
+    def fake_add_mcp(self, server_name, _resolver=None, mcp_config=None):
+        called[server_name] = mcp_config
+        return self
+
+    monkeypatch.setattr(ToolFactory, "add_mcp", fake_add_mcp)
+
+    # Patch ToolFactory.resolve to always return a dummy function with a docstring
+    def dummy_tool(*_args, **_kwargs):
+        """A dummy tool for testing."""
+        return None
+
+    monkeypatch.setattr(ToolFactory, "resolve", lambda _self, _name: dummy_tool)
+    handler = ReactNodeHandler(tool_factory=ToolFactory())
+    # Call handler.create_node, which should trigger MCP registration
+    handler.create_node(config)
+    assert "math_server" in called
+    assert called["math_server"] == mcp_servers["math_server"]["config"]

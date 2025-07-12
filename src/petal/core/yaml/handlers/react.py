@@ -1,6 +1,6 @@
 """React node configuration handler."""
 
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 from petal.core.config.yaml import BaseNodeConfig, ReactNodeConfig
 from petal.core.steps.registry import StepRegistry
@@ -14,6 +14,13 @@ class ReactNodeHandler(NodeConfigHandler):
     def __init__(self, tool_factory: Any = None):
         self.tool_factory = tool_factory or ToolFactory()
         self.registry = StepRegistry()
+
+    def _register_mcp_servers(self, mcp_servers: Dict[str, Any]):
+        """Register all MCP servers from the config with the ToolFactory using the generic resolver."""
+        for server_name, server_info in mcp_servers.items():
+            mcp_config = server_info.get("config")
+            if mcp_config:
+                self.tool_factory.add_mcp(server_name, mcp_config=mcp_config)
 
     def create_node(self, config: BaseNodeConfig) -> Callable:
         """Create a React node from configuration.
@@ -30,11 +37,14 @@ class ReactNodeHandler(NodeConfigHandler):
             if isinstance(config, ReactNodeConfig)
             else ReactNodeConfig(**config.__dict__)
         )
+        # Register MCP servers if present
+        mcp_servers = getattr(react_config, "mcp_servers", None)
+        if mcp_servers:
+            self._register_mcp_servers(mcp_servers)
         # Resolve tools using ToolFactory
         resolved_tools = [
             self.tool_factory.resolve(tool) for tool in react_config.tools
         ]
-
         # Convert config to step config format
         step_config = self._config_to_step_config(react_config, resolved_tools)
         return self.registry.create_step(step_config)

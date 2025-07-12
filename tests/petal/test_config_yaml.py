@@ -94,16 +94,16 @@ class TestTypeResolver:
 
     def test_resolve_type_valid_types(self):
         """Test resolving valid type names."""
-        assert TypeResolver.resolve_type("str") == str
-        assert TypeResolver.resolve_type("int") == int
-        assert TypeResolver.resolve_type("float") == float
-        assert TypeResolver.resolve_type("bool") == bool
-        assert TypeResolver.resolve_type("list") == List
-        assert TypeResolver.resolve_type("dict") == Dict
-        assert TypeResolver.resolve_type("tuple") == tuple
-        assert TypeResolver.resolve_type("set") == set
-        assert TypeResolver.resolve_type("bytes") == bytes
-        assert TypeResolver.resolve_type("None") == type(None)
+        assert TypeResolver.resolve_type("str") is str
+        assert TypeResolver.resolve_type("int") is int
+        assert TypeResolver.resolve_type("float") is float
+        assert TypeResolver.resolve_type("bool") is bool
+        assert TypeResolver.resolve_type("list") is List
+        assert TypeResolver.resolve_type("dict") is Dict
+        assert TypeResolver.resolve_type("tuple") is tuple
+        assert TypeResolver.resolve_type("set") is set
+        assert TypeResolver.resolve_type("bytes") is bytes
+        assert TypeResolver.resolve_type("None") is type(None)
 
     def test_resolve_type_invalid_type(self):
         """Test resolving invalid type name raises error."""
@@ -148,9 +148,9 @@ class TestStateSchemaConfig:
             fields={"user_input": "str", "confidence": "float", "metadata": "dict"}
         )
         resolved_fields = config.get_resolved_fields()
-        assert resolved_fields["user_input"] == str
-        assert resolved_fields["confidence"] == float
-        assert resolved_fields["metadata"] == Dict
+        assert resolved_fields["user_input"] is str
+        assert resolved_fields["confidence"] is float
+        assert resolved_fields["metadata"] is Dict
 
     def test_get_resolved_fields_empty(self):
         """Test get_resolved_fields with empty fields."""
@@ -175,16 +175,16 @@ class TestStateSchemaConfig:
             }
         )
         resolved_fields = config.get_resolved_fields()
-        assert resolved_fields["text"] == str
-        assert resolved_fields["numbers"] == List
-        assert resolved_fields["settings"] == Dict
-        assert resolved_fields["enabled"] == bool
-        assert resolved_fields["count"] == int
-        assert resolved_fields["score"] == float
-        assert resolved_fields["data"] == bytes
-        assert resolved_fields["items"] == tuple
-        assert resolved_fields["tags"] == set
-        assert resolved_fields["none_value"] == type(None)
+        assert resolved_fields["text"] is str
+        assert resolved_fields["numbers"] is List
+        assert resolved_fields["settings"] is Dict
+        assert resolved_fields["enabled"] is bool
+        assert resolved_fields["count"] is int
+        assert resolved_fields["score"] is float
+        assert resolved_fields["data"] is bytes
+        assert resolved_fields["items"] is tuple
+        assert resolved_fields["tags"] is set
+        assert resolved_fields["none_value"] is type(None)
 
 
 class TestValidationConfig:
@@ -243,6 +243,88 @@ class TestBaseNodeConfig:
         """Test name whitespace stripping."""
         config = BaseNodeConfig(type="llm", name="  test  ", description="")
         assert config.name == "test"
+
+    def test_base_node_config_creation(self):
+        """Test BaseNodeConfig creation with required fields."""
+        config = BaseNodeConfig(
+            type="llm",
+            name="test_node",
+            description="Test node",
+            enabled=True,
+            state_schema=None,
+            input_schema=None,
+            output_schema=None,
+        )
+        assert config.type == "llm"
+        assert config.name == "test_node"
+        assert config.description == "Test node"
+        assert config.enabled is True
+
+    def test_base_node_config_minimal(self):
+        """Test BaseNodeConfig creation with minimal fields."""
+        config = BaseNodeConfig(
+            type="react",
+            name="minimal_node",
+            state_schema=None,
+            input_schema=None,
+            output_schema=None,
+        )
+        assert config.type == "react"
+        assert config.name == "minimal_node"
+        assert config.description is None
+        assert config.enabled is True
+
+    def test_base_node_config_with_schemas(self):
+        """Test BaseNodeConfig creation with schema configurations."""
+        state_schema = StateSchemaConfig(
+            fields={"user_input": "str", "confidence": "float"},
+            required_fields=["user_input"],
+            optional_fields={"confidence": 0.5},
+        )
+        input_schema = StateSchemaConfig(fields={"text": "str"})
+        output_schema = StateSchemaConfig(fields={"result": "str"})
+        config = BaseNodeConfig(
+            type="llm",
+            name="schema_node",
+            state_schema=state_schema,
+            input_schema=input_schema,
+            output_schema=output_schema,
+        )
+        assert config.state_schema is not None
+        assert config.input_schema is not None
+        assert config.output_schema is not None
+
+    def test_base_node_config_validation(self):
+        """Test BaseNodeConfig field validation."""
+        # Test empty name
+        with pytest.raises(ValueError, match="name cannot be empty"):
+            BaseNodeConfig(
+                type="llm",
+                name="",
+                state_schema=None,
+                input_schema=None,
+                output_schema=None,
+            )
+
+        # Test whitespace name
+        with pytest.raises(ValueError, match="name cannot be empty"):
+            BaseNodeConfig(
+                type="llm",
+                name="   ",
+                state_schema=None,
+                input_schema=None,
+                output_schema=None,
+            )
+
+        # Test invalid node type
+        with pytest.raises(ValueError, match="node_type must be one of"):
+            BaseNodeConfig(
+                type="invalid",
+                name="test",
+                state_schema=None,
+                input_schema=None,
+                output_schema=None,
+            )
 
 
 class TestLLMNodeConfig:
@@ -559,24 +641,24 @@ class TestIntegration:
     def test_edge_cases(self):
         """Test edge cases and error conditions."""
         # Test with None state schema
-        config = LLMNodeConfig(
+        llm_config = LLMNodeConfig(
             type="llm",
             name="test",
             provider="openai",
             model="gpt-4",
             state_schema=None,
         )
-        assert config.state_schema is None
+        assert llm_config.state_schema is None
 
         # Test with empty state schema
         empty_schema = StateSchemaConfig()
-        config = ReactNodeConfig(
+        react_config = ReactNodeConfig(
             type="react",
             name="test",
             tools=[],
             state_schema=empty_schema,
         )
-        assert config.state_schema == empty_schema
+        assert react_config.state_schema == empty_schema
 
 
 class TestEnhancedStateSchemaConfig:

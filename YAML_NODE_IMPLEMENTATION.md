@@ -75,11 +75,11 @@ AgentFactory.node_from_yaml(path)
 - [x] Create unit tests for state schema loading
 
 #### 3.2 Add Tool Registry Integration
-- [ ] Extend `ReactNodeConfig` to support tool references
-- [ ] Add tool discovery and resolution from YAML
-- [ ] Support both direct tool names and tool configurations
-- [ ] Integrate with existing `ToolFactory`
-- [ ] Create unit tests for tool integration
+- [x] Extend `ReactNodeConfig` to support tool references (in progress: implementing generic MCP resolver for tool discovery and registration)
+- [x] Add tool discovery and resolution from YAML (MCP tool discovery now handled generically via mcp_servers in YAML)
+- [x] Support both direct tool names and tool configurations (direct names and mcp: references supported)
+- [x] Integrate with existing `ToolFactory` (ReactNodeHandler now uses ToolFactory for all tool resolution, including MCP tools)
+- [x] Create unit tests for tool integration (tests for MCP tool registry integration are present and passing)
 
 #### 3.3 Add Memory Configuration
 - [ ] Extend YAML models to support memory configuration
