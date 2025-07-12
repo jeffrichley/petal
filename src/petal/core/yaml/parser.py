@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import yaml
 
-from petal.core.config.yaml import LLMNodeConfig
+from petal.core.config.yaml import CustomNodeConfig, LLMNodeConfig, ReactNodeConfig
 
 
 class YAMLFileNotFoundError(Exception):
@@ -40,4 +40,8 @@ class YAMLNodeParser:
         node_type = data.get("type")
         if node_type == "llm":
             return LLMNodeConfig(**data)
+        elif node_type == "react":
+            return ReactNodeConfig(**data)
+        elif node_type == "custom":
+            return CustomNodeConfig(**data)
         raise ValueError(f"Unsupported node type: {node_type}")

@@ -1,0 +1,15 @@
+type: react
+name: advanced_agent
+description: Advanced agent with MCP tools and state schema
+tools:
+  - search
+  - mcp:filesystem
+  - mcp:sqlite
+reasoning_prompt: "Analyze the problem systematically and use available tools."
+system_prompt: "You are an advanced AI agent with access to multiple tools."
+max_iterations: 10
+state_schema:
+  fields:
+    user_query: str
+    search_results: list
+    final_answer: str

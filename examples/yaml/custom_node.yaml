@@ -1,0 +1,16 @@
+type: custom
+name: data_processor
+description: A custom data processing node
+function_path: "examples.custom_tool.process_data"
+parameters:
+  batch_size: 100
+  timeout: 30
+validation:
+  input_schema:
+    fields:
+      data: str
+      format: str
+  output_schema:
+    fields:
+      result: str
+      status: str

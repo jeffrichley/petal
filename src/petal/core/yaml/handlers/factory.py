@@ -3,6 +3,7 @@
 from typing import Dict, Type
 
 from petal.core.yaml.handlers.base import NodeConfigHandler
+from petal.core.yaml.handlers.custom import CustomNodeHandler
 from petal.core.yaml.handlers.llm import LLMNodeHandler
 from petal.core.yaml.handlers.react import ReactNodeHandler
 
@@ -14,6 +15,7 @@ class HandlerFactory:
         self._handlers: Dict[str, Type[NodeConfigHandler]] = {
             "llm": LLMNodeHandler,
             "react": ReactNodeHandler,
+            "custom": CustomNodeHandler,
         }
 
     def get_handler(self, node_type: str) -> NodeConfigHandler:

@@ -1,0 +1,7 @@
+type: react
+name: reasoning_agent
+description: An agent that can use tools and reason step by step
+tools: [search, calculator]
+reasoning_prompt: "Think step by step about how to solve this problem."
+system_prompt: "You are a reasoning agent that can use tools to solve problems."
+max_iterations: 5

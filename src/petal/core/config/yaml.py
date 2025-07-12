@@ -61,7 +61,7 @@ def validate_field_name(v: str) -> str:
 
 def validate_node_type(v: str) -> str:
     """Validate node type is supported."""
-    valid_types = ["llm", "react"]
+    valid_types = ["llm", "react", "custom"]
     if v not in valid_types:
         raise ValueError(f"node_type must be one of {valid_types}")
     return v
@@ -282,5 +282,33 @@ class ReactNodeConfig(BaseNodeConfig):
         return v.strip() if v else v
 
 
+class CustomNodeConfig(BaseNodeConfig):
+    """Configuration for Custom nodes."""
+
+    function_path: str = Field(..., description="Python import path to function")
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict, description="Function parameters"
+    )
+    validation: Optional[ValidationConfig] = Field(
+        default=None, description="Input/output validation configuration"
+    )
+
+    @field_validator("function_path")
+    @classmethod
+    def validate_function_path(cls, v: str) -> str:
+        """Validate function path is not empty."""
+        if not v or not v.strip():
+            raise ValueError("function_path cannot be empty")
+        return v.strip()
+
+    @field_validator("parameters")
+    @classmethod
+    def validate_parameters(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate parameters is a dictionary."""
+        if not isinstance(v, dict):
+            raise ValueError("parameters must be a dictionary")
+        return v
+
+
 # Union type for all node configurations
-NodeConfig = LLMNodeConfig | ReactNodeConfig
+NodeConfig = LLMNodeConfig | ReactNodeConfig | CustomNodeConfig

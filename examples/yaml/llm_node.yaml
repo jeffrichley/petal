@@ -1,0 +1,9 @@
+type: llm
+name: assistant
+description: A helpful AI assistant for answering questions
+provider: openai
+model: gpt-4o-mini
+temperature: 0.0
+max_tokens: 1000
+prompt: "You are a helpful assistant. Answer the user's question: {user_input}"
+system_prompt: "You are a knowledgeable and helpful AI assistant."

@@ -32,7 +32,7 @@ class TestValidationFunctions:
         with pytest.raises(ValueError, match="node_type must be one of"):
             validate_node_type("invalid")
         with pytest.raises(ValueError, match="node_type must be one of"):
-            validate_node_type("custom")
+            validate_node_type("unsupported")
 
     def test_validate_provider_valid(self):
         """Test valid providers."""

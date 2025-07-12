@@ -110,6 +110,33 @@ Core Methods
            agent = factory.build()
            result = await agent.arun({"name": "Alice"})
 
+.. method:: AgentFactory.node_from_yaml(path: str)
+
+   Load a node from YAML configuration file.
+
+   Args:
+       path: Path to YAML configuration file
+
+   Returns:
+       Callable: The node function created from YAML configuration
+
+   Raises:
+       YAMLFileNotFoundError: If YAML file doesn't exist
+       YAMLParseError: If YAML is invalid
+       ValueError: If node type is unsupported or configuration is invalid
+
+   Example:
+       .. code-block:: python
+
+           # Load LLM node from YAML
+           factory.node_from_yaml("config/llm_node.yaml")
+
+           # Load React node from YAML
+           factory.node_from_yaml("config/react_node.yaml")
+
+           # Load Custom node from YAML
+           factory.node_from_yaml("config/custom_node.yaml")
+
 Complete Example
 ---------------
 
