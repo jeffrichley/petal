@@ -453,3 +453,9 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 ---
 
 End of task list.
+
+## Discovered During Work
+
+* [x] Fix mypy YAML stub issue by adding per-module override for `yaml` in `pyproject.toml` (2024-07-06)
+    - Pre-commit and CI now pass without type: ignore comments or global ignore_missing_imports.
+    - See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports for reference.

@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 from petal.core.config.yaml import LLMNodeConfig
 
