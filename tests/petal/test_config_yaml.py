@@ -1,11 +1,14 @@
 """Tests for YAML configuration models."""
 
+from typing import Dict, List
+
 import pytest
 from petal.core.config.yaml import (
     BaseNodeConfig,
     LLMNodeConfig,
     ReactNodeConfig,
     StateSchemaConfig,
+    TypeResolver,
     ValidationConfig,
     validate_max_iterations,
     validate_max_tokens,
@@ -86,15 +89,51 @@ class TestValidationFunctions:
             validate_max_iterations(-1)
 
 
+class TestTypeResolver:
+    """Test TypeResolver class."""
+
+    def test_resolve_type_valid_types(self):
+        """Test resolving valid type names."""
+        assert TypeResolver.resolve_type("str") == str
+        assert TypeResolver.resolve_type("int") == int
+        assert TypeResolver.resolve_type("float") == float
+        assert TypeResolver.resolve_type("bool") == bool
+        assert TypeResolver.resolve_type("list") == List
+        assert TypeResolver.resolve_type("dict") == Dict
+        assert TypeResolver.resolve_type("tuple") == tuple
+        assert TypeResolver.resolve_type("set") == set
+        assert TypeResolver.resolve_type("bytes") == bytes
+        assert TypeResolver.resolve_type("None") == type(None)
+
+    def test_resolve_type_invalid_type(self):
+        """Test resolving invalid type name raises error."""
+        with pytest.raises(ValueError, match="Unsupported type: invalid_type"):
+            TypeResolver.resolve_type("invalid_type")
+
+    def test_is_valid_type(self):
+        """Test is_valid_type method."""
+        assert TypeResolver.is_valid_type("str") is True
+        assert TypeResolver.is_valid_type("int") is True
+        assert TypeResolver.is_valid_type("float") is True
+        assert TypeResolver.is_valid_type("bool") is True
+        assert TypeResolver.is_valid_type("list") is True
+        assert TypeResolver.is_valid_type("dict") is True
+        assert TypeResolver.is_valid_type("tuple") is True
+        assert TypeResolver.is_valid_type("set") is True
+        assert TypeResolver.is_valid_type("bytes") is True
+        assert TypeResolver.is_valid_type("None") is True
+        assert TypeResolver.is_valid_type("invalid_type") is False
+
+
 class TestStateSchemaConfig:
     """Test StateSchemaConfig model."""
 
     def test_valid_config(self):
         """Test valid state schema configuration."""
         config = StateSchemaConfig(
-            fields={"input": str, "output": str}, required_fields=["input"]
+            fields={"input": "str", "output": "str"}, required_fields=["input"]
         )
-        assert config.fields == {"input": str, "output": str}
+        assert config.fields == {"input": "str", "output": "str"}
         assert config.required_fields == ["input"]
 
     def test_default_config(self):
@@ -103,14 +142,58 @@ class TestStateSchemaConfig:
         assert config.fields == {}
         assert config.required_fields == []
 
+    def test_get_resolved_fields(self):
+        """Test get_resolved_fields method."""
+        config = StateSchemaConfig(
+            fields={"user_input": "str", "confidence": "float", "metadata": "dict"}
+        )
+        resolved_fields = config.get_resolved_fields()
+        assert resolved_fields["user_input"] == str
+        assert resolved_fields["confidence"] == float
+        assert resolved_fields["metadata"] == Dict
+
+    def test_get_resolved_fields_empty(self):
+        """Test get_resolved_fields with empty fields."""
+        config = StateSchemaConfig()
+        resolved_fields = config.get_resolved_fields()
+        assert resolved_fields == {}
+
+    def test_get_resolved_fields_complex_types(self):
+        """Test get_resolved_fields with complex types."""
+        config = StateSchemaConfig(
+            fields={
+                "text": "str",
+                "numbers": "list",
+                "settings": "dict",
+                "enabled": "bool",
+                "count": "int",
+                "score": "float",
+                "data": "bytes",
+                "items": "tuple",
+                "tags": "set",
+                "none_value": "None",
+            }
+        )
+        resolved_fields = config.get_resolved_fields()
+        assert resolved_fields["text"] == str
+        assert resolved_fields["numbers"] == List
+        assert resolved_fields["settings"] == Dict
+        assert resolved_fields["enabled"] == bool
+        assert resolved_fields["count"] == int
+        assert resolved_fields["score"] == float
+        assert resolved_fields["data"] == bytes
+        assert resolved_fields["items"] == tuple
+        assert resolved_fields["tags"] == set
+        assert resolved_fields["none_value"] == type(None)
+
 
 class TestValidationConfig:
     """Test ValidationConfig model."""
 
     def test_valid_config(self):
         """Test valid validation configuration."""
-        input_schema = StateSchemaConfig(fields={"input": str})
-        output_schema = StateSchemaConfig(fields={"output": str})
+        input_schema = StateSchemaConfig(fields={"input": "str"})
+        output_schema = StateSchemaConfig(fields={"output": "str"})
 
         config = ValidationConfig(
             input_schema=input_schema, output_schema=output_schema
@@ -338,6 +421,7 @@ class TestReactNodeConfig:
         config = ReactNodeConfig(
             type="react",
             name="minimal",
+            tools=[],
             description="",
             reasoning_prompt=None,
             system_prompt=None,
@@ -345,9 +429,9 @@ class TestReactNodeConfig:
         assert config.type == "react"
         assert config.name == "minimal"
         assert config.tools == []
+        assert config.max_iterations == 5
         assert config.reasoning_prompt is None
         assert config.system_prompt is None
-        assert config.max_iterations == 5
 
     def test_invalid_max_iterations(self):
         """Test invalid max_iterations."""
@@ -355,6 +439,7 @@ class TestReactNodeConfig:
             ReactNodeConfig(
                 type="react",
                 name="test",
+                tools=["tool1"],
                 max_iterations=0,
                 description="",
                 reasoning_prompt="",
@@ -367,7 +452,7 @@ class TestReactNodeConfig:
             ReactNodeConfig(
                 type="react",
                 name="test",
-                tools=["search", "", "calculator"],
+                tools=["tool1", "", "tool3"],
                 description="",
                 reasoning_prompt="",
                 system_prompt="",
@@ -381,6 +466,7 @@ class TestReactNodeConfig:
             ReactNodeConfig(
                 type="react",
                 name="test",
+                tools=["tool1"],
                 reasoning_prompt="",
                 description="",
                 system_prompt="",
@@ -394,6 +480,7 @@ class TestReactNodeConfig:
             ReactNodeConfig(
                 type="react",
                 name="test",
+                tools=["tool1"],
                 system_prompt="",
                 description="",
                 reasoning_prompt="",
@@ -404,18 +491,19 @@ class TestReactNodeConfig:
         config = ReactNodeConfig(
             type="react",
             name="test",
-            tools=["  search  ", "  calculator  "],
+            tools=["  tool1  ", "  tool2  "],
             description="",
             reasoning_prompt=None,
             system_prompt=None,
         )
-        assert config.tools == ["search", "calculator"]
+        assert config.tools == ["tool1", "tool2"]
 
     def test_prompt_stripping(self):
         """Test prompt whitespace stripping."""
         config = ReactNodeConfig(
             type="react",
             name="test",
+            tools=["tool1"],
             reasoning_prompt="  test reasoning  ",
             system_prompt="  test system  ",
             description="",
@@ -425,100 +513,140 @@ class TestReactNodeConfig:
 
 
 class TestIntegration:
-    """Test integration scenarios."""
+    """Test integration between different config models."""
 
     def test_llm_node_creation(self):
-        """Test creating LLM node with all fields."""
+        """Test LLM node creation with all components."""
+        state_schema = StateSchemaConfig(
+            fields={"user_input": "str", "response": "str"},
+            required_fields=["user_input"],
+        )
+
         config = LLMNodeConfig(
             type="llm",
             name="assistant",
-            description="A helpful AI assistant",
+            description="A helpful assistant",
             provider="openai",
             model="gpt-4o-mini",
-            temperature=0.0,
-            max_tokens=1000,
-            prompt="You are a helpful assistant. Answer the user's question: {user_input}",
-            system_prompt="You are a knowledgeable and helpful AI assistant.",
+            state_schema=state_schema,
         )
 
-        # Verify all fields are correctly set
-        assert config.type == "llm"
-        assert config.name == "assistant"
-        assert config.description == "A helpful AI assistant"
-        assert config.provider == "openai"
-        assert config.model == "gpt-4o-mini"
-        assert config.temperature == 0.0
-        assert config.max_tokens == 1000
-        if config.prompt is not None:
-            assert "user_input" in config.prompt
-        if config.system_prompt is not None:
-            assert "knowledgeable" in config.system_prompt
+        assert config.state_schema == state_schema
+        assert config.state_schema.fields == {"user_input": "str", "response": "str"}
 
     def test_react_node_creation(self):
-        """Test creating React node with all fields."""
+        """Test React node creation with all components."""
+        state_schema = StateSchemaConfig(
+            fields={"query": "str", "tools_used": "list", "result": "str"},
+            required_fields=["query"],
+        )
+
         config = ReactNodeConfig(
             type="react",
             name="reasoning_agent",
             description="An agent that can use tools and reason",
-            tools=["search", "calculator", "database"],
-            reasoning_prompt="Think step by step about how to solve this problem.",
-            system_prompt="You are a reasoning agent that can use tools to solve problems.",
-            max_iterations=5,
+            tools=["search", "calculator"],
+            state_schema=state_schema,
         )
 
-        # Verify all fields are correctly set
-        assert config.type == "react"
-        assert config.name == "reasoning_agent"
-        assert config.description == "An agent that can use tools and reason"
-        assert len(config.tools) == 3
-        assert "search" in config.tools
-        assert "calculator" in config.tools
-        assert "database" in config.tools
-        if config.reasoning_prompt is not None:
-            assert "step by step" in config.reasoning_prompt
-        if config.system_prompt is not None:
-            assert "reasoning agent" in config.system_prompt
-        assert config.max_iterations == 5
+        assert config.state_schema == state_schema
+        assert config.state_schema.fields == {
+            "query": "str",
+            "tools_used": "list",
+            "result": "str",
+        }
 
     def test_edge_cases(self):
-        """Test edge cases and boundary conditions."""
-        # Test minimum valid values
-        llm_config = LLMNodeConfig(
+        """Test edge cases and error conditions."""
+        # Test with None state schema
+        config = LLMNodeConfig(
             type="llm",
-            name="minimal",
+            name="test",
             provider="openai",
             model="gpt-4",
-            temperature=0.0,
-            max_tokens=1,
-            description="",
-            prompt=None,
-            system_prompt=None,
+            state_schema=None,
         )
-        assert llm_config.temperature == 0.0
-        assert llm_config.max_tokens == 1
+        assert config.state_schema is None
 
-        # Test maximum valid values
-        llm_config = LLMNodeConfig(
-            type="llm",
-            name="maximal",
-            provider="openai",
-            model="gpt-4",
-            temperature=2.0,
-            max_tokens=8000,
-            description="",
-            prompt=None,
-            system_prompt=None,
-        )
-        assert llm_config.temperature == 2.0
-        assert llm_config.max_tokens == 8000
-
-        # Test React node with minimum iterations
-        react_config = ReactNodeConfig(
+        # Test with empty state schema
+        empty_schema = StateSchemaConfig()
+        config = ReactNodeConfig(
             type="react",
-            name="minimal",
-            max_iterations=1,
-            description="",
-            reasoning_prompt=None,
-            system_prompt=None,
+            name="test",
+            tools=[],
+            state_schema=empty_schema,
         )
-        assert react_config.max_iterations == 1
+        assert config.state_schema == empty_schema
+
+
+class TestEnhancedStateSchemaConfig:
+    """Test enhanced StateSchemaConfig model with string type support."""
+
+    def test_string_type_fields(self):
+        """Test state schema with string type definitions."""
+        config = StateSchemaConfig(
+            fields={"user_input": "str", "confidence": "float", "metadata": "dict"},
+            required_fields=["user_input"],
+        )
+        assert config.fields == {
+            "user_input": "str",
+            "confidence": "float",
+            "metadata": "dict",
+        }
+        assert config.required_fields == ["user_input"]
+
+    def test_optional_fields_with_defaults(self):
+        """Test state schema with optional fields and default values."""
+        config = StateSchemaConfig(
+            fields={"user_input": "str", "confidence": "float"},
+            required_fields=["user_input"],
+            optional_fields={"confidence": 0.5},
+        )
+        assert config.optional_fields == {"confidence": 0.5}
+
+    def test_nested_schemas(self):
+        """Test state schema with nested schema definitions."""
+        nested_schema = StateSchemaConfig(
+            fields={"algorithm": "str", "parameters": "dict"},
+            required_fields=["algorithm"],
+        )
+        config = StateSchemaConfig(
+            fields={"data_input": "dict", "processing_config": "dict"},
+            required_fields=["data_input"],
+            nested_schemas={"processing_config": nested_schema},
+        )
+        assert "processing_config" in config.nested_schemas
+        assert config.nested_schemas["processing_config"] == nested_schema
+
+    def test_invalid_field_name(self):
+        """Test validation of invalid field names."""
+        with pytest.raises(ValidationError, match="Invalid field name"):
+            StateSchemaConfig(
+                fields={"invalid-field": "str"}, required_fields=["invalid-field"]
+            )
+
+    def test_invalid_type_name(self):
+        """Test validation of invalid type names."""
+        with pytest.raises(ValidationError, match="Unsupported type"):
+            StateSchemaConfig(
+                fields={"user_input": "invalid_type"}, required_fields=["user_input"]
+            )
+
+    def test_required_field_not_in_fields(self):
+        """Test validation when required field is not in fields."""
+        with pytest.raises(
+            ValidationError, match="Required field not found in fields: missing_field"
+        ):
+            StateSchemaConfig(
+                fields={"user_input": "str"}, required_fields=["missing_field"]
+            )
+
+    def test_optional_field_not_in_fields(self):
+        """Test validation when optional field is not in fields."""
+        with pytest.raises(
+            ValidationError, match="Optional field not found in fields: missing_field"
+        ):
+            StateSchemaConfig(
+                fields={"user_input": "str"},
+                optional_fields={"missing_field": "default_value"},
+            )

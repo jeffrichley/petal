@@ -1,8 +1,62 @@
 """YAML configuration models for node loading."""
 
-from typing import Annotated, Dict, List, Optional, Type
+import re
+from typing import Annotated, Any, Dict, List, Optional, Type
 
 from pydantic import AfterValidator, BaseModel, Field, field_validator
+
+
+class TypeResolver:
+    """Resolves string type names to Python types."""
+
+    _type_mapping = {
+        "str": str,
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "list": List,
+        "dict": Dict,
+        "tuple": tuple,
+        "set": set,
+        "bytes": bytes,
+        "None": type(None),
+    }
+
+    @classmethod
+    def resolve_type(cls, type_name: str) -> Type:
+        """Resolve string type name to Python type.
+
+        Args:
+            type_name: The string representation of the type
+
+        Returns:
+            The Python type
+
+        Raises:
+            ValueError: If the type name is not supported
+        """
+        if type_name not in cls._type_mapping:
+            raise ValueError(f"Unsupported type: {type_name}")
+        return cls._type_mapping[type_name]
+
+    @classmethod
+    def is_valid_type(cls, type_name: str) -> bool:
+        """Check if a type name is valid.
+
+        Args:
+            type_name: The string representation of the type
+
+        Returns:
+            True if the type is supported, False otherwise
+        """
+        return type_name in cls._type_mapping
+
+
+def validate_field_name(v: str) -> str:
+    """Validate field name is a valid Python identifier."""
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", v):
+        raise ValueError(f"Invalid field name: {v}")
+    return v
 
 
 def validate_node_type(v: str) -> str:
@@ -45,12 +99,61 @@ def validate_max_iterations(v: int) -> int:
 class StateSchemaConfig(BaseModel):
     """Configuration for dynamic state schema creation."""
 
-    fields: Dict[str, Type] = Field(
-        default_factory=dict, description="Field definitions for state schema"
+    fields: Dict[str, str] = Field(
+        default_factory=dict, description="Field name to type string mapping"
     )
     required_fields: List[str] = Field(
         default_factory=list, description="List of required field names"
     )
+    optional_fields: Dict[str, Any] = Field(
+        default_factory=dict, description="Optional fields with default values"
+    )
+    nested_schemas: Dict[str, "StateSchemaConfig"] = Field(
+        default_factory=dict, description="Nested schema definitions"
+    )
+
+    @field_validator("fields")
+    @classmethod
+    def validate_fields(cls, v: Dict[str, str]) -> Dict[str, str]:
+        """Validate field names and types."""
+        for field_name, type_name in v.items():
+            # Validate field name
+            validate_field_name(field_name)
+            # Validate type name
+            if not TypeResolver.is_valid_type(type_name):
+                raise ValueError(f"Unsupported type: {type_name}")
+        return v
+
+    @field_validator("required_fields")
+    @classmethod
+    def validate_required_fields(cls, v: List[str], info) -> List[str]:
+        """Validate required fields exist in fields."""
+        fields = info.data.get("fields", {})
+        for field_name in v:
+            if field_name not in fields:
+                raise ValueError(f"Required field not found in fields: {field_name}")
+        return v
+
+    @field_validator("optional_fields")
+    @classmethod
+    def validate_optional_fields(cls, v: Dict[str, Any], info) -> Dict[str, Any]:
+        """Validate optional fields exist in fields."""
+        fields = info.data.get("fields", {})
+        for field_name in v:
+            if field_name not in fields:
+                raise ValueError(f"Optional field not found in fields: {field_name}")
+        return v
+
+    def get_resolved_fields(self) -> Dict[str, Type]:
+        """Get fields with resolved Python types.
+
+        Returns:
+            Dictionary mapping field names to Python types
+        """
+        return {
+            name: TypeResolver.resolve_type(type_name)
+            for name, type_name in self.fields.items()
+        }
 
 
 class ValidationConfig(BaseModel):
@@ -73,6 +176,15 @@ class BaseNodeConfig(BaseModel):
     name: str = Field(..., description="Name of the node")
     description: Optional[str] = Field(None, description="Description of the node")
     enabled: bool = Field(default=True, description="Whether the node is enabled")
+    state_schema: Optional[StateSchemaConfig] = Field(
+        None, description="State schema definition for this node"
+    )
+    input_schema: Optional[StateSchemaConfig] = Field(
+        None, description="Input validation schema"
+    )
+    output_schema: Optional[StateSchemaConfig] = Field(
+        None, description="Output validation schema"
+    )
 
     @field_validator("name")
     @classmethod

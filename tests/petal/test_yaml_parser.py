@@ -76,3 +76,53 @@ def test_parse_node_config_returns_llm_node_config(valid_llm_yaml_file):
     assert config.max_tokens == 1000
     assert config.prompt == "You are a helpful assistant."
     assert config.system_prompt == "You are a knowledgeable and helpful AI assistant."
+
+
+def test_parse_node_config_unsupported_node_type(tmp_path):
+    """Test parsing YAML with unsupported node type."""
+    file_path = tmp_path / "unsupported.yaml"
+    file_path.write_text(
+        """
+        type: unsupported
+        name: test
+        """
+    )
+    parser = YAMLNodeParser()
+    with pytest.raises(ValueError, match="Unsupported node type: unsupported"):
+        parser.parse_node_config(str(file_path))
+
+
+def test_parse_node_config_missing_type(tmp_path):
+    """Test parsing YAML with missing type field."""
+    file_path = tmp_path / "missing_type.yaml"
+    file_path.write_text(
+        """
+        name: test
+        provider: openai
+        model: gpt-4
+        """
+    )
+    parser = YAMLNodeParser()
+    with pytest.raises(ValueError, match="Unsupported node type: None"):
+        parser.parse_node_config(str(file_path))
+
+
+def test_load_yaml_file_not_implemented():
+    """Test that load_yaml_file raises NotImplementedError."""
+    parser = YAMLNodeParser()
+    with pytest.raises(NotImplementedError):
+        parser.load_yaml_file("test.yaml")
+
+
+def test_detect_node_type_not_implemented():
+    """Test that detect_node_type raises NotImplementedError."""
+    parser = YAMLNodeParser()
+    with pytest.raises(NotImplementedError):
+        parser.detect_node_type({})
+
+
+def test_validate_yaml_schema_not_implemented():
+    """Test that validate_yaml_schema raises NotImplementedError."""
+    parser = YAMLNodeParser()
+    with pytest.raises(NotImplementedError):
+        parser.validate_yaml_schema({})

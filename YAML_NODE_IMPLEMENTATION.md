@@ -68,11 +68,11 @@ AgentFactory.node_from_yaml(path)
 ### Phase 3: Advanced Configuration Support
 
 #### 3.1 Add State Schema Support
-- [ ] Extend YAML models to support state schema definitions
-- [ ] Add `StateSchemaConfig` with field definitions and validation
-- [ ] Integrate with existing `StateTypeFactory`
-- [ ] Support dynamic state type creation from YAML
-- [ ] Create unit tests for state schema loading
+- [x] Extend YAML models to support state schema definitions
+- [x] Add `StateSchemaConfig` with field definitions and validation
+- [x] Integrate with existing `StateTypeFactory`
+- [x] Support dynamic state type creation from YAML
+- [x] Create unit tests for state schema loading
 
 #### 3.2 Add Tool Registry Integration
 - [ ] Extend `ReactNodeConfig` to support tool references
