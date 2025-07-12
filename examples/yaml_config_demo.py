@@ -112,7 +112,7 @@ def demo_supporting_models():
 
     # State schema configuration
     state_schema = StateSchemaConfig(
-        fields={"input": str, "output": str, "context": str},
+        fields={"input": "str", "output": "str", "context": "str"},
         required_fields=["input", "output"],
     )
 
@@ -123,8 +123,10 @@ def demo_supporting_models():
 
     # Validation configuration
     validation_config = ValidationConfig(
-        input_schema=StateSchemaConfig(fields={"user_input": str}),
-        output_schema=StateSchemaConfig(fields={"response": str, "confidence": float}),
+        input_schema=StateSchemaConfig(fields={"user_input": "str"}),
+        output_schema=StateSchemaConfig(
+            fields={"response": "str", "confidence": "float"}
+        ),
     )
 
     print("Validation Configuration:")
