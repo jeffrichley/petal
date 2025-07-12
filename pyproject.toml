@@ -23,8 +23,10 @@ dependencies = [
     "langchain-openai>=0.3.27",
     "langgraph>=0.5.1",
     "pre-commit>=4.2.0",
+    "pyyaml>=6.0.2",
     "rich>=14.0.0",
     "setuptools>=80.9.0",
+    "types-pyyaml>=6.0.12.20250516",
 ]
 
 [project.optional-dependencies]
@@ -129,5 +131,6 @@ addopts = [
 
 [dependency-groups]
 dev = [
+    "types-pyyaml>=6.0.12.20250516",
     "vulture>=2.14",
 ]

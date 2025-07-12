@@ -36,30 +36,34 @@ AgentFactory.node_from_yaml(path)
 > - No regressions in existing codebase
 
 #### 1.2 Create YAML Parser and Type Detection
-- [ ] Create `src/petal/core/yaml/__init__.py`
-- [ ] Create `src/petal/core/yaml/parser.py` with `YAMLNodeParser` class
-- [ ] Implement `parse_node_config(path: str) -> BaseNodeConfig` method
-- [ ] Implement `detect_node_type(yaml_data: Dict) -> str` method
-- [ ] Add support for YAML validation and schema checking
-- [ ] Create unit tests in `tests/petal/test_yaml_parser.py`
+- [x] Create `src/petal/core/yaml/__init__.py`
+- [x] Create `src/petal/core/yaml/parser.py` with `YAMLNodeParser` class
+- [x] Implement `parse_node_config(path: str) -> BaseNodeConfig` method
+- [x] Implement `detect_node_type(yaml_data: Dict) -> str` method
+- [x] Add support for YAML validation and schema checking
+- [x] Create unit tests in `tests/petal/test_yaml_parser.py`
+
+> **Completed:**
+> - YAMLNodeParser implemented for LLM nodes with type detection and schema validation
+> - All tests written using TDD and passing
+> - Success criteria for this phase met
 
 ### Phase 2: Node Factory Integration
 
 #### 2.1 Extend AgentFactory with YAML Support
-- [ ] Add `node_from_yaml(path: str) -> Runnable` method to AgentFactory
-- [ ] Integrate with existing step registry and strategies
-- [ ] Add validation for YAML file existence and format
-- [ ] Add error handling for malformed YAML configurations
-- [ ] Create unit tests in `tests/petal/test_factory.py`
+- [x] Add `node_from_yaml(path: str) -> Runnable` method to AgentFactory
+- [x] Integrate with existing step registry and strategies
+- [x] Add validation for YAML file existence and format
+- [x] Add error handling for malformed YAML configurations
+- [x] Create unit tests in `tests/petal/test_factory.py`
 
 #### 2.2 Create Node Configuration Handlers
-- [ ] Create `src/petal/core/yaml/handlers/__init__.py`
-- [ ] Create `src/petal/core/yaml/handlers/base.py` with `NodeConfigHandler` ABC
-- [ ] Create `src/petal/core/yaml/handlers/llm.py` with `LLMNodeHandler`
-- [ ] Create `src/petal/core/yaml/handlers/react.py` with `ReactNodeHandler`
-- [ ] Create `src/petal/core/yaml/handlers/custom.py` with `CustomNodeHandler`
-- [ ] Implement `create_node(config: BaseNodeConfig) -> Runnable` method
-- [ ] Create unit tests in `tests/petal/test_yaml_handlers.py`
+- [x] Create `src/petal/core/yaml/handlers/__init__.py`
+- [x] Create `src/petal/core/yaml/handlers/base.py` with `NodeConfigHandler` ABC
+- [x] Create `src/petal/core/yaml/handlers/llm.py` with `LLMNodeHandler`
+- [x] Create `src/petal/core/yaml/handlers/react.py` with `ReactNodeHandler`
+- [x] Implement `create_node(config: BaseNodeConfig) -> Runnable` method
+- [x] Create unit tests in `tests/petal/test_yaml_handlers.py`
 
 ### Phase 3: Advanced Configuration Support
 

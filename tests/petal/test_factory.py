@@ -5,8 +5,10 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from petal.core.agent import Agent
+from petal.core.config.yaml import LLMNodeConfig, ReactNodeConfig
 from petal.core.factory import AgentFactory, DefaultState
 from petal.core.tool_factory import ToolFactory
+from petal.core.yaml.parser import YAMLFileNotFoundError, YAMLParseError
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -2293,3 +2295,89 @@ async def test_with_react_loop_with_system_prompt():
         )
         result = await agent.arun({"messages": [HumanMessage(content="test")]})
         assert "messages" in result
+
+
+def test_agent_factory_node_from_yaml_llm():
+    """Test AgentFactory.node_from_yaml loads LLM node from YAML and adds to builder."""
+    factory = AgentFactory(DefaultState)
+    mock_config = LLMNodeConfig(
+        type="llm",
+        name="test_llm",
+        description="Test LLM node",
+        provider="openai",
+        model="gpt-4o-mini",
+        temperature=0.0,
+        max_tokens=1000,
+        prompt="Test prompt",
+        system_prompt="Test system",
+    )
+    with (
+        patch("petal.core.yaml.parser.YAMLNodeParser") as mock_parser,
+        patch("petal.core.yaml.handlers.HandlerFactory") as mock_factory,
+    ):
+        mock_parser.return_value.parse_node_config.return_value = mock_config
+        mock_handler = patch("petal.core.yaml.handlers.llm.LLMNodeHandler").start()
+        mock_factory.return_value.get_handler.return_value = mock_handler
+        mock_handler.create_node.return_value = lambda x: x
+
+        # Should add to builder and return function
+        node = factory.node_from_yaml("test.yaml")
+        assert callable(node)
+
+        # Should have added a step to the builder
+        assert len(factory._builder._config.steps) == 1
+        assert factory._builder._config.steps[0].strategy_type == "custom"
+        assert factory._builder._config.steps[0].node_name == "test_llm"
+
+        patch.stopall()
+
+
+def test_agent_factory_node_from_yaml_react():
+    """Test AgentFactory.node_from_yaml loads React node from YAML and adds to builder."""
+    factory = AgentFactory(DefaultState)
+    mock_config = ReactNodeConfig(
+        type="react",
+        name="test_react",
+        description="Test React node",
+        tools=["search", "calculator"],
+        reasoning_prompt="Think step by step",
+        system_prompt="You are a reasoning agent",
+        max_iterations=5,
+    )
+    with (
+        patch("petal.core.yaml.parser.YAMLNodeParser") as mock_parser,
+        patch("petal.core.yaml.handlers.HandlerFactory") as mock_factory,
+    ):
+        mock_parser.return_value.parse_node_config.return_value = mock_config
+        mock_handler = patch("petal.core.yaml.handlers.react.ReactNodeHandler").start()
+        mock_factory.return_value.get_handler.return_value = mock_handler
+        mock_handler.create_node.return_value = lambda x: x
+
+        # Should add to builder and return function
+        node = factory.node_from_yaml("test.yaml")
+        assert callable(node)
+
+        # Should have added a step to the builder
+        assert len(factory._builder._config.steps) == 1
+        assert factory._builder._config.steps[0].strategy_type == "custom"
+        assert factory._builder._config.steps[0].node_name == "test_react"
+
+        patch.stopall()
+
+
+def test_agent_factory_node_from_yaml_file_not_found():
+    """Test AgentFactory.node_from_yaml handles file not found."""
+    factory = AgentFactory(DefaultState)
+    with pytest.raises(YAMLFileNotFoundError):
+        factory.node_from_yaml("nonexistent.yaml")
+
+
+def test_agent_factory_node_from_yaml_invalid_yaml():
+    """Test AgentFactory.node_from_yaml handles invalid YAML."""
+    factory = AgentFactory(DefaultState)
+    with patch("petal.core.yaml.parser.YAMLNodeParser") as mock_parser:
+        mock_parser.return_value.parse_node_config.side_effect = YAMLParseError(
+            "Invalid YAML"
+        )
+        with pytest.raises(YAMLParseError):
+            factory.node_from_yaml("invalid.yaml")

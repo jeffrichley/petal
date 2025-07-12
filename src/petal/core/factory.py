@@ -242,3 +242,39 @@ class AgentFactory:
 
         # Generate diagram using the static method
         AgentFactory.diagram_agent(agent, path, format)
+
+    def node_from_yaml(self, path: str):
+        """
+        Load a node from YAML configuration file.
+
+        Args:
+            path: Path to YAML configuration file
+
+        Returns:
+            Callable node function
+
+        Raises:
+            YAMLFileNotFoundError: If YAML file doesn't exist
+            YAMLParseError: If YAML is invalid
+            ValueError: If node type is unsupported
+        """
+        from petal.core.yaml.handlers import HandlerFactory
+        from petal.core.yaml.parser import YAMLNodeParser
+
+        # Parse YAML configuration
+        parser = YAMLNodeParser()
+        config = parser.parse_node_config(path)
+
+        # Create appropriate handler
+        handler_factory = HandlerFactory()
+        handler = handler_factory.get_handler(config.type)
+
+        # Create the node function
+        node_function = handler.create_node(config)
+
+        # Add the node to the builder (following the same pattern as other methods)
+        self._builder.with_step(
+            "custom", step_function=node_function, node_name=config.name
+        )
+
+        return node_function
