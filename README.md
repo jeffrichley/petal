@@ -267,3 +267,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution gu
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+# Consistent Formatting, Linting, and Type Checking
+
+- Run `make checkit` to check types, run pre-commit hooks (formatting, linting, type checking), and run tests with coverage.
+- If pre-commit makes changes, stage them (`git add .`) and re-commit.
+- Optionally, run `make precommit-autofix` to auto-fix and stage all changes before committing.

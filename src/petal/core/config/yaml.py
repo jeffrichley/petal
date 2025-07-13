@@ -301,14 +301,6 @@ class CustomNodeConfig(BaseNodeConfig):
             raise ValueError("function_path cannot be empty")
         return v.strip()
 
-    @field_validator("parameters")
-    @classmethod
-    def validate_parameters(cls, v: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate parameters is a dictionary."""
-        if not isinstance(v, dict):
-            raise ValueError("parameters must be a dictionary")
-        return v
-
 
 # Union type for all node configurations
 NodeConfig = LLMNodeConfig | ReactNodeConfig | CustomNodeConfig

@@ -132,6 +132,10 @@ addopts = [
     "--cov-report=xml",
     "--cov-fail-under=80"
 ]
+filterwarnings = [
+    "ignore::pydantic.PydanticDeprecatedSince20:langchain_core.*",
+    "ignore::pydantic.PydanticDeprecatedSince20:langchain.*"
+]
 
 [dependency-groups]
 dev = [

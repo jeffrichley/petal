@@ -52,11 +52,13 @@ docs-build: docs  ## Alias for docs
 docs-view: docs-serve  ## Alias for docs-serve
 
 checkit:
-	black .
-	ruff check . --fix
 	mypy src/ tests/
 	pre-commit run --all-files
 	$(MAKE) test-cov-check
+
+precommit-autofix:
+	pre-commit run --all-files
+	git add .
 
 v:  ## Activate virtual environment (Mac)
 	@echo "Starting new shell with virtual environment activated..."
