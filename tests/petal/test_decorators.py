@@ -2,12 +2,16 @@
 Tests for the @petaltool decorator to ensure LangChain compatibility.
 """
 
-from unittest.mock import Mock
+import asyncio
+import unittest  # For mock.ANY
+from unittest.mock import Mock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
-from petal.core.decorators import petaltool
+from petal.core.decorators import petalmcp, petalmcp_tool, petaltool
 from petal.core.registry import ToolRegistry
+from petal.core.tool_factory import ToolFactory
+from pydantic import BaseModel
 
 
 class TestPetaltoolDecorator:
@@ -58,8 +62,6 @@ class TestPetaltoolDecorator:
 
     def test_petaltool_with_schema(self):
         """Test @petaltool with custom schema."""
-
-        from pydantic import BaseModel
 
         class SearchSchema(BaseModel):
             query: str
@@ -383,3 +385,217 @@ class TestPetaltoolDecorator:
             assert hasattr(tool_obj, "name")
             assert hasattr(tool_obj, "description")
             assert hasattr(tool_obj, "args_schema")
+
+
+class TestPetalMCPDecorators:
+    def test_petalmcp_registers_server_with_tool_factory(self):
+        """@petalmcp should call ToolFactory.add_mcp with correct args."""
+        with patch.object(ToolFactory, "add_mcp", autospec=True) as mock_add_mcp:
+            config = {
+                "url": {"endpoint": "http://localhost:8000/mcp", "meta": 123}
+            }  # object value for mypy
+
+            @petalmcp("test_server", config=config)
+            class TestServer:
+                pass
+
+            mock_add_mcp.assert_called_once_with(
+                unittest.mock.ANY, "test_server", mcp_config=config
+            )
+
+    def test_petalmcp_tool_registers_function_with_tool_factory(self):
+        """@petalmcp_tool should call ToolFactory.add with correct namespace."""
+        with patch.object(ToolFactory, "add", autospec=True) as mock_add:
+
+            @petalmcp_tool("mcp:myserver:mytool")
+            def mytool(x: int) -> int:
+                return x + 1
+
+            # Should register under the correct name
+            args, kwargs = mock_add.call_args
+            assert args[1] == "mcp:myserver:mytool"
+            assert callable(args[2])
+
+    @pytest.mark.asyncio
+    async def test_petalmcp_decorator_uses_official_mcp_client(self):
+        """@petalmcp should not create custom MCP client, but use ToolFactory.add_mcp (which uses MultiServerMCPClient)."""
+        with patch("langchain_mcp_adapters.client.MultiServerMCPClient", autospec=True):
+            config = {
+                "url": {"endpoint": "http://localhost:8000/mcp", "meta": 123}
+            }  # object value for mypy
+            tf = ToolFactory()
+            tf.add_mcp("test_server", mcp_config=config)
+            # Wait for the MCP loading to complete to avoid the warning
+            await tf.await_mcp_loaded("test_server")
+
+    def test_petalmcp_tool_duplicate_name_raises(self):
+        """@petalmcp_tool should raise if the tool name is already registered."""
+        tf = ToolFactory()
+
+        @petaltool
+        def dupe_tool(x: int) -> int:
+            """Duplicate tool for testing."""
+            return x
+
+        tf.add("mcp:dupe:tool", dupe_tool)
+        with (
+            patch.object(ToolFactory, "add", side_effect=KeyError("already exists")),
+            pytest.raises(KeyError),
+        ):
+
+            @petalmcp_tool("mcp:dupe:tool")
+            def dupe(x: int) -> int:
+                return x
+
+
+class TestToolFactoryErrorCases:
+    """Test error cases in ToolFactory.add() and ToolFactory.resolve() methods."""
+
+    def test_tool_factory_add_with_non_basetool_raises_typeerror(self):
+        """ToolFactory.add() should raise TypeError when adding non-BaseTool objects."""
+        tf = ToolFactory()
+
+        # Test with a regular function (not decorated with @petaltool)
+        def regular_function(x: int) -> int:
+            return x + 1
+
+        with pytest.raises(
+            TypeError,
+            match="Tool 'test_tool' must be decorated with @tool or @petaltool",
+        ):
+            tf.add("test_tool", regular_function)
+
+        # Test with a string
+        with pytest.raises(
+            TypeError,
+            match="Tool 'test_tool' must be decorated with @tool or @petaltool",
+        ):
+            tf.add("test_tool", "not a tool")
+
+        # Test with None
+        with pytest.raises(
+            TypeError,
+            match="Tool 'test_tool' must be decorated with @tool or @petaltool",
+        ):
+            tf.add("test_tool", None)
+
+        # Test with an integer
+        with pytest.raises(
+            TypeError,
+            match="Tool 'test_tool' must be decorated with @tool or @petaltool",
+        ):
+            tf.add("test_tool", 42)
+
+    def test_tool_factory_resolve_nonexistent_tool_raises_keyerror(self):
+        """ToolFactory.resolve() should raise KeyError for non-existent tools."""
+        tf = ToolFactory()
+
+        with pytest.raises(
+            KeyError, match="Tool 'nonexistent_tool' not found in registry."
+        ):
+            tf.resolve("nonexistent_tool")
+
+    @pytest.mark.asyncio
+    async def test_tool_factory_resolve_mcp_tool_still_loading_raises_keyerror(self):
+        tf = ToolFactory()
+        event = asyncio.Event()
+        tf._mcp_loaded["mcp:test_server"] = event
+        # Set the event so the coroutine completes and does not hang
+        event.set()
+        with pytest.raises(
+            KeyError, match="MCP tool 'mcp:test_server:tool' is still loading"
+        ):
+            tf.resolve("mcp:test_server:tool")
+
+    def test_tool_factory_resolve_mcp_tool_server_not_registered_raises_keyerror(self):
+        """ToolFactory.resolve() should raise KeyError for MCP tools with unregistered server."""
+        tf = ToolFactory()
+
+        with pytest.raises(
+            KeyError,
+            match="MCP tool 'mcp:unknown_server:tool' not found. Server 'unknown_server' has not been registered.",
+        ):
+            tf.resolve("mcp:unknown_server:tool")
+
+    def test_tool_factory_resolve_corrupted_registry_raises_typeerror(self):
+        """ToolFactory.resolve() should raise TypeError if registry contains non-BaseTool objects."""
+        tf = ToolFactory()
+
+        # Manually corrupt the registry with a non-BaseTool object
+        tf._registry["corrupted_tool"] = "not a BaseTool"  # type: ignore[assignment]
+
+        with pytest.raises(
+            TypeError, match="Tool 'corrupted_tool' is not a BaseTool instance"
+        ):
+            tf.resolve("corrupted_tool")
+
+    def test_tool_factory_add_mcp_without_config_raises_valueerror(self):
+        """ToolFactory.add_mcp() should raise ValueError when called without config or resolver."""
+        tf = ToolFactory()
+
+        with pytest.raises(
+            ValueError, match="mcp_config is required when resolver is None"
+        ):
+            tf.add_mcp("test_server")
+
+    def test_tool_factory_add_mcp_with_invalid_mcp_tool_name_raises_keyerror(self):
+        """ToolFactory.resolve() should handle MCP tools with invalid name format."""
+        tf = ToolFactory()
+
+        # Test with MCP tool name that doesn't have enough parts
+        with pytest.raises(KeyError, match="Tool 'mcp:invalid' not found in registry."):
+            tf.resolve("mcp:invalid")
+
+        # Test with MCP tool name that has too many parts but server not registered
+        with pytest.raises(
+            KeyError,
+            match="MCP tool 'mcp:test:tool:extra' not found. Server 'test' has not been registered.",
+        ):
+            tf.resolve("mcp:test:tool:extra")
+
+    @pytest.mark.asyncio
+    async def test_tool_factory_chaining_works_correctly(self, mcp_server_config):
+        tf = ToolFactory()
+
+        @petaltool
+        def test_tool(x: int) -> int:
+            """Test tool for chaining."""
+            return x + 1
+
+        result = tf.add("test_tool", test_tool)
+        assert result is tf
+        # Use the real MCP server fixture instead of mocking
+        result = tf.add_mcp("test_server", mcp_config=mcp_server_config)
+        assert result is tf
+        await tf.await_mcp_loaded("test_server")
+
+        # Verify that the MCP tools were loaded
+        tool_names = tf.list()
+        assert "mcp:test_server:add" in tool_names
+        assert "mcp:test_server:multiply" in tool_names
+
+    def test_tool_factory_list_returns_sorted_names(self):
+        """ToolFactory.list() should return sorted list of tool names."""
+        tf = ToolFactory()
+
+        @petaltool
+        def tool_c(x: int) -> int:
+            """Tool C for testing."""
+            return x
+
+        @petaltool
+        def tool_a(x: int) -> int:
+            """Tool A for testing."""
+            return x
+
+        @petaltool
+        def tool_b(x: int) -> int:
+            """Tool B for testing."""
+            return x
+
+        tf.add("tool_c", tool_c)
+        tf.add("tool_a", tool_a)
+        tf.add("tool_b", tool_b)
+
+        tool_list = tf.list()
+        assert tool_list == ["tool_a", "tool_b", "tool_c"]

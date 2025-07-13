@@ -1,6 +1,8 @@
 # All tools registered with ToolFactory must be async-friendly (either sync or async functions).
 import asyncio
-from typing import Any, Awaitable, Callable, Coroutine, Dict, List
+from typing import Any, Callable, Coroutine, Dict, List
+
+from langchain_core.tools import BaseTool
 
 
 class ToolFactory:
@@ -16,50 +18,52 @@ class ToolFactory:
         self._mcp_tasks: Dict[str, asyncio.Task[Any]] = {}
         self._mcp_loaded: Dict[str, asyncio.Event] = {}
 
-    def add(self, name: str, fn: Callable[..., Any]) -> "ToolFactory":
+    def add(self, name: str, fn: BaseTool) -> "ToolFactory":
         """
-        Register a tool function by name.
+        Register a tool by name. Must be a BaseTool instance (decorated with @tool or @petaltool).
 
         Args:
             name (str): Name to register the tool under.
-            fn (Callable): The tool function (sync or async).
+            fn (BaseTool): The tool (must be a BaseTool instance).
 
         Returns:
             ToolFactory: self (for chaining)
         """
+        if not isinstance(fn, BaseTool):
+            raise TypeError(
+                f"Tool '{name}' must be decorated with @tool or @petaltool and be a BaseTool instance. "
+                f"Got type: {type(fn)}."
+            )
         self._registry[name] = fn
         return self
 
-    def resolve(self, name: str) -> Callable[..., Awaitable[Any]]:
+    def resolve(self, name: str) -> BaseTool:
         """
-        Retrieve a tool function by name.
-        If the tool is an MCP tool that's still loading, wait for it to complete.
+        Retrieve a tool by name. Only BaseTool instances are supported.
 
         Args:
             name (str): The name of the tool.
 
         Returns:
-            Callable[..., Awaitable[Any]]: An async function that wraps the registered tool.
+            BaseTool: The registered tool.
 
         Raises:
             KeyError: If the tool is not found.
+            TypeError: If the registered object is not a BaseTool (should not happen).
         """
         # Check if this is an MCP tool that's still loading
         if name.startswith("mcp:") and name not in self._registry:
-            # Extract server name from tool name (format: mcp:server:tool)
             parts = name.split(":")
             if len(parts) >= 3:
                 server_name = parts[1]
                 namespace = f"mcp:{server_name}"
                 event = self._mcp_loaded.get(namespace)
                 if event:
-                    # Wait for MCP tools to load
                     asyncio.create_task(self._wait_for_mcp_and_resolve(name, event))
                     raise KeyError(
                         f"MCP tool '{name}' is still loading. Please wait for it to complete."
                     )
                 else:
-                    # MCP server hasn't been registered yet
                     raise KeyError(
                         f"MCP tool '{name}' not found. Server '{server_name}' has not been registered."
                     )
@@ -68,36 +72,11 @@ class ToolFactory:
             raise KeyError(f"Tool '{name}' not found in registry.")
 
         tool = self._registry[name]
-
-        # If it's already a LangChain tool (has invoke or ainvoke), return it directly
-        # LangGraph can handle LangChain tools natively
-        if hasattr(tool, "invoke") or hasattr(tool, "ainvoke"):
-            return tool
-
-        # Create a proper async wrapper that preserves the original tool's signature
-        import inspect
-        from functools import wraps
-
-        sig = inspect.signature(tool)
-
-        @wraps(tool)
-        async def async_wrapper(*args, **kwargs):
-            if asyncio.iscoroutinefunction(tool):
-                return await tool(*args, **kwargs)
-            else:
-                loop = asyncio.get_event_loop()
-                from functools import partial
-
-                return await loop.run_in_executor(None, partial(tool, *args, **kwargs))
-
-        async_wrapper.__signature__ = sig  # type: ignore
-        # Manually set metadata for LangChain/LangGraph compatibility
-        async_wrapper.name = getattr(tool, "__name__", "unknown")  # type: ignore
-        async_wrapper.__name__ = getattr(tool, "__name__", "unknown")
-        async_wrapper.description = getattr(tool, "__doc__", "No description")  # type: ignore
-        async_wrapper.__doc__ = getattr(tool, "__doc__", None)
-
-        return async_wrapper
+        if not isinstance(tool, BaseTool):
+            raise TypeError(
+                f"Tool '{name}' is not a BaseTool instance. All tools must be registered with @tool or @petaltool."
+            )
+        return tool
 
     async def _wait_for_mcp_and_resolve(self, name: str, event: asyncio.Event) -> None:
         """

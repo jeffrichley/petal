@@ -4,6 +4,7 @@ from langchain.tools import tool
 from langchain_core.tools import BaseTool
 
 from petal.core.registry import ToolRegistry
+from petal.core.tool_factory import ToolFactory
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -67,8 +68,8 @@ def petaltool(  # type: ignore[misc]
     ) -> BaseTool:
         registry = ToolRegistry()
         registry.add(tool_name, tool_obj)
-        tool_obj._petal_registered = True
-        tool_obj._original_func = func
+        tool_obj._petal_registered = True  # type: ignore[attr-defined]
+        tool_obj._original_func = func  # type: ignore[attr-defined]
         return tool_obj
 
     def _decorator(func: Callable) -> BaseTool:
@@ -104,40 +105,27 @@ def petaltool(  # type: ignore[misc]
         return _decorator
 
 
-@tool
-def petalmcp(_server_name: str):
+def petalmcp(server_name: str, config: dict):
     """
     Decorator for creating MCP server classes.
-
-    Args:
-        server_name: The name of the MCP server.
-
-    Returns:
-        Decorated class that will be registered as an MCP server.
+    Registers the server with ToolFactory.add_mcp using the official MCP client.
     """
 
     def decorator(cls):
-        # TODO: Implement MCP server registration
-        # This will be implemented in Task 1.3
+        ToolFactory().add_mcp(server_name, mcp_config=config)
         return cls
 
     return decorator
 
 
-def petalmcp_tool(_tool_name: str):
+def petalmcp_tool(tool_name: str):
     """
     Decorator for creating MCP tool functions.
-
-    Args:
-        tool_name: The full name of the MCP tool (e.g., "filesystem:list_files").
-
-    Returns:
-        Decorated function that will be registered as an MCP tool.
+    Registers the function as a tool under the mcp:server:tool namespace via ToolFactory.add.
     """
 
     def decorator(func):
-        # TODO: Implement MCP tool registration
-        # This will be implemented in Task 1.3
+        ToolFactory().add(tool_name, func)
         return func
 
     return decorator

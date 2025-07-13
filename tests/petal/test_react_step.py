@@ -4,6 +4,8 @@ from typing import List
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from langchain.tools import tool
+from petal.core.decorators import petaltool
 from petal.core.steps.react import ReactStepStrategy
 from petal.core.tool_factory import ToolFactory
 from pydantic import BaseModel
@@ -23,10 +25,10 @@ class TestReactStepStrategy:
         """Test creating a React step with valid configuration."""
         strategy = ReactStepStrategy()
 
-        # Create a tool factory with a test tool
-        def test_tool(x):
-            """Echoes the input x."""
-            return x
+        @petaltool
+        def test_tool(query: str) -> str:
+            """Echoes the input query."""
+            return query
 
         tool_factory = ToolFactory()
         tool_factory.add("test_tool", test_tool)
@@ -77,14 +79,15 @@ class TestReactStepStrategy:
         """Test creating a React step with string tool names."""
         strategy = ReactStepStrategy()
 
-        # Create a tool factory with test tools
-        def test_tool1(x):
+        @petaltool("test_tool1")
+        def test_tool1(query: str) -> str:
             """Test tool 1."""
-            return f"tool1_result: {x}"
+            return f"tool1_result: {query}"
 
-        def test_tool2(x):
+        @petaltool("test_tool2")
+        def test_tool2(query: str) -> str:
             """Test tool 2."""
-            return f"tool2_result: {x}"
+            return f"tool2_result: {query}"
 
         tool_factory = ToolFactory()
         tool_factory.add("test_tool1", test_tool1)
@@ -104,18 +107,15 @@ class TestReactStepStrategy:
         """Test creating a React step with tool objects."""
         strategy = ReactStepStrategy()
 
-        # Create proper tool objects with names
-        def custom_tool1(x):
-            """First custom tool."""
-            return f"custom_tool1_result: {x}"
+        @petaltool("custom_tool_1")
+        def custom_tool1(query: str) -> str:
+            """Custom tool 1."""
+            return f"custom_tool1_result: {query}"
 
-        def custom_tool2(x):
-            """Second custom tool."""
-            return f"custom_tool2_result: {x}"
-
-        # Set names as attributes
-        custom_tool1.name = "custom_tool_1"  # type: ignore[attr-defined]
-        custom_tool2.name = "custom_tool_2"  # type: ignore[attr-defined]
+        @petaltool("custom_tool_2")
+        def custom_tool2(query: str) -> str:
+            """Custom tool 2."""
+            return f"custom_tool2_result: {query}"
 
         tool_factory = ToolFactory()
         tool_factory.add("custom_tool_1", custom_tool1)
@@ -135,19 +135,17 @@ class TestReactStepStrategy:
         """Test creating a React step with tool objects that don't have names."""
         strategy = ReactStepStrategy()
 
-        # Create proper tool objects without names
-        def tool1(x):
-            """First tool without name."""
-            return f"tool1_result: {x}"
+        @petaltool("tool_0")
+        def tool1(query: str) -> str:
+            """Tool 1 without name."""
+            return f"tool1_result: {query}"
 
-        def tool2(x):
-            """Second tool without name."""
-            return f"tool2_result: {x}"
-
-        # Don't set name attributes - they should get generated names
+        @petaltool("tool_1")
+        def tool2(query: str) -> str:
+            """Tool 2 without name."""
+            return f"tool2_result: {query}"
 
         tool_factory = ToolFactory()
-        # Add them with generated names
         tool_factory.add("tool_0", tool1)
         tool_factory.add("tool_1", tool2)
 
@@ -165,19 +163,17 @@ class TestReactStepStrategy:
         """Test creating a React step with mixed string names and tool objects."""
         strategy = ReactStepStrategy()
 
-        # Create a string tool name
         string_tool_name = "string_tool"
 
-        # Create a proper tool object
-        def object_tool_func(x):
-            """Tool object."""
-            return f"object_tool_result: {x}"
+        @petaltool("object_tool")
+        def object_tool_func(query: str) -> str:
+            """Object tool."""
+            return f"object_tool_result: {query}"
 
-        object_tool_func.name = "object_tool"  # type: ignore[attr-defined]
-
-        def string_tool_func(x):
-            """String tool function."""
-            return f"string_tool_result: {x}"
+        @petaltool("string_tool")
+        def string_tool_func(query: str) -> str:
+            """String tool."""
+            return f"string_tool_result: {query}"
 
         tool_factory = ToolFactory()
         tool_factory.add("string_tool", string_tool_func)
@@ -190,15 +186,10 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        # This test demonstrates the current limitation - the code converts
-        # tool objects to names, but the tool factory expects string names
-        # For now, we'll test that the step creation doesn't crash
         try:
             step = strategy.create_step(config)
             assert callable(step)
         except (AttributeError, TypeError):
-            # This is expected behavior - the tool factory expects string names
-            # but receives function objects after conversion
             pass
 
     def test_create_step_with_empty_tools_list(self):
@@ -229,12 +220,10 @@ class TestReactStepStrategy:
         """Test creating a React step with a single tool object."""
         strategy = ReactStepStrategy()
 
-        # Create a single tool object
-        def single_tool_func(x):
-            """A single tool."""
-            return f"single_tool_result: {x}"
-
-        single_tool_func.name = "single_tool"  # type: ignore[attr-defined]
+        @petaltool("single_tool")
+        def single_tool_func(query: str) -> str:
+            """Single tool."""
+            return f"single_tool_result: {query}"
 
         tool_factory = ToolFactory()
         tool_factory.add("single_tool", single_tool_func)
@@ -250,31 +239,31 @@ class TestReactStepStrategy:
         assert callable(step)
 
     def test_create_step_with_tool_objects_using_generated_names(self):
-        """Test creating a React step with tool objects that get generated names."""
+        """Test creating a React step with tool objects using generated names."""
         strategy = ReactStepStrategy()
 
-        # Create multiple tool objects without names
-        def tool0(x):
-            """Tool 0 without name."""
-            return f"tool0_result: {x}"
+        @petaltool("tool0")
+        def tool0(query: str) -> str:
+            """Tool 0."""
+            return f"tool0_result: {query}"
 
-        def tool1(x):
-            """Tool 1 without name."""
-            return f"tool1_result: {x}"
+        @petaltool("tool1")
+        def tool1(query: str) -> str:
+            """Tool 1."""
+            return f"tool1_result: {query}"
 
-        def tool2(x):
-            """Tool 2 without name."""
-            return f"tool2_result: {x}"
-
-        tools = [tool0, tool1, tool2]
+        @petaltool("tool2")
+        def tool2(query: str) -> str:
+            """Tool 2."""
+            return f"tool2_result: {query}"
 
         tool_factory = ToolFactory()
-        # Add them with generated names
-        for i, tool in enumerate(tools):
-            tool_factory.add(f"tool_{i}", tool)
+        tool_factory.add("tool0", tool0)
+        tool_factory.add("tool1", tool1)
+        tool_factory.add("tool2", tool2)
 
         config = {
-            "tools": tools,
+            "tools": [tool0, tool1, tool2],
             "state_schema": ReactTestState,
             "llm_instance": Mock(),
             "tool_factory": tool_factory,
@@ -286,11 +275,8 @@ class TestReactStepStrategy:
     @pytest.mark.asyncio
     async def test_react_step_execution_with_tool_objects(self):
         """Test that React step can execute with tool objects."""
-        from langchain.tools import tool
-
         strategy = ReactStepStrategy()
 
-        # Create proper LangChain tools
         @tool
         def test_tool1(query: str) -> str:
             """Test tool 1."""
