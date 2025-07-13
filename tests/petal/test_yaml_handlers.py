@@ -599,5 +599,5 @@ def test_custom_node_config_parameters_validation():
             name="test",
             description="desc",
             function_path="module.func",
-            parameters=[1, 2, 3],
+            parameters=[1, 2, 3],  # type: ignore[arg-type]
         )

@@ -382,7 +382,7 @@ Return the state as a JSON object matching the schema structure.
         tool_node_with_obs = self._create_tool_node(tool_node)
         decide_next_step = self._create_decide_next_step()
 
-        graph = StateGraph(ReActLoopState)
+        graph = StateGraph(ReActLoopState)  # type: ignore[arg-type]
         graph.add_node("prompt", prompt_node)
         graph.add_node("llm", llm_node)
         graph.add_node("tools", tool_node_with_obs)
@@ -394,7 +394,7 @@ Return the state as a JSON object matching the schema structure.
 
         async def arun_agent(user_state: Any, *args, **kwargs):
             internal_state = self._user_to_internal(user_state)
-            result_dict = await compiled_graph.ainvoke(internal_state, *args, **kwargs)
+            result_dict = await compiled_graph.ainvoke(internal_state, *args, **kwargs)  # type: ignore[arg-type]
             # Convert the result dict back to ReActLoopState
             result_state = ReActLoopState(**result_dict)
             return await self._synthesize_final_state(result_state, user_state)
