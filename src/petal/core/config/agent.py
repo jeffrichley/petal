@@ -30,7 +30,14 @@ def validate_graph_type(v: str) -> str:
 
 def validate_provider(v: str) -> str:
     """Validate provider is supported."""
-    valid_providers = ["openai", "anthropic", "google", "cohere", "huggingface"]
+    valid_providers = [
+        "openai",
+        "anthropic",
+        "google",
+        "cohere",
+        "huggingface",
+        "ollama",
+    ]
     if v not in valid_providers:
         raise ValueError(f"provider must be one of {valid_providers}")
     return v

@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "langchain>=0.3.26",
     "langchain-mcp-adapters>=0.1.8",
+    "langchain-ollama>=0.3.4",
     "langchain-openai>=0.3.27",
     "langgraph>=0.5.1",
     "pre-commit>=4.2.0",

@@ -80,6 +80,31 @@ class LLMTypes:
     COHERE_COMMAND_CREATIVE = PreconfiguredLLMConfig(
         provider="cohere", model="command", temperature=0.7, max_tokens=8000
     )
+    # Ollama configurations (local LLM support)
+    OLLAMA_LLAMA2 = PreconfiguredLLMConfig(
+        provider="ollama", model="llama2", temperature=0.0, max_tokens=8000
+    )
+    OLLAMA_LLAMA2_CREATIVE = PreconfiguredLLMConfig(
+        provider="ollama", model="llama2", temperature=0.7, max_tokens=8000
+    )
+    OLLAMA_MISTRAL = PreconfiguredLLMConfig(
+        provider="ollama", model="mistral", temperature=0.0, max_tokens=8000
+    )
+    OLLAMA_MISTRAL_CREATIVE = PreconfiguredLLMConfig(
+        provider="ollama", model="mistral", temperature=0.7, max_tokens=8000
+    )
+    OLLAMA_CODESTRAL = PreconfiguredLLMConfig(
+        provider="ollama", model="codestral", temperature=0.0, max_tokens=8000
+    )
+    OLLAMA_CODESTRAL_CREATIVE = PreconfiguredLLMConfig(
+        provider="ollama", model="codestral", temperature=0.7, max_tokens=8000
+    )
+    OLLAMA_NEURAL_CHAT = PreconfiguredLLMConfig(
+        provider="ollama", model="neural-chat", temperature=0.0, max_tokens=8000
+    )
+    OLLAMA_NEURAL_CHAT_CREATIVE = PreconfiguredLLMConfig(
+        provider="ollama", model="neural-chat", temperature=0.7, max_tokens=8000
+    )
 
     @classmethod
     def create_custom(

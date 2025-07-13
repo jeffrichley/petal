@@ -37,6 +37,9 @@ It's designed to help you create powerful, discoverable agents and tools with mi
 - 🎯 **Named Parameter LLM Configuration**
   Use `with_llm(provider, model, temperature=0.0)` instead of magic dictionary keys.
 
+- 🏠 **Local LLM Support**
+  Run local models via Ollama with the same interface as cloud providers.
+
 - 💬 **System Prompt Support**
   Add system prompts with state variable interpolation for dynamic behavior.
 
@@ -50,6 +53,15 @@ source .venv/bin/activate
 uv pip install -e ".[dev]"
 ```
 
+### Local LLM Setup (Optional)
+
+To use local LLMs via Ollama:
+
+1. **Install Ollama**: [https://ollama.ai/](https://ollama.ai/)
+2. **Pull a model**: `ollama pull llama2`
+3. **Start Ollama**: `ollama serve`
+4. **Test the demo**: `python examples/ollama_demo.py`
+
 ### Simple Agent with AgentFactory
 
 ```python
@@ -60,6 +72,30 @@ agent = (
     .with_chat(
         prompt_template="Hello {name}! How can I help you today?",
         system_prompt="You are a helpful and friendly assistant."
+    )
+    .build()
+)
+
+result = await agent.arun({"name": "Alice", "messages": []})
+print(result["messages"][-1].content)
+```
+
+### Local LLM with Ollama
+
+```python
+from petal.core.factory import AgentFactory, DefaultState
+
+# Use local LLM via Ollama
+agent = (
+    AgentFactory(DefaultState)
+    .with_chat(
+        prompt_template="Hello {name}! How can I help you today?",
+        system_prompt="You are a helpful and friendly assistant.",
+        llm_config={
+            "provider": "ollama",
+            "model": "llama2",
+            "temperature": 0.7,
+        }
     )
     .build()
 )

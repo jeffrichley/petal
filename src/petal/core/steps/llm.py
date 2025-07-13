@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 from langchain.chat_models.base import BaseChatModel
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 from petal.core.steps.base import StepStrategy
@@ -111,6 +112,12 @@ class LLMStep:
         """Create LLM instance for the specified provider."""
         if provider == "openai":
             return ChatOpenAI(**llm_params)
+        elif provider == "ollama":
+            # For Ollama, we need to handle the base_url parameter specially
+            # Ollama typically runs on localhost:11434
+            if "base_url" not in llm_params:
+                llm_params["base_url"] = "http://localhost:11434"
+            return ChatOllama(**llm_params)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 
