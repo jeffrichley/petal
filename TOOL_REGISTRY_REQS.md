@@ -372,10 +372,10 @@ Raise KeyError
 - [x] Add metadata extraction (docstring, type hints)
 - [x] Integrate with ToolRegistry singleton
 - [x] Write decorator tests
-- [ ] Implement `@petalmcp` class decorator for MCP servers
-- [ ] Implement `@petalmcp_tool` function decorator for MCP tools
-- [ ] Add MCP server registration and tool resolution
-- [ ] Write MCP decorator tests
+- [x] Implement `@petalmcp` class decorator for MCP servers
+- [x] Implement `@petalmcp_tool` function decorator for MCP tools
+- [x] Add MCP server registration and tool resolution
+- [x] Write MCP decorator tests
 
 #### Task 1.4: Refactoring and Test/Lint Improvements
 - [x] Remove legacy wrapper logic from ToolRegistry, only accept/return BaseTool
@@ -503,7 +503,7 @@ Raise KeyError
 #### Task 5.3: Backward Compatibility
 - [ ] Test existing functionality
 - [ ] Validate ToolFactory compatibility
-- [ ] Test MCP integration
+- [x] Test MCP integration
 - [ ] Verify agent examples work
 - [ ] Update migration guide
 
@@ -533,20 +533,20 @@ Raise KeyError
 **Goal**: Establish the foundation for lazy discovery
 
 **Tasks to Complete:**
-- [ ] **Task 1.1**: Create Singleton ToolRegistry
+- [x] **Task 1.1**: Create Singleton ToolRegistry
   - Implement singleton pattern with thread safety
   - Add basic registry operations (add, resolve, list)
   - Add discovery cache mechanism
   - Write comprehensive unit tests
 
-- [ ] **Task 1.2**: Implement Discovery Strategy Base
+- [x] **Task 1.2**: Implement Discovery Strategy Base
   - Create DiscoveryStrategy abstract base class
   - Define discovery interface
   - Add strategy registration mechanism
   - Implement discovery chain execution
   - Write tests for strategy pattern
 
-- [ ] **Task 1.3**: Create Tool Decorators
+- [x] **Task 1.3**: Create Tool Decorators
   - Implement `@petaltool` decorator
   - Implement `@petalmcp` class decorator
   - Implement `@petalmcp_tool` function decorator
