@@ -389,11 +389,11 @@ Raise KeyError
 ### Phase 2: Discovery Strategies
 
 #### Task 2.1: Decorator Discovery Strategy
-- [ ] Implement `DecoratorDiscovery` strategy
-- [ ] Add module scanning functionality
-- [ ] Implement module caching
-- [ ] Handle namespace support
-- [ ] Write comprehensive tests
+- [x] Implement `DecoratorDiscovery` strategy
+- [x] Add module scanning functionality (now uses importlib/vars for best practice, pythonic, and warning-free scanning)
+- [x] Implement module caching
+- [x] Handle namespace support
+- [x] Write comprehensive tests
 
 #### Task 2.2: Config Discovery Strategy
 - [ ] Implement `ConfigDiscovery` strategy
@@ -564,9 +564,9 @@ Raise KeyError
 **Goal**: Implement all discovery strategies
 
 **Tasks to Complete:**
-- [ ] **Task 2.1**: Decorator Discovery Strategy
+- [x] **Task 2.1**: Decorator Discovery Strategy
   - Implement DecoratorDiscovery strategy
-  - Add module scanning functionality
+  - Add module scanning functionality (now uses importlib/vars for best practice, pythonic, and warning-free scanning)
   - Implement module caching
   - Handle namespace support
   - Write comprehensive tests

@@ -463,28 +463,28 @@ class TestToolFactoryErrorCases:
             TypeError,
             match="Tool 'test_tool' must be decorated with @tool or @petaltool",
         ):
-            tf.add("test_tool", regular_function)
+            tf.add("test_tool", regular_function)  # type: ignore[arg-type]
 
         # Test with a string
         with pytest.raises(
             TypeError,
             match="Tool 'test_tool' must be decorated with @tool or @petaltool",
         ):
-            tf.add("test_tool", "not a tool")
+            tf.add("test_tool", "not a tool")  # type: ignore[arg-type]
 
         # Test with None
         with pytest.raises(
             TypeError,
             match="Tool 'test_tool' must be decorated with @tool or @petaltool",
         ):
-            tf.add("test_tool", None)
+            tf.add("test_tool", None)  # type: ignore[arg-type]
 
         # Test with an integer
         with pytest.raises(
             TypeError,
             match="Tool 'test_tool' must be decorated with @tool or @petaltool",
         ):
-            tf.add("test_tool", 42)
+            tf.add("test_tool", 42)  # type: ignore[arg-type]
 
     def test_tool_factory_resolve_nonexistent_tool_raises_keyerror(self):
         """ToolFactory.resolve() should raise KeyError for non-existent tools."""
