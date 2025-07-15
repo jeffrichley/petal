@@ -405,11 +405,11 @@ Raise KeyError
 - [x] Write config parsing tests
 
 #### Task 2.3: Folder Discovery Strategy
-- [ ] Implement `FolderDiscovery` strategy
-- [ ] Add default folder scanning
-- [ ] Support custom folder paths
-- [ ] Handle file pattern matching
-- [ ] Write folder scanning tests
+- [x] Implement `FolderDiscovery` strategy
+- [x] Add default folder scanning
+- [x] Support custom folder paths
+- [x] Handle file pattern matching
+- [x] Write folder scanning tests
 
 #### Task 2.4: MCP Discovery Integration
 - [ ] Integrate existing MCP functionality
@@ -580,7 +580,7 @@ Raise KeyError
   - Add config file caching
   - Write config parsing tests
 
-- [ ] **Task 2.3**: Folder Discovery Strategy
+- [x] **Task 2.3**: Folder Discovery Strategy
   - Implement FolderDiscovery strategy
   - Add default folder scanning
   - Support custom folder paths

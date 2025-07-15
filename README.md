@@ -21,6 +21,7 @@ It's designed to help you create powerful, discoverable agents and tools with mi
 
 - 🧠 **Tool & MCP Discovery**
   Automatically register local and external tools using a configurable registry.
+  Includes folder-based scanning for @petaltool and @tool functions.
 
 - 🏗️ **LangGraph Integration**
   Agents are directly runnable as LangGraph nodes with native support for state merging and memory.
