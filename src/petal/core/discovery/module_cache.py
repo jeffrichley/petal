@@ -74,23 +74,28 @@ class ModuleCache:
 
     def _is_decorated_tool(self, obj: Any) -> bool:
         """Check if an object is a decorated tool."""
-        # Check if it's a function and has the petaltool metadata
-        if not callable(obj):
-            return False
+        # Check if it's a BaseTool instance (from @petaltool or @tool)
+        if isinstance(obj, BaseTool):
+            return True
 
-        # Look for petaltool metadata
-        return hasattr(obj, "_petaltool_metadata")
+        # Legacy check for _petaltool_metadata (for backward compatibility)
+        return callable(obj) and hasattr(obj, "_petaltool_metadata")
 
     def _extract_tool_name(self, obj: Any, default_name: str) -> Optional[str]:
         """Extract the tool name from a decorated function."""
-        if not hasattr(obj, "_petaltool_metadata"):
-            return None
+        # For BaseTool instances (from @petaltool or @tool)
+        if isinstance(obj, BaseTool):
+            return obj.name
 
-        metadata = obj._petaltool_metadata
-        # Handle case where metadata exists but is empty or doesn't have 'name'
-        if not metadata or not isinstance(metadata, dict):
-            return default_name
-        return metadata.get("name", default_name)
+        # Legacy check for _petaltool_metadata
+        if hasattr(obj, "_petaltool_metadata"):
+            metadata = obj._petaltool_metadata
+            # Handle case where metadata exists but is empty or doesn't have 'name'
+            if not metadata or not isinstance(metadata, dict):
+                return default_name
+            return metadata.get("name", default_name)
+
+        return None
 
     def clear_cache(self) -> None:
         """Clear the module cache for testing."""

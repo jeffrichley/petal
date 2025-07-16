@@ -1,11 +1,24 @@
 """Tests for the plugin system."""
 
+import os
+import tempfile
 from typing import Any, Dict, Type
-from unittest.mock import Mock, patch
 
 import pytest
 from petal.core.plugins.base import PluginManager, StepPlugin
 from petal.core.steps.base import StepStrategy
+
+
+@pytest.fixture
+def real_strategy():
+    class _RealStrategy(StepStrategy):
+        def create_step(self, _config: Dict[str, Any]):
+            return lambda x: f"processed_{x}"
+
+        def get_node_name(self, index: int) -> str:
+            return f"real_step_{index}"
+
+    return _RealStrategy
 
 
 class TestStepPlugin:
@@ -65,7 +78,7 @@ class TestPluginManager:
         manager = PluginManager()
         assert manager._plugins == {}
 
-    def test_register_plugin(self):
+    def test_register_plugin(self, real_strategy):
         """Test registering a plugin."""
         manager = PluginManager()
 
@@ -74,7 +87,7 @@ class TestPluginManager:
                 return "test"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return real_strategy
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {}
@@ -85,7 +98,7 @@ class TestPluginManager:
         assert "test" in manager._plugins
         assert manager._plugins["test"] == plugin
 
-    def test_get_plugin_success(self):
+    def test_get_plugin_success(self, real_strategy):
         """Test successfully retrieving a registered plugin."""
         manager = PluginManager()
 
@@ -94,7 +107,7 @@ class TestPluginManager:
                 return "test"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return real_strategy
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {}
@@ -112,16 +125,34 @@ class TestPluginManager:
         with pytest.raises(ValueError, match="Plugin not found: nonexistent"):
             manager.get_plugin("nonexistent")
 
-    def test_register_duplicate_plugin(self):
+    def test_register_duplicate_plugin(self):  # noqa: C901
         """Test that registering duplicate plugin overwrites the old one."""
         manager = PluginManager()
+
+        class RealStrategy1(StepStrategy):
+            """First strategy implementation."""
+
+            def create_step(self, _config: Dict[str, Any]):
+                return lambda x: f"version1_{x}"
+
+            def get_node_name(self, index: int) -> str:
+                return f"step_v1_{index}"
+
+        class RealStrategy2(StepStrategy):
+            """Second strategy implementation."""
+
+            def create_step(self, _config: Dict[str, Any]):
+                return lambda x: f"version2_{x}"
+
+            def get_node_name(self, index: int) -> str:
+                return f"step_v2_{index}"
 
         class MockPlugin1(StepPlugin):
             def get_name(self) -> str:
                 return "test"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return RealStrategy1
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {"version": 1}
@@ -131,7 +162,7 @@ class TestPluginManager:
                 return "test"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return RealStrategy2
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {"version": 2}
@@ -145,71 +176,226 @@ class TestPluginManager:
         manager.register(plugin2)
         assert manager.get_plugin("test").get_config_schema()["version"] == 2
 
-    @patch("importlib.import_module")
-    def test_discover_plugins_success(self, mock_import):
-        """Test successful plugin discovery."""
+    def test_discover_plugins_with_real_module(self):
+        """Test plugin discovery with a real temporary module."""
         manager = PluginManager()
 
-        class MockPlugin1(StepPlugin):
-            def get_name(self) -> str:
-                return "plugin1"
+        # Create a temporary module with real plugins
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create the module directory
+            module_dir = os.path.join(temp_dir, "test_plugin_package")
+            os.makedirs(module_dir)
 
-            def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+            # Create __init__.py with plugins
+            init_content = '''
+"""Test plugin package."""
 
-            def get_config_schema(self) -> Dict[str, Any]:
-                return {}
+from petal.core.plugins.base import StepPlugin
+from petal.core.steps.base import StepStrategy
 
-        class MockPlugin2(StepPlugin):
-            def get_name(self) -> str:
-                return "plugin2"
 
-            def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+class TestStrategy(StepStrategy):
+    """Test strategy implementation."""
 
-            def get_config_schema(self) -> Dict[str, Any]:
-                return {}
+    def create_step(self, config):
+        return lambda x: f"test_processed_{x}"
 
-        # Mock the imported module
-        mock_module = Mock()
-        mock_module.PLUGINS = [MockPlugin1(), MockPlugin2()]
-        mock_import.return_value = mock_module
+    def get_node_name(self, index):
+        return f"test_step_{index}"
 
-        manager.discover("test_package")
 
-        assert "plugin1" in manager._plugins
-        assert "plugin2" in manager._plugins
+class TestPlugin1(StepPlugin):
+    """First test plugin."""
 
-    @patch("importlib.import_module")
-    def test_discover_plugins_no_plugins_attribute(self, mock_import):
+    def get_name(self):
+        return "test_plugin_1"
+
+    def get_strategy(self):
+        return TestStrategy
+
+    def get_config_schema(self):
+        return {"type": "test1"}
+
+
+class TestPlugin2(StepPlugin):
+    """Second test plugin."""
+
+    def get_name(self):
+        return "test_plugin_2"
+
+    def get_strategy(self):
+        return TestStrategy
+
+    def get_config_schema(self):
+        return {"type": "test2"}
+
+
+PLUGINS = [TestPlugin1(), TestPlugin2()]
+'''
+
+            with open(os.path.join(module_dir, "__init__.py"), "w") as f:
+                f.write(init_content)
+
+            # Add the temp directory to Python path and discover plugins
+            import sys
+
+            sys.path.insert(0, temp_dir)
+
+            try:
+                manager.discover("test_plugin_package")
+
+                # Verify plugins were discovered and registered
+                assert "test_plugin_1" in manager._plugins
+                assert "test_plugin_2" in manager._plugins
+
+                # Test that the plugins work correctly
+                plugin1 = manager.get_plugin("test_plugin_1")
+                plugin2 = manager.get_plugin("test_plugin_2")
+
+                assert plugin1.get_name() == "test_plugin_1"
+                assert plugin2.get_name() == "test_plugin_2"
+
+                # Test strategy integration
+                strategy1 = plugin1.get_strategy()
+                strategy2 = plugin2.get_strategy()
+
+                assert strategy1 == strategy2  # Same strategy class
+
+                # Test actual step creation
+                step = strategy1().create_step({})
+                result = step("hello")
+                assert result == "test_processed_hello"
+
+                # Test node name generation
+                node_name = strategy1().get_node_name(0)
+                assert node_name == "test_step_0"
+
+            finally:
+                # Clean up
+                sys.path.remove(temp_dir)
+
+    def test_discover_plugins_no_plugins_attribute(self):
         """Test discovery when package has no PLUGINS attribute."""
         manager = PluginManager()
 
-        # Mock the imported module without PLUGINS attribute
-        mock_module = Mock()
-        del mock_module.PLUGINS
-        mock_import.return_value = mock_module
+        # Create a temporary module without PLUGINS attribute
+        with tempfile.TemporaryDirectory() as temp_dir:
+            module_dir = os.path.join(temp_dir, "test_empty_package")
+            os.makedirs(module_dir)
 
-        # Should not raise an error
-        manager.discover("test_package")
+            # Create __init__.py without PLUGINS
+            init_content = '''
+"""Test package without plugins."""
 
-        # No plugins should be registered
-        assert len(manager._plugins) == 0
+def some_function():
+    return "hello"
+'''
 
-    @patch("importlib.import_module")
-    def test_discover_plugins_import_error(self, mock_import):
+            with open(os.path.join(module_dir, "__init__.py"), "w") as f:
+                f.write(init_content)
+
+            import sys
+
+            sys.path.insert(0, temp_dir)
+
+            try:
+                # Should not raise an error
+                manager.discover("test_empty_package")
+
+                # No plugins should be registered
+                assert len(manager._plugins) == 0
+
+            finally:
+                sys.path.remove(temp_dir)
+
+    def test_discover_plugins_import_error(self):
         """Test discovery when package import fails."""
         manager = PluginManager()
 
-        mock_import.side_effect = ImportError("Package not found")
-
-        # Should not raise an error
-        manager.discover("nonexistent_package")
+        # Try to discover a non-existent package
+        manager.discover("definitely_nonexistent_package_12345")
 
         # No plugins should be registered
         assert len(manager._plugins) == 0
 
-    def test_thread_safety(self):
+    def test_discover_plugins_with_mixed_content(self):
+        """Test discovery when PLUGINS list contains non-StepPlugin items."""
+        manager = PluginManager()
+
+        # Create a temporary module with mixed content in PLUGINS
+        with tempfile.TemporaryDirectory() as temp_dir:
+            module_dir = os.path.join(temp_dir, "test_mixed_package")
+            os.makedirs(module_dir)
+
+            # Create __init__.py with mixed content
+            init_content = '''
+"""Test package with mixed PLUGINS content."""
+
+from petal.core.plugins.base import StepPlugin
+from petal.core.steps.base import StepStrategy
+
+
+class TestStrategy(StepStrategy):
+    """Test strategy implementation."""
+
+    def create_step(self, config):
+        return lambda x: f"mixed_processed_{x}"
+
+    def get_node_name(self, index):
+        return f"mixed_step_{index}"
+
+
+class ValidPlugin(StepPlugin):
+    """Valid plugin implementation."""
+
+    def get_name(self):
+        return "valid_plugin"
+
+    def get_strategy(self):
+        return TestStrategy
+
+    def get_config_schema(self):
+        return {"type": "valid"}
+
+
+# Mixed content - only ValidPlugin should be registered
+PLUGINS = [
+    ValidPlugin(),
+    "not_a_plugin",  # String, not a StepPlugin
+    42,              # Integer, not a StepPlugin
+    None,            # None, not a StepPlugin
+    {"key": "value"}, # Dict, not a StepPlugin
+]
+'''
+
+            with open(os.path.join(module_dir, "__init__.py"), "w") as f:
+                f.write(init_content)
+
+            import sys
+
+            sys.path.insert(0, temp_dir)
+
+            try:
+                manager.discover("test_mixed_package")
+
+                # Only the valid plugin should be registered
+                assert len(manager._plugins) == 1
+                assert "valid_plugin" in manager._plugins
+
+                # Verify the plugin works correctly
+                plugin = manager.get_plugin("valid_plugin")
+                assert plugin.get_name() == "valid_plugin"
+
+                # Test strategy integration
+                strategy = plugin.get_strategy()
+                step = strategy().create_step({})
+                result = step("hello")
+                assert result == "mixed_processed_hello"
+
+            finally:
+                sys.path.remove(temp_dir)
+
+    def test_thread_safety(self, real_strategy):
         """Test that plugin registration is thread-safe."""
         import threading
 
@@ -220,11 +406,13 @@ class TestPluginManager:
             """Register a plugin in a separate thread."""
 
             class MockPlugin(StepPlugin):
+                """Mock plugin for thread safety testing."""
+
                 def get_name(self) -> str:
                     return plugin_name
 
                 def get_strategy(self) -> Type[StepStrategy]:
-                    return Mock()
+                    return real_strategy
 
                 def get_config_schema(self) -> Dict[str, Any]:
                     return {}
@@ -252,7 +440,7 @@ class TestPluginManager:
         for i in range(10):
             assert f"plugin_{i}" in manager._plugins
 
-    def test_list_plugins(self):
+    def test_list_plugins(self, real_strategy):
         """Test listing all registered plugins."""
         manager = PluginManager()
 
@@ -261,7 +449,7 @@ class TestPluginManager:
                 return "plugin1"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return real_strategy
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {}
@@ -271,7 +459,7 @@ class TestPluginManager:
                 return "plugin2"
 
             def get_strategy(self) -> Type[StepStrategy]:
-                return Mock()
+                return real_strategy
 
             def get_config_schema(self) -> Dict[str, Any]:
                 return {}

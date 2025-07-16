@@ -1,7 +1,7 @@
 # math_server.py
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
-mcp = FastMCP("Math")
+mcp: FastMCP = FastMCP("Math")
 
 
 @mcp.tool()
