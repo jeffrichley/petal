@@ -24,7 +24,7 @@ async def run_demo():
 
     # Build agent with the new, more Pythonic API
     builder = AgentBuilder(DemoState)
-    agent = (
+    agent = await (
         builder.with_step(
             "llm", prompt_template="User says: {user_input}. Respond helpfully."
         )

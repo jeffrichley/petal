@@ -62,17 +62,20 @@ async def main():
     print("🤖 Petal AgentFactory Tool Integration Demo")
     print("=" * 50)
 
-    # Create factory and register tools
+    # Create factory and register tools using ToolRegistry singleton
     factory = AgentFactory(ChatState)
-    factory._tool_factory.add("calculator", calculator)
-    factory._tool_factory.add("weather_tool", weather_tool)
-    factory._tool_factory.add("echo_tool", echo_tool)
+    from petal.core.registry import ToolRegistry
+
+    registry = ToolRegistry()
+    registry.add("calculator", calculator)
+    registry.add("weather_tool", weather_tool)
+    registry.add("echo_tool", echo_tool)
 
     print("\n1️⃣ Basic Tool Usage")
     print("-" * 30)
 
     # Build agent with tools using LLM types
-    agent = (
+    agent = await (
         factory.with_chat(llm_config={"provider": "openai", "model": "gpt-4o-mini"})
         .with_tools(["calculator", "weather_tool"])
         .build()
@@ -111,7 +114,7 @@ async def main():
     print("-" * 35)
 
     # Build agent with ReAct tools and scratchpad
-    react_agent = (
+    react_agent = await (
         factory.with_chat(llm_config={"provider": "openai", "model": "gpt-4o-mini"})
         .with_react_tools([echo_tool], scratchpad_key="observations")
         .build()
@@ -148,7 +151,7 @@ async def main():
     print("-" * 25)
 
     # Show how to use tools directly without registration
-    direct_agent = (
+    direct_agent = await (
         AgentFactory(ChatState)
         .with_chat(llm_config={"provider": "openai", "model": "gpt-4o-mini"})
         .with_tools([calculator])  # Direct tool object
@@ -164,9 +167,9 @@ async def main():
     print("\n4️⃣ Tool Registration and Resolution")
     print("-" * 35)
 
-    # Show tool factory capabilities
+    # Show tool registry capabilities
     print("Registered tools:")
-    for tool_name in factory._tool_factory.list():
+    for tool_name in registry.list():
         print(f"  • {tool_name}")
 
     print("\n✅ Tool Integration Demo Complete!")

@@ -148,7 +148,7 @@ class TestLLMTypesIntegration:
             messages: Annotated[list, add_messages]
             test_field: str
 
-        agent = (
+        agent = await (
             AgentFactory(TestState)
             .with_chat(
                 llm_config=LLMTypes.OPENAI_GPT4O_MINI, prompt_template="Test prompt"
@@ -166,7 +166,7 @@ class TestLLMTypesIntegration:
             messages: Annotated[list, add_messages]
             test_field: str
 
-        agent = (
+        agent = await (
             AgentFactory(TestState)
             .with_chat(
                 llm_config=LLMTypes.OPENAI_GPT4O_CREATIVE,
@@ -185,7 +185,7 @@ class TestLLMTypesIntegration:
             messages: Annotated[list, add_messages]
             test_field: str
 
-        agent = (
+        agent = await (
             AgentFactory(TestState)
             .with_chat(
                 llm_config=LLMTypes.OPENAI_GPT4O_ANALYTICAL,
@@ -205,9 +205,9 @@ class TestLLMTypesIntegration:
             test_field: str
 
         custom_config = LLMTypes.create_custom(
-            "openai", "gpt-4o", temperature=0.3, max_tokens=8000
+            provider="openai", model="gpt-4o", temperature=0.3, max_tokens=8000
         )
-        agent = (
+        agent = await (
             AgentFactory(TestState)
             .with_chat(
                 llm_config=custom_config, prompt_template="Custom configuration test"

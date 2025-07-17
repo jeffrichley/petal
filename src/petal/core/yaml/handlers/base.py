@@ -10,7 +10,7 @@ class NodeConfigHandler(ABC):
     """Abstract base class for node configuration handlers."""
 
     @abstractmethod
-    def create_node(self, config: BaseNodeConfig) -> Callable:
+    async def create_node(self, config: BaseNodeConfig) -> Callable:
         """Create a runnable node from configuration.
 
         Args:

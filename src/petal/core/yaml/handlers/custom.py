@@ -10,7 +10,7 @@ from petal.core.yaml.handlers.base import NodeConfigHandler
 class CustomNodeHandler(NodeConfigHandler):
     """Handler for creating Custom nodes from YAML configuration."""
 
-    def create_node(self, config: BaseNodeConfig) -> Callable:
+    async def create_node(self, config: BaseNodeConfig) -> Callable:
         """Create a custom node from configuration.
 
         Args:

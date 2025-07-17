@@ -135,21 +135,23 @@ async def main():
 
     # Build the agent with AgentFactory
     agent = (
-        AgentFactory(GreetingState)
-        # Step 1: Select personality
-        .add(select_personality)
-        # Step 2: Generate greeting with personality-based system prompt
-        .with_chat(
-            prompt_template="Greet {user_name} in a friendly way!",
-            system_prompt="You are a helpful assistant that speaks like a {personality}. Use your personality in your greeting!",
+        await (
+            AgentFactory(GreetingState)
+            # Step 1: Select personality
+            .add(select_personality)
+            # Step 2: Generate greeting with personality-based system prompt
+            .with_chat(
+                prompt_template="Greet {user_name} in a friendly way!",
+                system_prompt="You are a helpful assistant that speaks like a {personality}. Use your personality in your greeting!",
+            )
+            # Step 3: Select topic for joke
+            .add(select_topic)
+            # Step 4: Tell a joke about the topic
+            .with_chat(
+                prompt_template="Tell a funny joke about {topic}. Make it entertaining!",
+                system_prompt="You are a {personality} who tells great jokes. Keep your personality in the joke!",
+            ).build()
         )
-        # Step 3: Select topic for joke
-        .add(select_topic)
-        # Step 4: Tell a joke about the topic
-        .with_chat(
-            prompt_template="Tell a funny joke about {topic}. Make it entertaining!",
-            system_prompt="You are a {personality} who tells great jokes. Keep your personality in the joke!",
-        ).build()
     )
 
     # Show running progress

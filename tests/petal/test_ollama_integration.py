@@ -126,7 +126,7 @@ class TestOllamaIntegration:
             mock_llm.ainvoke.return_value = mock_response
 
             # Create agent with Ollama
-            agent = (
+            agent = await (
                 AgentFactory(TestState)
                 .with_chat(
                     prompt_template="User says: {user_input}",

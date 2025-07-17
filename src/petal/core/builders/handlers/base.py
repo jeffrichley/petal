@@ -35,7 +35,7 @@ class StepConfigHandler(ABC):
         """
 
     @abstractmethod
-    def handle(self, config: Dict[str, Any]) -> Callable:
+    async def handle(self, config: Dict[str, Any]) -> Callable:
         """
         Handle step configuration and create a callable step.
 
@@ -49,7 +49,7 @@ class StepConfigHandler(ABC):
             ValueError: If the configuration is invalid for this handler
         """
 
-    def process(self, step_type: str, config: Dict[str, Any]) -> Callable:
+    async def process(self, step_type: str, config: Dict[str, Any]) -> Callable:
         """
         Process configuration through the chain of responsibility.
 
@@ -69,8 +69,8 @@ class StepConfigHandler(ABC):
             ValueError: If no handler in the chain can handle the step type
         """
         if self.can_handle(step_type):
-            return self.handle(config)
+            return await self.handle(config)
         elif self.next_handler:
-            return self.next_handler.process(step_type, config)
+            return await self.next_handler.process(step_type, config)
         else:
             raise ValueError(f"No handler found for step type: {step_type}")

@@ -22,7 +22,7 @@ class ReactNodeHandler(NodeConfigHandler):
             if mcp_config:
                 self.tool_factory.add_mcp(server_name, mcp_config=mcp_config)
 
-    def create_node(self, config: BaseNodeConfig) -> Callable:
+    async def create_node(self, config: BaseNodeConfig) -> Callable:
         """Create a React node from configuration.
 
         Args:
@@ -47,7 +47,7 @@ class ReactNodeHandler(NodeConfigHandler):
         ]
         # Convert config to step config format
         step_config = self._config_to_step_config(react_config, resolved_tools)
-        return self.registry.create_step(step_config)
+        return await self.registry.create_step(step_config)
 
     def _config_to_step_config(self, config: ReactNodeConfig, resolved_tools):
         """Convert ReactNodeConfig to StepConfig format."""

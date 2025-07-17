@@ -55,23 +55,29 @@ tool_factory.add("get_weather", get_weather)
 console.print("[bold yellow]🤖 Initializing LLM...[/bold yellow]")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
+
 # --- Build ReAct agent using AgentFactory ---
-console.print("[bold yellow]🔧 Building ReAct agent with AgentFactory...[/bold yellow]")
-agent = (
-    AgentFactory(CustomState)
-    .with_react_loop(["get_weather"], llm_instance=llm, tool_factory=tool_factory)
-    .with_system_prompt("You are a helpful assistant. Address the user as {user_name}.")
-    .with_structured_output(CustomState)
-    .build()
-)
-console.print(
-    "[bold green]✅ ReAct agent built successfully with AgentFactory![/bold green]"
-)
-
-
-# --- Run the agent ---
 async def main():
-    console.print("\n[bold cyan]🚀 Starting ReAct Agent Framework Demo[/bold cyan]")
+    console.print(
+        "[bold yellow]\U0001f527 Building ReAct agent with AgentFactory...[/bold yellow]"
+    )
+    agent = await (
+        AgentFactory(CustomState)
+        .with_react_loop(["get_weather"], llm_instance=llm, tool_factory=tool_factory)
+        .with_system_prompt(
+            "You are a helpful assistant. Address the user as {user_name}."
+        )
+        .with_structured_output(CustomState)
+        .build()
+    )
+    console.print(
+        "[bold green]\u2705 ReAct agent built successfully with AgentFactory![/bold green]"
+    )
+
+    # --- Run the agent ---
+    console.print(
+        "\n[bold cyan]\U0001f680 Starting ReAct Agent Framework Demo[/bold cyan]"
+    )
 
     # Create initial state
     state = CustomState(
@@ -88,11 +94,11 @@ async def main():
     console.print(
         Panel(
             f"[bold]Initial State:[/bold]\n"
-            f"User: {state['user_name']}\n"
-            f"Location: {state['location']}\n"
-            f"Topic: {state['topic']}\n"
-            f"Message: {state['messages'][0].content}",
-            title="🎯 Input",
+            f"User: {state.user_name}\n"
+            f"Location: {state.location}\n"
+            f"Topic: {state.topic}\n"
+            f"Message: {state.messages[0].content}",
+            title="\U0001f3af Input",
             border_style="blue",
         )
     )
@@ -106,13 +112,15 @@ async def main():
         task = progress.add_task("Running ReAct loop...", total=None)
 
         console.print(
-            "\n[bold magenta]🔄 Starting ReAct reasoning loop...[/bold magenta]"
+            "\n[bold magenta]\U0001f504 Starting ReAct reasoning loop...[/bold magenta]"
         )
-        result = await agent.arun(state)
+        result = await agent.arun(state.model_dump())
         progress.update(task, completed=True)
 
     # Display final results
-    console.print("\n[bold green]🎉 ReAct Agent Framework Completed![/bold green]")
+    console.print(
+        "\n[bold green]\U0001f389 ReAct Agent Framework Completed![/bold green]"
+    )
 
     # Create a results table
     table = Table(title="Final State Results")
@@ -136,22 +144,28 @@ async def main():
         console.print(
             Panel(
                 result["scratchpad"],
-                title="📝 Reasoning Scratchpad",
+                title="\U0001f4dd Reasoning Scratchpad",
                 border_style="yellow",
             )
         )
 
     # Show thoughts and actions
     if result["thoughts"]:
-        thoughts_text = "\n".join([f"💭 {thought}" for thought in result["thoughts"]])
-        console.print(Panel(thoughts_text, title="🧠 Thoughts", border_style="blue"))
+        thoughts_text = "\n".join(
+            [f"\U0001f4ad {thought}" for thought in result["thoughts"]]
+        )
+        console.print(
+            Panel(thoughts_text, title="\U0001f9e0 Thoughts", border_style="blue")
+        )
 
     if result["actions"]:
-        actions_text = "\n".join([f"⚡ {action}" for action in result["actions"]])
-        console.print(Panel(actions_text, title="🔧 Actions", border_style="red"))
+        actions_text = "\n".join([f"\u26a1 {action}" for action in result["actions"]])
+        console.print(
+            Panel(actions_text, title="\U0001f527 Actions", border_style="red")
+        )
 
 
 if __name__ == "__main__":
-    console.print("[bold]🌟 ReAct Agent Framework Playground[/bold]")
+    console.print("[bold]\U0001f31f ReAct Agent Framework Playground[/bold]")
     console.print("=" * 50)
     asyncio.run(main())

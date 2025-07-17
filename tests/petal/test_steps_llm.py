@@ -45,7 +45,7 @@ async def test_llm_step_strategy_create_and_call():
         "llm_config": {"model": "gpt-4o-mini"},
         "llm_instance": DummyLLM(),
     }
-    step = strategy.create_step(config)
+    step = await strategy.create_step(config)
     assert isinstance(step, LLMStep)
     node_name = strategy.get_node_name(0)
     assert node_name == "llm_step_0"
@@ -69,7 +69,7 @@ async def test_llm_step_real_end_to_end():
         "llm_config": {"provider": "openai", "model": "gpt-4o-mini"},
         # No llm_instance - should create real LLM
     }
-    step = strategy.create_step(config)
+    step = await strategy.create_step(config)
     assert isinstance(step, LLMStep)
 
     # Mock the _create_llm_for_provider to return DummyLLM instead of real LLM
@@ -95,7 +95,8 @@ async def test_llm_step_real_end_to_end():
         assert ai_message.content == "Hello!"
 
 
-def test_llm_step_strategy_config_validation():
+@pytest.mark.asyncio
+async def test_llm_step_strategy_config_validation():
     strategy = LLMStepStrategy()
     # Missing llm_instance and llm_config - should use default config
     # Use a mock LLM to avoid real API calls
@@ -107,7 +108,7 @@ def test_llm_step_strategy_config_validation():
     mock_llm.ainvoke = Mock(return_value=AIMessage(content="Test response"))
 
     config = {"prompt_template": "Hi", "llm_instance": mock_llm}
-    step = strategy.create_step(config)
+    step = await strategy.create_step(config)
     assert isinstance(step, LLMStep)
 
 
@@ -460,7 +461,8 @@ async def test_llm_step_with_empty_tools_doesnt_bind():
     assert "messages" in result
 
 
-def test_llm_step_strategy_with_tools():
+@pytest.mark.asyncio
+async def test_llm_step_strategy_with_tools():
     """Test that LLM step strategy properly handles tools in config."""
     strategy = LLMStepStrategy()
 
@@ -472,12 +474,13 @@ def test_llm_step_strategy_with_tools():
         "tools": tools,
     }
 
-    step = strategy.create_step(config)
+    step = await strategy.create_step(config)
     assert isinstance(step, LLMStep)
     assert step.tools == tools
 
 
-def test_llm_step_strategy_without_tools():
+@pytest.mark.asyncio
+async def test_llm_step_strategy_without_tools():
     """Test that LLM step strategy handles config without tools."""
     strategy = LLMStepStrategy()
 
@@ -488,7 +491,7 @@ def test_llm_step_strategy_without_tools():
         # No tools key
     }
 
-    step = strategy.create_step(config)
+    step = await strategy.create_step(config)
     assert isinstance(step, LLMStep)
     assert step.tools is None
 

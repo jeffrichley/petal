@@ -13,7 +13,7 @@ class LLMNodeHandler(NodeConfigHandler):
     def __init__(self):
         self.registry = StepRegistry()
 
-    def create_node(self, config: BaseNodeConfig) -> Callable:
+    async def create_node(self, config: BaseNodeConfig) -> Callable:
         """Create an LLM node from configuration.
 
         Args:
@@ -30,7 +30,7 @@ class LLMNodeHandler(NodeConfigHandler):
         )
         # Convert config to step config format
         step_config = self._config_to_step_config(llm_config)
-        return self.registry.create_step(step_config)
+        return await self.registry.create_step(step_config)
 
     def _config_to_step_config(self, config: LLMNodeConfig):
         """Convert LLMNodeConfig to StepConfig format."""

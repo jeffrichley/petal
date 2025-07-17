@@ -16,13 +16,14 @@ class TestYAMLLoadingIntegration:
         self.factory = AgentFactory(DefaultState)
         self.test_yaml_dir = "examples/yaml"
 
-    def test_load_llm_node_from_yaml(self):
+    @pytest.mark.asyncio
+    async def test_load_llm_node_from_yaml(self):
         """Test loading LLM node from YAML configuration."""
         # Arrange
         yaml_path = os.path.join(self.test_yaml_dir, "llm_node.yaml")
 
         # Act
-        node_function = self.factory.node_from_yaml(yaml_path)
+        node_function = await self.factory.node_from_yaml(yaml_path)
 
         # Assert
         assert node_function is not None
@@ -95,7 +96,8 @@ class TestYAMLLoadingIntegration:
         assert "search_results" in config.state_schema.fields
         assert "final_answer" in config.state_schema.fields
 
-    def test_yaml_file_not_found_error(self):
+    @pytest.mark.asyncio
+    async def test_yaml_file_not_found_error(self):
         """Test error handling for non-existent YAML file."""
         # Arrange
         non_existent_path = "non_existent_file.yaml"
@@ -104,9 +106,10 @@ class TestYAMLLoadingIntegration:
         from petal.core.yaml.parser import YAMLFileNotFoundError
 
         with pytest.raises(YAMLFileNotFoundError):
-            self.factory.node_from_yaml(non_existent_path)
+            await self.factory.node_from_yaml(non_existent_path)
 
-    def test_invalid_yaml_syntax_error(self):
+    @pytest.mark.asyncio
+    async def test_invalid_yaml_syntax_error(self):
         """Test error handling for invalid YAML syntax."""
         # Arrange
         import tempfile
@@ -119,11 +122,12 @@ class TestYAMLLoadingIntegration:
         try:
             # Act & Assert
             with pytest.raises(YAMLParseError):
-                self.factory.node_from_yaml(temp_path)
+                await self.factory.node_from_yaml(temp_path)
         finally:
             os.unlink(temp_path)
 
-    def test_unsupported_node_type_error(self):
+    @pytest.mark.asyncio
+    async def test_unsupported_node_type_error(self):
         """Test error handling for unsupported node type."""
         # Arrange
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -133,17 +137,18 @@ class TestYAMLLoadingIntegration:
         try:
             # Act & Assert
             with pytest.raises(ValueError, match="Unsupported node type"):
-                self.factory.node_from_yaml(temp_path)
+                await self.factory.node_from_yaml(temp_path)
         finally:
             os.unlink(temp_path)
 
-    def test_integration_with_existing_factory_methods(self):
+    @pytest.mark.asyncio
+    async def test_integration_with_existing_factory_methods(self):
         """Test integration of YAML loading with existing factory methods."""
         # Arrange
         yaml_path = os.path.join(self.test_yaml_dir, "llm_node.yaml")
 
         # Act - Add YAML node first, then use existing methods
-        self.factory.node_from_yaml(yaml_path)
+        await self.factory.node_from_yaml(yaml_path)
         self.factory.with_chat(
             prompt_template="Additional prompt: {user_input}",
             system_prompt="Additional system prompt",
@@ -156,14 +161,15 @@ class TestYAMLLoadingIntegration:
         # Second step should be the programmatic LLM step
         assert self.factory._builder._config.steps[1].strategy_type == "llm"
 
-    def test_build_agent_with_yaml_nodes(self):
+    @pytest.mark.asyncio
+    async def test_build_agent_with_yaml_nodes(self):
         """Test building a complete agent with YAML nodes."""
         # Arrange
         yaml_path = os.path.join(self.test_yaml_dir, "llm_node.yaml")
 
         # Act
-        self.factory.node_from_yaml(yaml_path)
-        agent = self.factory.build()
+        await self.factory.node_from_yaml(yaml_path)
+        agent = await self.factory.build()
 
         # Assert
         assert agent is not None
@@ -171,7 +177,8 @@ class TestYAMLLoadingIntegration:
         assert agent.built
 
     @patch("petal.core.yaml.parser.YAMLNodeParser.parse_node_config")
-    def test_yaml_parsing_performance(self, mock_parse):
+    @pytest.mark.asyncio
+    async def test_yaml_parsing_performance(self, mock_parse):
         """Test performance of YAML parsing vs programmatic creation."""
         # Arrange
         yaml_path = os.path.join(self.test_yaml_dir, "llm_node.yaml")
@@ -183,7 +190,7 @@ class TestYAMLLoadingIntegration:
         mock_parse.return_value = mock_config
 
         # Act
-        self.factory.node_from_yaml(yaml_path)
+        await self.factory.node_from_yaml(yaml_path)
 
         # Assert
         mock_parse.assert_called_once_with(yaml_path)
@@ -210,7 +217,8 @@ class TestYAMLLoadingIntegration:
         assert react_config.type == "react"
         assert react_config.name == "reasoning_agent"
 
-    def test_yaml_node_with_missing_required_fields(self):
+    @pytest.mark.asyncio
+    async def test_yaml_node_with_missing_required_fields(self):
         """Test error handling for missing required fields in YAML."""
         # Arrange
         import tempfile
@@ -223,6 +231,6 @@ class TestYAMLLoadingIntegration:
         try:
             # Act & Assert
             with pytest.raises(ValidationError):
-                self.factory.node_from_yaml(temp_path)
+                await self.factory.node_from_yaml(temp_path)
         finally:
             os.unlink(temp_path)

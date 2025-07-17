@@ -27,7 +27,7 @@ class CustomConfigHandler(StepConfigHandler):
         """
         return step_type == "custom"
 
-    def handle(self, config: Dict[str, Any]) -> Callable:
+    async def handle(self, config: Dict[str, Any]) -> Callable:
         """
         Handle custom step configuration and create a custom step.
 
@@ -47,4 +47,4 @@ class CustomConfigHandler(StepConfigHandler):
 
         # Create custom step using the strategy
         strategy = CustomStepStrategy()
-        return strategy.create_step(config)
+        return await strategy.create_step(config)

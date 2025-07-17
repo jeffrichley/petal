@@ -17,7 +17,7 @@ class DemoState(TypedDict):
     name: str
 
 
-def main():
+async def main():
     """Test the diagram_graph functionality."""
     print("Creating agent factory...")
 
@@ -33,7 +33,7 @@ def main():
     # Generate diagram
     print("Generating diagram...")
     try:
-        factory.diagram_graph("agent_diagram.png")
+        await factory.diagram_graph("agent_diagram.png")
         print("✅ Diagram saved to agent_diagram.png")
     except Exception as e:
         print(f"❌ Failed to generate diagram: {e}")
@@ -43,4 +43,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+
+    asyncio.run(main())

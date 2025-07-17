@@ -27,7 +27,7 @@ class LLMConfigHandler(StepConfigHandler):
         """
         return step_type == "llm"
 
-    def handle(self, config: Dict[str, Any]) -> Callable:
+    async def handle(self, config: Dict[str, Any]) -> Callable:
         """
         Handle LLM step configuration and create an LLM step.
 
@@ -46,4 +46,4 @@ class LLMConfigHandler(StepConfigHandler):
 
         # Create LLM step using the strategy
         strategy = LLMStepStrategy()
-        return strategy.create_step(config)
+        return await strategy.create_step(config)

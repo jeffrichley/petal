@@ -33,7 +33,7 @@ class AgentBuilderDirector:
         self.config = config
         self.registry = registry
 
-    def build(self) -> Agent:
+    async def build(self) -> Agent:
         """
         Build an agent from configuration.
 
@@ -50,7 +50,7 @@ class AgentBuilderDirector:
         state_type = self._create_state_type()
 
         # Build graph
-        graph = self._build_graph(state_type)
+        graph = await self._build_graph(state_type)
 
         # Create and return agent
         return Agent().build(graph, state_type)
@@ -69,7 +69,7 @@ class AgentBuilderDirector:
             return StateTypeFactory.create_with_messages(self.config.state_type)
         return self.config.state_type
 
-    def _build_graph(self, state_type: Type) -> Runnable:
+    async def _build_graph(self, state_type: Type) -> Runnable:
         """
         Build the LangGraph StateGraph from configuration.
 
@@ -85,7 +85,7 @@ class AgentBuilderDirector:
         for i, step_config in enumerate(self.config.steps):
             # Get strategy and create step
             strategy = self.registry.get_strategy(step_config.strategy_type)
-            step = strategy.create_step(step_config.config)
+            step = await strategy.create_step(step_config.config)
 
             # Generate node name
             node_name = step_config.node_name or strategy.get_node_name(i)

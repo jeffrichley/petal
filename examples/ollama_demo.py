@@ -34,7 +34,7 @@ async def main():
     # Example 1: Simple Ollama agent with qwen3:4b
     print("🤖 Creating Ollama agent with qwen3:4b...")
 
-    agent = (
+    agent = await (
         AgentFactory(OllamaState)
         .with_chat(
             prompt_template="User says: {user_input}. Respond naturally.",
@@ -63,7 +63,7 @@ async def main():
     # Example 2: Creative agent with qwen3:4b
     print("🎨 Creating creative agent with qwen3:4b...")
 
-    creative_agent = (
+    creative_agent = await (
         AgentFactory(OllamaState)
         .with_chat(
             prompt_template="User asks: {user_input}. Be creative and engaging in your response.",
@@ -94,7 +94,7 @@ async def main():
 
     from petal.core.config.llm_types import LLMTypes
 
-    analytical_agent = (
+    analytical_agent = await (
         AgentFactory(OllamaState)
         .with_chat(
             prompt_template="Analyze this: {user_input}. Provide a detailed, analytical response.",
@@ -118,7 +118,7 @@ async def main():
     # Example 4: Custom Ollama configuration (qwen3:4b)
     print("🔧 Using custom Ollama configuration (qwen3:4b)...")
 
-    custom_agent = (
+    custom_agent = await (
         AgentFactory(OllamaState)
         .with_chat(
             prompt_template="Code this: {user_input}. Provide clean, well-commented code.",

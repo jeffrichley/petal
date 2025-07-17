@@ -148,37 +148,41 @@ class TestToolStepStrategy:
 
         return test_tool
 
-    def test_create_step_with_tools(self, strategy, mock_tool):
+    @pytest.mark.asyncio
+    async def test_create_step_with_tools(self, strategy, mock_tool):
         """Test creating a step with tools."""
         config: Dict[str, Any] = {"tools": [mock_tool]}
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
 
         assert isinstance(step, ToolStep)
         assert step.tools == [mock_tool]
         assert step.scratchpad_key is None
 
-    def test_create_step_with_scratchpad(self, strategy, mock_tool):
+    @pytest.mark.asyncio
+    async def test_create_step_with_scratchpad(self, strategy, mock_tool):
         """Test creating a step with scratchpad key."""
         config: Dict[str, Any] = {"tools": [mock_tool], "scratchpad_key": "scratchpad"}
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
 
         assert isinstance(step, ToolStep)
         assert step.tools == [mock_tool]
         assert step.scratchpad_key == "scratchpad"
 
-    def test_create_step_no_tools(self, strategy):
+    @pytest.mark.asyncio
+    async def test_create_step_no_tools(self, strategy):
         """Test creating a step without tools raises error."""
         config: Dict[str, Any] = {"tools": []}
 
         with pytest.raises(ValueError, match="Tool step requires at least one tool"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
-    def test_create_step_missing_tools(self, strategy):
+    @pytest.mark.asyncio
+    async def test_create_step_missing_tools(self, strategy):
         """Test creating a step with missing tools raises error."""
         config: Dict[str, Any] = {}
 
         with pytest.raises(ValueError, match="Tool step requires at least one tool"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
     def test_get_node_name(self, strategy):
         """Test node name generation."""

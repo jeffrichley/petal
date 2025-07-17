@@ -168,13 +168,14 @@ class TestAgentBuilder:
         with pytest.raises(ValueError, match="Unknown step type"):
             builder.with_step("unknown_strategy", prompt_template="Hello")
 
-    def test_build_method_validation(self):
+    @pytest.mark.asyncio
+    async def test_build_method_validation(self):
         """Test that build method validates configuration properly."""
         builder = AgentBuilder(BuilderTestState)
 
         # Build should raise ValueError when no steps are configured
         with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
-            builder.build()
+            await builder.build()
 
     def test_builder_state_consistency(self):
         """Test that builder maintains consistent state."""

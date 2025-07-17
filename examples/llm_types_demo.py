@@ -23,19 +23,21 @@ async def main():
 
     # Create an agent with multiple LLM steps using different configurations
     agent = (
-        AgentFactory(ChatState)
-        # Step 1: Analytical analysis with GPT-4o-mini
-        .with_chat(
-            llm_config=LLMTypes.OPENAI_GPT4O_MINI_ANALYTICAL,
-            prompt_template="Analyze this input: {user_input}",
-            system_prompt="You are an analytical assistant. Provide clear, logical analysis.",
+        await (
+            AgentFactory(ChatState)
+            # Step 1: Analytical analysis with GPT-4o-mini
+            .with_chat(
+                llm_config=LLMTypes.OPENAI_GPT4O_MINI_ANALYTICAL,
+                prompt_template="Analyze this input: {user_input}",
+                system_prompt="You are an analytical assistant. Provide clear, logical analysis.",
+            )
+            # Step 2: Creative response with GPT-4o (creative)
+            .with_chat(
+                llm_config=LLMTypes.OPENAI_GPT4O_CREATIVE,
+                prompt_template="Based on the analysis, create a creative response about: {user_input}",
+                system_prompt="You are a creative writer. Be imaginative and engaging.",
+            ).build()
         )
-        # Step 2: Creative response with GPT-4o (creative)
-        .with_chat(
-            llm_config=LLMTypes.OPENAI_GPT4O_CREATIVE,
-            prompt_template="Based on the analysis, create a creative response about: {user_input}",
-            system_prompt="You are a creative writer. Be imaginative and engaging.",
-        ).build()
     )
 
     # Test the agent
@@ -85,7 +87,7 @@ async def demo_custom_configurations():
     print(f"📝 Long Response: {custom_long_response}")
 
     # Test with custom configuration
-    agent = (
+    agent = await (
         AgentFactory(ChatState)
         .with_chat(
             llm_config=custom_analytical,

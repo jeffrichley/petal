@@ -12,7 +12,7 @@ from petal.core.tool_factory import ToolFactory
 class ReactStepStrategy(StepStrategy):
     """Strategy for creating React reasoning loop steps."""
 
-    def create_step(self, config: Dict[str, Any]) -> Callable:
+    async def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a React step from configuration.
 
         Args:

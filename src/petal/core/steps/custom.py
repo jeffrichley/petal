@@ -8,7 +8,7 @@ from petal.core.steps.base import StepStrategy
 class CustomStepStrategy(StepStrategy):
     """Strategy for creating custom function steps."""
 
-    def create_step(self, config: Dict[str, Any]) -> Callable:
+    async def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a custom step from configuration.
 
         Args:

@@ -21,7 +21,8 @@ class ReactTestState(BaseModel):
 class TestReactStepStrategy:
     """Test the React step strategy."""
 
-    def test_create_step_with_valid_config(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_valid_config(self):
         """Test creating a React step with valid configuration."""
         strategy = ReactStepStrategy()
 
@@ -40,10 +41,11 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
-    def test_create_step_without_tools(self):
+    @pytest.mark.asyncio
+    async def test_create_step_without_tools(self):
         """Test creating a React step without tools raises error."""
         strategy = ReactStepStrategy()
 
@@ -53,9 +55,10 @@ class TestReactStepStrategy:
         }
 
         with pytest.raises(ValueError, match="React steps require at least one tool"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
-    def test_create_step_without_state_schema(self):
+    @pytest.mark.asyncio
+    async def test_create_step_without_state_schema(self):
         """Test creating a React step without state schema raises error."""
         strategy = ReactStepStrategy()
 
@@ -64,7 +67,7 @@ class TestReactStepStrategy:
         }
 
         with pytest.raises(ValueError, match="React steps require a state_schema"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
     def test_get_node_name(self):
         """Test node name generation."""
@@ -75,7 +78,8 @@ class TestReactStepStrategy:
         node_name = strategy.get_node_name(5)
         assert node_name == "react_step_5"
 
-    def test_create_step_with_string_tool_names(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_string_tool_names(self):
         """Test creating a React step with string tool names."""
         strategy = ReactStepStrategy()
 
@@ -100,10 +104,11 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
-    def test_create_step_with_tool_objects(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_tool_objects(self):
         """Test creating a React step with tool objects."""
         strategy = ReactStepStrategy()
 
@@ -128,10 +133,11 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
-    def test_create_step_with_tool_objects_no_names(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_tool_objects_no_names(self):
         """Test creating a React step with tool objects that don't have names."""
         strategy = ReactStepStrategy()
 
@@ -156,10 +162,11 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
-    def test_create_step_with_mixed_tool_types(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_mixed_tool_types(self):
         """Test creating a React step with mixed string names and tool objects."""
         strategy = ReactStepStrategy()
 
@@ -187,12 +194,13 @@ class TestReactStepStrategy:
         }
 
         try:
-            step = strategy.create_step(config)
+            step = await strategy.create_step(config)
             assert callable(step)
         except (AttributeError, TypeError):
             pass
 
-    def test_create_step_with_empty_tools_list(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_empty_tools_list(self):
         """Test creating a React step with empty tools list raises error."""
         strategy = ReactStepStrategy()
 
@@ -202,9 +210,10 @@ class TestReactStepStrategy:
         }
 
         with pytest.raises(ValueError, match="React steps require at least one tool"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
-    def test_create_step_with_none_tools(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_none_tools(self):
         """Test creating a React step with None tools raises error."""
         strategy = ReactStepStrategy()
 
@@ -214,9 +223,10 @@ class TestReactStepStrategy:
         }
 
         with pytest.raises(ValueError, match="React steps require at least one tool"):
-            strategy.create_step(config)
+            await strategy.create_step(config)
 
-    def test_create_step_with_single_tool_object(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_single_tool_object(self):
         """Test creating a React step with a single tool object."""
         strategy = ReactStepStrategy()
 
@@ -235,10 +245,11 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
-    def test_create_step_with_tool_objects_using_generated_names(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_tool_objects_using_generated_names(self):
         """Test creating a React step with tool objects using generated names."""
         strategy = ReactStepStrategy()
 
@@ -269,7 +280,7 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
     @pytest.mark.asyncio
@@ -303,11 +314,7 @@ class TestReactStepStrategy:
             "tool_factory": tool_factory,
         }
 
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
 
         # Test that the step is callable
         assert callable(step)
-
-        # Test that the step can be created without errors
-        # The actual execution would require more complex mocking
-        # of the ReActAgentBuilder and its dependencies

@@ -44,7 +44,7 @@ class StepRegistry:
                 raise ValueError(f"Unknown step type: {name}")
             return self._strategies[name]()
 
-    def create_step(self, step_config: StepConfig) -> Callable:
+    async def create_step(self, step_config: StepConfig) -> Callable:
         """Create a step callable from a step configuration.
 
         Args:
@@ -57,7 +57,7 @@ class StepRegistry:
             ValueError: If the step type is not registered.
         """
         strategy = self.get_strategy(step_config.strategy_type)
-        return strategy.create_step(step_config.config)
+        return await strategy.create_step(step_config.config)
 
     def validate_strategy(self, name: str) -> None:
         """Validate that a step strategy exists in the registry.

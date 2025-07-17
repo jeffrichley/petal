@@ -25,13 +25,14 @@ class TestStepStrategyABC:
         assert StepStrategy.create_step.__isabstractmethod__  # type: ignore[attr-defined]
         assert StepStrategy.get_node_name.__isabstractmethod__  # type: ignore[attr-defined]
 
-    def test_concrete_implementation_works(self):
+    @pytest.mark.asyncio
+    async def test_concrete_implementation_works(self):
         """Test that a concrete implementation of StepStrategy works correctly."""
         strategy = MyCustomStrategy()
 
         # Test create_step method
         test_config = {"step_function": lambda x: x}
-        step = strategy.create_step(test_config)
+        step = await strategy.create_step(test_config)
         assert callable(step)
 
         # Test get_node_name method
@@ -41,7 +42,8 @@ class TestStepStrategyABC:
         node_name = strategy.get_node_name(5)
         assert node_name == "custom_step_5"
 
-    def test_concrete_implementation_with_different_configs(self):
+    @pytest.mark.asyncio
+    async def test_concrete_implementation_with_different_configs(self):
         """Test concrete implementation with various configuration types."""
         strategy = MyCustomStrategy()
 
@@ -50,7 +52,7 @@ class TestStepStrategyABC:
             return {"processed": True}
 
         config = {"step_function": test_func}
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
         # Test that the step can be called
@@ -66,26 +68,29 @@ class TestStepStrategyABC:
         assert strategy.get_node_name(10) == "custom_step_10"
         assert strategy.get_node_name(-1) == "custom_step_-1"
 
-    def test_create_step_with_invalid_config(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_invalid_config(self):
         """Test create_step with invalid configuration."""
         strategy = MyCustomStrategy()
 
         # Test with missing required key
         with pytest.raises(KeyError):
-            strategy.create_step({})
+            await strategy.create_step({})
 
         # Test with non-callable function
         with pytest.raises(ValueError, match="step_function must be callable"):
-            strategy.create_step({"step_function": "not_callable"})
+            await strategy.create_step({"step_function": "not_callable"})
 
-    def test_create_step_with_none_function(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_none_function(self):
         """Test create_step with None as function."""
         strategy = MyCustomStrategy()
 
         with pytest.raises(ValueError, match="step_function must be callable"):
-            strategy.create_step({"step_function": None})
+            await strategy.create_step({"step_function": None})
 
-    def test_create_step_with_async_function(self):
+    @pytest.mark.asyncio
+    async def test_create_step_with_async_function(self):
         """Test create_step with async function."""
         strategy = MyCustomStrategy()
 
@@ -93,7 +98,7 @@ class TestStepStrategyABC:
             return {"async_processed": True}
 
         config = {"step_function": async_func}
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
         assert callable(step)
 
 
@@ -162,7 +167,8 @@ class TestMyCustomStrategy:
         assert not hasattr(strategy.create_step, "__isabstractmethod__")
         assert not hasattr(strategy.get_node_name, "__isabstractmethod__")
 
-    def test_my_custom_strategy_functionality(self):
+    @pytest.mark.asyncio
+    async def test_my_custom_strategy_functionality(self):
         """Test the complete functionality of MyCustomStrategy."""
         strategy = MyCustomStrategy()
 
@@ -171,7 +177,7 @@ class TestMyCustomStrategy:
 
         # Test create_step
         config = {"step_function": test_function}
-        step = strategy.create_step(config)
+        step = await strategy.create_step(config)
 
         # Test that step works
         result = step({"input": "test_value"})
@@ -188,22 +194,26 @@ class TestMyCustomStrategy:
         assert strategy.get_node_name(5) == "custom_step_5"
         assert strategy.get_node_name(10) == "custom_step_10"
 
-    def test_my_custom_strategy_missing_step_function(self):
+    @pytest.mark.asyncio
+    async def test_my_custom_strategy_missing_step_function(self):
         """Test that MyCustomStrategy raises KeyError when step_function is missing."""
         strategy = MyCustomStrategy()
 
         with pytest.raises(KeyError, match="step_function"):
-            strategy.create_step({})
+            await strategy.create_step({})
 
-    def test_my_custom_strategy_non_callable_step_function(self):
+    @pytest.mark.asyncio
+    async def test_my_custom_strategy_non_callable_step_function(self):
         """Test that MyCustomStrategy raises ValueError when step_function is not callable."""
         strategy = MyCustomStrategy()
 
         with pytest.raises(ValueError, match="step_function must be callable"):
-            strategy.create_step({"step_function": "not_callable"})
+            await strategy.create_step({"step_function": "not_callable"})
 
 
-def test_custom_step_strategy_raises_valueerror_for_non_callable():
+@pytest.mark.asyncio
+async def test_custom_step_strategy_raises_valueerror_for_non_callable():
+    """Test that CustomStepStrategy raises ValueError for non-callable functions."""
     from petal.core.steps.custom import CustomStepStrategy
 
     strategy = CustomStepStrategy()
@@ -211,4 +221,4 @@ def test_custom_step_strategy_raises_valueerror_for_non_callable():
     import pytest
 
     with pytest.raises(ValueError, match="Custom step must be callable"):
-        strategy.create_step(config)
+        await strategy.create_step(config)

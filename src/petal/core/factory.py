@@ -1,13 +1,20 @@
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Annotated, Any, Callable, Dict, List, Optional, Union
 
 from langchain.chat_models.base import BaseChatModel
 from langgraph.graph.message import add_messages
-from typing_extensions import Annotated, TypedDict
+from typing_extensions import TypedDict
 
 from petal.core.agent import Agent
 from petal.core.builders.agent import AgentBuilder
 from petal.core.config.agent import LLMConfig
-from petal.core.tool_factory import ToolFactory
+from petal.core.registry import ToolRegistry
+
+
+class ToolDiscoveryConfig(TypedDict):
+    enabled: bool
+    folders: Optional[List[str]]
+    config_locations: Optional[List[str]]
+    exclude_patterns: Optional[List[str]]
 
 
 class DefaultState(TypedDict):
@@ -29,8 +36,16 @@ class AgentFactory:
         # Use new architecture internally
         self._builder = AgentBuilder(state_type)
 
-        # Initialize tool factory
-        self._tool_factory = ToolFactory()
+        # Initialize tool registry (singleton)
+        self._tool_registry = ToolRegistry()
+
+        # Initialize tool discovery configuration with defaults
+        self._tool_discovery_config: ToolDiscoveryConfig = {
+            "enabled": True,
+            "folders": None,
+            "config_locations": None,
+            "exclude_patterns": None,
+        }
 
     def add(
         self, step: Callable[..., Any], node_name: Optional[str] = None
@@ -66,16 +81,8 @@ class AgentFactory:
         if not tools:
             raise ValueError("Tools list cannot be empty. Provide at least one tool.")
 
-        # Resolve tools
-        resolved_tools = []
-        for tool in tools:
-            if isinstance(tool, str):
-                resolved_tools.append(self._tool_factory.resolve(tool))
-            else:
-                resolved_tools.append(tool)
-
-        # Add tools to the most recent LLM step
-        last_step.config["tools"] = resolved_tools
+        # Store tools as-is (strings or objects) - resolve at build time
+        last_step.config["tools"] = tools
         if scratchpad_key:
             last_step.config["scratchpad_key"] = scratchpad_key
 
@@ -169,7 +176,36 @@ class AgentFactory:
         self._builder.with_structured_output(model, key)
         return self
 
-    def build(self) -> Agent:
+    def with_tool_discovery(
+        self,
+        enabled: bool = True,
+        folders: Optional[List[str]] = None,
+        config_locations: Optional[List[str]] = None,
+        exclude_patterns: Optional[List[str]] = None,
+    ) -> "AgentFactory":
+        """
+        Configure tool discovery for this agent factory.
+
+        Args:
+            enabled: Whether to enable tool discovery
+            folders: List of folders to scan for tools
+            config_locations: List of config file locations to scan
+            exclude_patterns: List of patterns to exclude from discovery
+
+        Returns:
+            self for fluent chaining
+        """
+        self._tool_discovery_config.update(
+            {
+                "enabled": enabled,
+                "folders": folders,
+                "config_locations": config_locations,
+                "exclude_patterns": exclude_patterns,
+            }
+        )
+        return self
+
+    async def build(self) -> Agent:
         """Build the agent using new architecture."""
         # Add tool steps for each LLM step that has tools
         for step_config in self._builder._config.steps:
@@ -181,7 +217,7 @@ class AgentFactory:
                 }
                 self._builder.with_step("tool", **tool_config)
 
-        return self._builder.build()
+        return await self._builder.build()
 
     @staticmethod
     def diagram_agent(agent: "Agent", path: str, format: str = "png") -> None:
@@ -219,7 +255,7 @@ class AgentFactory:
         except Exception as e:
             raise RuntimeError(f"Failed to generate diagram: {e}") from e
 
-    def diagram_graph(self, path: str, format: str = "png") -> Any:
+    async def diagram_graph(self, path: str, format: str = "png") -> Any:
         """
         Generate a diagram of the agent graph and save it to a file.
 
@@ -238,12 +274,12 @@ class AgentFactory:
             raise ValueError("Cannot generate diagram: no steps have been configured")
 
         # Build the agent
-        agent = self.build()
+        agent = await self.build()
 
         # Generate diagram using the static method
         AgentFactory.diagram_agent(agent, path, format)
 
-    def node_from_yaml(self, path: str):
+    async def node_from_yaml(self, path: str):
         """
         Load a node from YAML configuration file.
 
@@ -270,7 +306,7 @@ class AgentFactory:
         handler = handler_factory.get_handler(config.type)
 
         # Create the node function
-        node_function = handler.create_node(config)
+        node_function = await handler.create_node(config)
 
         # Add the node to the builder (following the same pattern as other methods)
         self._builder.with_step(

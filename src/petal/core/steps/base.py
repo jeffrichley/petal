@@ -8,7 +8,7 @@ class StepStrategy(ABC):
     """Abstract base class for step creation strategies."""
 
     @abstractmethod
-    def create_step(self, config: Dict[str, Any]) -> Callable:
+    async def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a step callable from configuration."""
 
     @abstractmethod
@@ -19,7 +19,7 @@ class StepStrategy(ABC):
 class MyCustomStrategy(StepStrategy):
     """Strategy for creating custom function steps (MCP-compliant)."""
 
-    def create_step(self, config: Dict[str, Any]) -> Callable:
+    async def create_step(self, config: Dict[str, Any]) -> Callable:
         """Create a custom step from configuration.
 
         Args:

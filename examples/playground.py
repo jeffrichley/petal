@@ -33,21 +33,23 @@ async def run_example():
     # Build agent with custom step and LLM step
     builder = AgentBuilder(TestState)
     agent = (
-        builder.with_step("custom", step_function=custom_step)
-        .with_step(
-            "llm",
-            prompt_template="The user's name is {name}. Say something nice to them.",
+        await (
+            builder.with_step("custom", step_function=custom_step)
+            .with_step(
+                "llm",
+                prompt_template="The user's name is {name}. Say something nice to them.",
+            )
+            .with_system_prompt(
+                "You are a helpful assistant that talks like a {personality}."
+            )
+            # .with_step(
+            #     "llm",
+            #     prompt_template="The user's name is {name}. Say something nice to them.",
+            #     system_prompt="You are a helpful assistant that talks like a {personality}.",
+            # )
+            .with_llm(provider="openai", model="gpt-4o-mini")
+            .build()
         )
-        .with_system_prompt(
-            "You are a helpful assistant that talks like a {personality}."
-        )
-        # .with_step(
-        #     "llm",
-        #     prompt_template="The user's name is {name}. Say something nice to them.",
-        #     system_prompt="You are a helpful assistant that talks like a {personality}.",
-        # )
-        .with_llm(provider="openai", model="gpt-4o-mini")
-        .build()
     )
 
     # Run the agent
@@ -64,11 +66,11 @@ async def run_yaml_example():
 
     # Load node from YAML (if the file exists)
     try:
-        factory.node_from_yaml("examples/yaml/llm_node.yaml")
+        await factory.node_from_yaml("examples/yaml/llm_node.yaml")
         print("✓ Successfully loaded LLM node from YAML")
 
         # Build agent
-        agent = factory.build()
+        agent = await factory.build()
         print("✓ Successfully built agent with YAML node")
 
         # Run the agent

@@ -67,7 +67,8 @@ class TestLLMConfigHandler:
         assert handler.can_handle("custom") is False
         assert handler.can_handle("unknown") is False
 
-    def test_handle_creates_llm_step(self):
+    @pytest.mark.asyncio
+    async def test_handle_creates_llm_step(self):
         """Test that handle method creates an LLM step."""
         handler = LLMConfigHandler()
         config: Dict[str, Any] = {
@@ -76,52 +77,57 @@ class TestLLMConfigHandler:
             "llm_config": {"model": "gpt-4o-mini"},
         }
 
-        step = handler.handle(config)
+        step = await handler.handle(config)
         assert callable(step)
         assert hasattr(step, "prompt_template")
         assert step.prompt_template == "Hello {name}"
 
-    def test_handle_with_minimal_config(self):
+    @pytest.mark.asyncio
+    async def test_handle_with_minimal_config(self):
         """Test handle with minimal configuration."""
         handler = LLMConfigHandler()
         config: Dict[str, Any] = {"prompt_template": "Hello"}
 
-        step = handler.handle(config)
+        step = await handler.handle(config)
         assert callable(step)
 
-    def test_process_llm_step_type(self):
+    @pytest.mark.asyncio
+    async def test_process_llm_step_type(self):
         """Test process method with LLM step type."""
         handler = LLMConfigHandler()
         config: Dict[str, Any] = {"prompt_template": "Hello {name}"}
 
-        step = handler.process("llm", config)
+        step = await handler.process("llm", config)
         assert callable(step)
 
-    def test_process_unknown_step_type_raises_error(self):
+    @pytest.mark.asyncio
+    async def test_process_unknown_step_type_raises_error(self):
         """Test that process raises error for unknown step type."""
         handler = LLMConfigHandler()
         config: Dict[str, Any] = {"prompt_template": "Hello"}
 
         with pytest.raises(ValueError, match="No handler found for step type: custom"):
-            handler.process("custom", config)
+            await handler.process("custom", config)
 
-    def test_process_delegates_to_next_handler(self):
+    @pytest.mark.asyncio
+    async def test_process_delegates_to_next_handler(self):
         """Test that process delegates to next handler when cannot handle."""
         llm_handler = LLMConfigHandler()
         custom_handler = CustomConfigHandler(llm_handler)
 
         # Custom handler should delegate to LLM handler for 'llm' type
         config: Dict[str, Any] = {"prompt_template": "Hello"}
-        step = custom_handler.process("llm", config)
+        step = await custom_handler.process("llm", config)
         assert callable(step)
 
-    def test_handle_validates_llm_config(self):
+    @pytest.mark.asyncio
+    async def test_handle_validates_llm_config(self):
         """Test that handle validates LLM configuration."""
         handler = LLMConfigHandler()
 
         # Test with invalid config
         with pytest.raises(ValueError):
-            handler.handle({})  # Missing required fields
+            await handler.handle({})  # Missing required fields
 
 
 class TestCustomConfigHandler:
@@ -138,7 +144,8 @@ class TestCustomConfigHandler:
         assert handler.can_handle("llm") is False
         assert handler.can_handle("unknown") is False
 
-    def test_handle_creates_custom_step(self):
+    @pytest.mark.asyncio
+    async def test_handle_creates_custom_step(self):
         """Test that handle method creates a custom step."""
         handler = CustomConfigHandler()
 
@@ -147,10 +154,11 @@ class TestCustomConfigHandler:
             return state
 
         config: Dict[str, Any] = {"step_function": test_function}
-        step = handler.handle(config)
+        step = await handler.handle(config)
         assert callable(step)
 
-    def test_handle_with_sync_function(self):
+    @pytest.mark.asyncio
+    async def test_handle_with_sync_function(self):
         """Test handle with synchronous function."""
         handler = CustomConfigHandler()
 
@@ -158,10 +166,11 @@ class TestCustomConfigHandler:
             return state
 
         config: Dict[str, Any] = {"step_function": sync_func}
-        step = handler.handle(config)
+        step = await handler.handle(config)
         assert callable(step)
 
-    def test_handle_with_async_function(self):
+    @pytest.mark.asyncio
+    async def test_handle_with_async_function(self):
         """Test handle with asynchronous function."""
         handler = CustomConfigHandler()
 
@@ -169,10 +178,11 @@ class TestCustomConfigHandler:
             return state
 
         config: Dict[str, Any] = {"step_function": async_func}
-        step = handler.handle(config)
+        step = await handler.handle(config)
         assert callable(step)
 
-    def test_process_custom_step_type(self):
+    @pytest.mark.asyncio
+    async def test_process_custom_step_type(self):
         """Test process method with custom step type."""
         handler = CustomConfigHandler()
 
@@ -180,26 +190,29 @@ class TestCustomConfigHandler:
             return state
 
         config: Dict[str, Any] = {"step_function": test_function}
-        step = handler.process("custom", config)
+        step = await handler.process("custom", config)
         assert callable(step)
 
-    def test_handle_raises_error_for_non_callable(self):
+    @pytest.mark.asyncio
+    async def test_handle_raises_error_for_non_callable(self):
         """Test that handle raises error for non-callable step function."""
         handler = CustomConfigHandler()
         config: Dict[str, Any] = {"step_function": "not a function"}
 
         with pytest.raises(ValueError, match="Custom step must be callable"):
-            handler.handle(config)
+            await handler.handle(config)
 
-    def test_handle_raises_error_for_missing_step_function(self):
+    @pytest.mark.asyncio
+    async def test_handle_raises_error_for_missing_step_function(self):
         """Test that handle raises error for missing step function."""
         handler = CustomConfigHandler()
         config: Dict[str, Any] = {}
 
         with pytest.raises(ValueError, match="Custom step must be callable"):
-            handler.handle(config)
+            await handler.handle(config)
 
-    def test_process_delegates_to_next_handler(self):
+    @pytest.mark.asyncio
+    async def test_process_delegates_to_next_handler(self):
         """Test that process delegates to next handler when cannot handle."""
         llm_handler = LLMConfigHandler()
         custom_handler = CustomConfigHandler(llm_handler)
@@ -209,23 +222,25 @@ class TestCustomConfigHandler:
             return state
 
         config: Dict[str, Any] = {"step_function": test_function}
-        step = custom_handler.process("custom", config)
+        step = await custom_handler.process("custom", config)
         assert callable(step)
 
 
 class TestHandlerChain:
     """Test the complete handler chain."""
 
-    def test_chain_handles_llm_steps(self):
+    @pytest.mark.asyncio
+    async def test_chain_handles_llm_steps(self):
         """Test that chain can handle LLM steps."""
         llm_handler = LLMConfigHandler()
         custom_handler = CustomConfigHandler(llm_handler)
 
         config: Dict[str, Any] = {"prompt_template": "Hello"}
-        step = custom_handler.process("llm", config)
+        step = await custom_handler.process("llm", config)
         assert callable(step)
 
-    def test_chain_handles_custom_steps(self):
+    @pytest.mark.asyncio
+    async def test_chain_handles_custom_steps(self):
         """Test that chain can handle custom steps."""
         llm_handler = LLMConfigHandler()
         custom_handler = CustomConfigHandler(llm_handler)
@@ -234,10 +249,11 @@ class TestHandlerChain:
             return state
 
         config: Dict[str, Any] = {"step_function": test_function}
-        step = custom_handler.process("custom", config)
+        step = await custom_handler.process("custom", config)
         assert callable(step)
 
-    def test_chain_raises_error_for_unknown_step_type(self):
+    @pytest.mark.asyncio
+    async def test_chain_raises_error_for_unknown_step_type(self):
         """Test that chain raises error for unknown step type."""
         llm_handler = LLMConfigHandler()
         custom_handler = CustomConfigHandler(llm_handler)
@@ -245,9 +261,10 @@ class TestHandlerChain:
         config: Dict[str, Any] = {"some_config": "value"}
 
         with pytest.raises(ValueError, match="No handler found for step type: unknown"):
-            custom_handler.process("unknown", config)
+            await custom_handler.process("unknown", config)
 
-    def test_chain_with_multiple_handlers(self):
+    @pytest.mark.asyncio
+    async def test_chain_with_multiple_handlers(self):
         """Test chain with multiple handlers in sequence."""
         # Create a chain: custom -> llm -> None
         llm_handler = LLMConfigHandler()
@@ -255,7 +272,7 @@ class TestHandlerChain:
 
         # Test that custom handler delegates to LLM handler
         config: Dict[str, Any] = {"prompt_template": "Hello"}
-        step = custom_handler.process("llm", config)
+        step = await custom_handler.process("llm", config)
         assert callable(step)
 
         # Test that custom handler handles its own type
@@ -263,14 +280,15 @@ class TestHandlerChain:
             return state
 
         config = {"step_function": test_function}
-        step = custom_handler.process("custom", config)
+        step = await custom_handler.process("custom", config)
         assert callable(step)
 
 
 class TestHandlerIntegration:
     """Test integration with existing components."""
 
-    def test_handler_with_step_registry(self):
+    @pytest.mark.asyncio
+    async def test_handler_with_step_registry(self):
         """Test that handlers work with step registry."""
         from petal.core.steps.registry import StepRegistry
 
@@ -280,7 +298,7 @@ class TestHandlerIntegration:
 
         # Handler should be able to create steps that work with registry
         config: Dict[str, Any] = {"prompt_template": "Hello"}
-        step = llm_handler.handle(config)
+        step = await llm_handler.handle(config)
         assert callable(step)
 
         # Verify the step can be used with the registry

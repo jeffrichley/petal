@@ -220,7 +220,7 @@ class AgentBuilder:
             step_config.config["structured_output_key"] = key
         return self
 
-    def build(self) -> Any:
+    async def build(self) -> Any:
         """
         Build the agent from configuration using AgentBuilderDirector (MCP-compliant).
 
@@ -228,7 +228,7 @@ class AgentBuilder:
             The built agent
         """
         director = AgentBuilderDirector(self._config, self._registry)
-        return director.build()
+        return await director.build()
 
     def get_config(self) -> AgentConfig:
         """

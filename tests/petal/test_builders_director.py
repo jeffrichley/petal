@@ -74,13 +74,14 @@ class TestAgentBuilderDirector:
         with pytest.raises(ValueError, match="registry cannot be None"):
             AgentBuilderDirector(sample_config, None)  # type: ignore[arg-type]
 
-    def test_build_with_empty_steps_raises_error(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_with_empty_steps_raises_error(self, sample_registry):
         config = AgentConfig(
             state_type=StateWithMessages, steps=[], **default_agent_config_kwargs()
         )
         director = AgentBuilderDirector(config, sample_registry)
         with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
-            director.build()
+            await director.build()
 
     def test_create_state_type_with_llm_steps(self, director):
         state_type = director._create_state_type()
@@ -123,10 +124,11 @@ class TestAgentBuilderDirector:
         state_type = director._create_state_type()
         assert state_type == StateWithMessages2
 
-    def test_build_graph_creates_correct_structure(self, director):
+    @pytest.mark.asyncio
+    async def test_build_graph_creates_correct_structure(self, director):
         """Test that _build_graph creates a real StateGraph with correct structure."""
         # Use real StateGraph instead of mocking
-        graph = director._build_graph(StateWithMessages)
+        graph = await director._build_graph(StateWithMessages)
 
         # Verify we got a compiled graph (Runnable)
         assert hasattr(graph, "invoke")
@@ -138,7 +140,8 @@ class TestAgentBuilderDirector:
         assert hasattr(graph, "__class__")
         assert "CompiledStateGraph" in str(graph.__class__)
 
-    def test_build_graph_with_custom_node_names(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_graph_with_custom_node_names(self, sample_registry):
         """Test that _build_graph respects custom node names."""
         config = AgentConfig(
             state_type=StateWithMessages,
@@ -159,7 +162,7 @@ class TestAgentBuilderDirector:
         director = AgentBuilderDirector(config, sample_registry)
 
         # Build real graph
-        graph = director._build_graph(StateWithMessages)
+        graph = await director._build_graph(StateWithMessages)
 
         # Verify we got a compiled graph
         assert hasattr(graph, "invoke")
@@ -171,9 +174,10 @@ class TestAgentBuilderDirector:
         assert hasattr(graph, "__class__")
         assert "CompiledStateGraph" in str(graph.__class__)
 
-    def test_build_graph_compiles_graph(self, director):
+    @pytest.mark.asyncio
+    async def test_build_graph_compiles_graph(self, director):
         """Test that _build_graph returns a compiled graph."""
-        graph = director._build_graph(StateWithMessages)
+        graph = await director._build_graph(StateWithMessages)
 
         # A compiled graph should have invoke and ainvoke methods
         assert callable(graph.invoke)
@@ -183,10 +187,11 @@ class TestAgentBuilderDirector:
         assert hasattr(graph, "__class__")
         assert "CompiledStateGraph" in str(graph.__class__)
 
-    def test_build_creates_agent_with_real_integration(self, director):
+    @pytest.mark.asyncio
+    async def test_build_creates_agent_with_real_integration(self, director):
         """Test the full build process without mocking internal methods."""
         # This test exercises the real build process
-        agent = director.build()
+        agent = await director.build()
 
         # Verify we got a real Agent
         assert isinstance(agent, Agent)
@@ -198,15 +203,17 @@ class TestAgentBuilderDirector:
         assert hasattr(agent.graph, "ainvoke")
         assert callable(agent.graph.ainvoke)
 
-    def test_build_validates_configuration(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_validates_configuration(self, sample_registry):
         config = AgentConfig(
             state_type=StateWithMessages, steps=[], **default_agent_config_kwargs()
         )
         director = AgentBuilderDirector(config, sample_registry)
         with pytest.raises(ValueError, match="Cannot build agent: no steps configured"):
-            director.build()
+            await director.build()
 
-    def test_build_with_invalid_step_type_raises_error(
+    @pytest.mark.asyncio
+    async def test_build_with_invalid_step_type_raises_error(
         self, sample_config, sample_registry
     ):
         sample_config.steps.append(
@@ -214,7 +221,7 @@ class TestAgentBuilderDirector:
         )
         director = AgentBuilderDirector(sample_config, sample_registry)
         with pytest.raises(ValueError, match="Unknown step type: invalid_type"):
-            director.build()
+            await director.build()
 
     def test_validate_configuration_with_valid_config(self, director):
         director._validate_configuration()
@@ -239,7 +246,8 @@ class TestAgentBuilderDirector:
         ):
             director._validate_configuration()
 
-    def test_build_integration_with_real_strategies(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_integration_with_real_strategies(self, sample_registry):
         config = AgentConfig(
             state_type=StateWithMessages,
             steps=[
@@ -257,11 +265,12 @@ class TestAgentBuilderDirector:
             **default_agent_config_kwargs(),
         )
         director = AgentBuilderDirector(config, sample_registry)
-        agent = director.build()
+        agent = await director.build()
         assert isinstance(agent, Agent)
         assert agent.built is True
 
-    def test_build_with_single_step(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_with_single_step(self, sample_registry):
         config = AgentConfig(
             state_type=StateWithMessages,
             steps=[
@@ -274,11 +283,12 @@ class TestAgentBuilderDirector:
             **default_agent_config_kwargs(),
         )
         director = AgentBuilderDirector(config, sample_registry)
-        agent = director.build()
+        agent = await director.build()
         assert isinstance(agent, Agent)
         assert agent.built is True
 
-    def test_build_with_multiple_steps(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_with_multiple_steps(self, sample_registry):
         config = AgentConfig(
             state_type=StateWithMessages,
             steps=[
@@ -301,11 +311,12 @@ class TestAgentBuilderDirector:
             **default_agent_config_kwargs(),
         )
         director = AgentBuilderDirector(config, sample_registry)
-        agent = director.build()
+        agent = await director.build()
         assert isinstance(agent, Agent)
         assert agent.built is True
 
-    def test_build_graph_with_real_state_type_creation(self, sample_registry):
+    @pytest.mark.asyncio
+    async def test_build_graph_with_real_state_type_creation(self, sample_registry):
         """Test that _build_graph works with dynamically created state types."""
 
         # Create a base state type without messages
@@ -333,7 +344,7 @@ class TestAgentBuilderDirector:
         assert "value" in state_type.__annotations__
 
         # Build graph with the enhanced state type
-        graph = director._build_graph(state_type)
+        graph = await director._build_graph(state_type)
         assert hasattr(graph, "ainvoke")
         assert callable(graph.ainvoke)
         assert hasattr(graph, "__class__")

@@ -133,7 +133,7 @@ class LLMStepStrategy(StepStrategy):
     Strategy for creating LLM steps.
     """
 
-    def create_step(self, config: Dict[str, Any]) -> LLMStep:
+    async def create_step(self, config: Dict[str, Any]) -> LLMStep:
         prompt_template = config.get("prompt_template", "")
         system_prompt = config.get("system_prompt", "")
 

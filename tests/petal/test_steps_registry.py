@@ -10,7 +10,7 @@ from petal.core.steps.registry import StepRegistry
 
 
 class DummyStrategy(StepStrategy):
-    def create_step(self, config: Dict[str, Any]):  # noqa: ARG002
+    async def create_step(self, config: Dict[str, Any]):  # noqa: ARG002
         return lambda x: x
 
     def get_node_name(self, index: int) -> str:
@@ -113,8 +113,8 @@ def test_validate_strategy_with_defaults():
         registry.validate_strategy("unknown")
 
 
-def test_create_step_with_valid_config():
-    """Test that create_step creates a callable from StepConfig."""
+@pytest.mark.asyncio
+async def test_create_step_with_valid_config():
     registry = StepRegistry()
     registry.register("dummy", DummyStrategy)
 
@@ -122,7 +122,7 @@ def test_create_step_with_valid_config():
         strategy_type="dummy", config={"test": "value"}, node_name="test_node"
     )
 
-    step = registry.create_step(step_config)
+    step = await registry.create_step(step_config)
     assert callable(step)
 
     # Test that the step can be called
@@ -130,7 +130,8 @@ def test_create_step_with_valid_config():
     assert result == {"input": "test"}
 
 
-def test_create_step_with_unknown_strategy():
+@pytest.mark.asyncio
+async def test_create_step_with_unknown_strategy():
     """Test that create_step raises error for unknown strategy type."""
     registry = StepRegistry()
 
@@ -139,10 +140,11 @@ def test_create_step_with_unknown_strategy():
     )
 
     with pytest.raises(ValueError, match="Unknown step type: unknown"):
-        registry.create_step(step_config)
+        await registry.create_step(step_config)
 
 
-def test_create_step_with_custom_strategy():
+@pytest.mark.asyncio
+async def test_create_step_with_custom_strategy():
     """Test that create_step works with CustomStepStrategy."""
     registry = StepRegistry()
 
@@ -152,7 +154,7 @@ def test_create_step_with_custom_strategy():
         node_name="custom_node",
     )
 
-    step = registry.create_step(step_config)
+    step = await registry.create_step(step_config)
     assert callable(step)
 
     # Test that the step can be called

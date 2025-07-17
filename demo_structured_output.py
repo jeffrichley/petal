@@ -32,7 +32,7 @@ async def main():
     with patch.object(
         llm_mod.LLMStep, "_create_llm_for_provider", return_value=mock_llm
     ):
-        agent = (
+        agent = await (
             AgentFactory(DefaultState)
             .with_chat(prompt_template="What is the answer?", model="gpt-4o-mini")
             .with_structured_output(MyModel)
@@ -52,7 +52,7 @@ async def main():
         print("Result['blah']:", result.get("blah"))
 
         # Key-wrapped case
-        agent2 = (
+        agent2 = await (
             AgentFactory(DefaultState)
             .with_chat(prompt_template="What is the answer?", model="gpt-4o-mini")
             .with_structured_output(MyModel, key="blah")

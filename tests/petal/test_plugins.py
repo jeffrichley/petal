@@ -176,7 +176,8 @@ class TestPluginManager:
         manager.register(plugin2)
         assert manager.get_plugin("test").get_config_schema()["version"] == 2
 
-    def test_discover_plugins_with_real_module(self):
+    @pytest.mark.asyncio
+    async def test_discover_plugins_with_real_module(self):
         """Test plugin discovery with a real temporary module."""
         manager = PluginManager()
 
@@ -197,7 +198,7 @@ from petal.core.steps.base import StepStrategy
 class TestStrategy(StepStrategy):
     """Test strategy implementation."""
 
-    def create_step(self, config):
+    async def create_step(self, config):
         return lambda x: f"test_processed_{x}"
 
     def get_node_name(self, index):
@@ -262,7 +263,7 @@ PLUGINS = [TestPlugin1(), TestPlugin2()]
                 assert strategy1 == strategy2  # Same strategy class
 
                 # Test actual step creation
-                step = strategy1().create_step({})
+                step = await strategy1().create_step({})
                 result = step("hello")
                 assert result == "test_processed_hello"
 
@@ -318,7 +319,8 @@ def some_function():
         # No plugins should be registered
         assert len(manager._plugins) == 0
 
-    def test_discover_plugins_with_mixed_content(self):
+    @pytest.mark.asyncio
+    async def test_discover_plugins_with_mixed_content(self):
         """Test discovery when PLUGINS list contains non-StepPlugin items."""
         manager = PluginManager()
 
@@ -338,7 +340,7 @@ from petal.core.steps.base import StepStrategy
 class TestStrategy(StepStrategy):
     """Test strategy implementation."""
 
-    def create_step(self, config):
+    async def create_step(self, config):
         return lambda x: f"mixed_processed_{x}"
 
     def get_node_name(self, index):
@@ -388,7 +390,7 @@ PLUGINS = [
 
                 # Test strategy integration
                 strategy = plugin.get_strategy()
-                step = strategy().create_step({})
+                step = await strategy().create_step({})
                 result = step("hello")
                 assert result == "mixed_processed_hello"
 

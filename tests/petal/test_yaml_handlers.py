@@ -53,7 +53,8 @@ def test_node_config_handler_interface():
     assert callable(node)
 
 
-def test_llm_node_handler_creation():
+@pytest.mark.asyncio
+async def test_llm_node_handler_creation():
     """Test LLMNodeHandler can create LLM nodes from config."""
     handler = LLMNodeHandler()
     config = LLMNodeConfig(
@@ -67,12 +68,13 @@ def test_llm_node_handler_creation():
         prompt="Test prompt",
         system_prompt="Test system",
     )
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
     assert callable(node)
     assert callable(node)
 
 
-def test_llm_node_handler_integration_with_registry(monkeypatch):
+@pytest.mark.asyncio
+async def test_llm_node_handler_integration_with_registry(monkeypatch):
     """Test LLMNodeHandler integrates with step registry."""
     handler = LLMNodeHandler()
     config = LLMNodeConfig(
@@ -89,12 +91,12 @@ def test_llm_node_handler_integration_with_registry(monkeypatch):
     called = {}
 
     class DummyRegistry:
-        def create_step(self, step_config):
+        async def create_step(self, step_config):
             called["step_config"] = step_config
             return lambda x: x
 
     monkeypatch.setattr(handler, "registry", DummyRegistry())
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
     assert callable(node)
     assert "step_config" in called
 
@@ -104,7 +106,8 @@ def dummy_tool_func(x):
     return x
 
 
-def test_react_node_handler_creation():
+@pytest.mark.asyncio
+async def test_react_node_handler_creation():
     """Test ReactNodeHandler can create React nodes from config."""
     with patch(
         "petal.core.tool_factory.ToolFactory.resolve",
@@ -120,12 +123,13 @@ def test_react_node_handler_creation():
             system_prompt="You are a reasoning agent",
             max_iterations=5,
         )
-        node = handler.create_node(config)
+        node = await handler.create_node(config)
         assert callable(node)
         assert callable(node)
 
 
-def test_react_node_handler_with_tool_factory():
+@pytest.mark.asyncio
+async def test_react_node_handler_with_tool_factory():
     """Test ReactNodeHandler integrates with ToolFactory."""
     with patch(
         "petal.core.tool_factory.ToolFactory.resolve",
@@ -141,7 +145,7 @@ def test_react_node_handler_with_tool_factory():
             system_prompt="You are a reasoning agent",
             max_iterations=5,
         )
-        node = handler.create_node(config)
+        node = await handler.create_node(config)
         assert callable(node)
         # No need to check tool resolution here, just that it works
 
@@ -162,7 +166,8 @@ def test_handler_factory_unknown_type():
         factory.get_handler("unknown")
 
 
-def test_react_node_handler_with_mcp_tools(monkeypatch):
+@pytest.mark.asyncio
+async def test_react_node_handler_with_mcp_tools(monkeypatch):
     """Test: ReactNodeHandler should register MCP servers from YAML config using generic resolver."""
     from petal.core.config.yaml import ReactNodeConfig
     from petal.core.tool_factory import ToolFactory
@@ -200,19 +205,21 @@ def test_react_node_handler_with_mcp_tools(monkeypatch):
     monkeypatch.setattr(ToolFactory, "add_mcp", fake_add_mcp)
 
     # Patch ToolFactory.resolve to always return a dummy function with a docstring
-    def dummy_tool(*_args, **_kwargs):
+    async def dummy_tool(*_args, **_kwargs):
         """A dummy tool for testing."""
         return None
 
     monkeypatch.setattr(ToolFactory, "resolve", lambda _self, _name: dummy_tool)
     handler = ReactNodeHandler(tool_factory=ToolFactory())
+
     # Call handler.create_node, which should trigger MCP registration
-    handler.create_node(config)
+    await handler.create_node(config)
     assert "math_server" in called
     assert called["math_server"] == mcp_servers["math_server"]["config"]
 
 
-def test_custom_node_handler_creation():
+@pytest.mark.asyncio
+async def test_custom_node_handler_creation():
     """Test CustomNodeHandler can create custom nodes from config."""
     handler = CustomNodeHandler()
 
@@ -224,7 +231,7 @@ def test_custom_node_handler_creation():
         parameters={"multiplier": 2, "offset": 10},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
     assert callable(node)
 
     # Test the node function
@@ -233,7 +240,8 @@ def test_custom_node_handler_creation():
     assert result == {"result": 20}  # 5 * 2 + 10
 
 
-def test_custom_node_handler_with_base_config():
+@pytest.mark.asyncio
+async def test_custom_node_handler_with_base_config():
     """Test CustomNodeHandler works with BaseNodeConfig input."""
     handler = CustomNodeHandler()
 
@@ -247,7 +255,7 @@ def test_custom_node_handler_with_base_config():
     )
     base_config.__dict__["parameters"] = {"add": 5}
 
-    node = handler.create_node(base_config)
+    node = await handler.create_node(base_config)
     assert callable(node)
 
     # Test the node function
@@ -257,7 +265,8 @@ def test_custom_node_handler_with_base_config():
     assert result["kwargs"]["add"] == 5
 
 
-def test_custom_node_handler_parameter_merging():
+@pytest.mark.asyncio
+async def test_custom_node_handler_parameter_merging():
     """Test that custom node parameters are merged with kwargs."""
     handler = CustomNodeHandler()
 
@@ -269,7 +278,7 @@ def test_custom_node_handler_parameter_merging():
         parameters={"base_param": "config_value"},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
 
     # Test with additional kwargs
     state = {"value": 5}
@@ -281,7 +290,8 @@ def test_custom_node_handler_parameter_merging():
     assert result["kwargs"]["another_param"] == 42  # From kwargs
 
 
-def test_custom_node_handler_empty_parameters():
+@pytest.mark.asyncio
+async def test_custom_node_handler_empty_parameters():
     """Test custom node handler with empty parameters."""
     handler = CustomNodeHandler()
 
@@ -293,7 +303,7 @@ def test_custom_node_handler_empty_parameters():
         parameters={},  # Empty parameters
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
 
     # Test the node function
     state = {"value": 42}
@@ -303,7 +313,8 @@ def test_custom_node_handler_empty_parameters():
     assert result["kwargs"]["extra_kwarg"] == "test"
 
 
-def test_custom_node_handler_kwargs_override_parameters():
+@pytest.mark.asyncio
+async def test_custom_node_handler_kwargs_override_parameters():
     """Test that kwargs override config parameters."""
     handler = CustomNodeHandler()
 
@@ -315,7 +326,7 @@ def test_custom_node_handler_kwargs_override_parameters():
         parameters={"param1": "config_value", "param2": "config_value2"},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
 
     # Test that kwargs override config parameters
     state = {"value": 42}
@@ -325,7 +336,8 @@ def test_custom_node_handler_kwargs_override_parameters():
     assert result["param2"] == "config_value2"  # From config
 
 
-def test_custom_node_handler_import_error():
+@pytest.mark.asyncio
+async def test_custom_node_handler_import_error():
     """Test CustomNodeHandler handles import errors gracefully."""
     handler = CustomNodeHandler()
 
@@ -342,10 +354,11 @@ def test_custom_node_handler_import_error():
         )
 
         with pytest.raises(ImportError, match="Module not found"):
-            handler.create_node(config)
+            await handler.create_node(config)
 
 
-def test_custom_node_handler_invalid_function_path():
+@pytest.mark.asyncio
+async def test_custom_node_handler_invalid_function_path():
     """Test CustomNodeHandler handles invalid function paths."""
     handler = CustomNodeHandler()
 
@@ -362,7 +375,7 @@ def test_custom_node_handler_invalid_function_path():
         )
 
         with pytest.raises(ValueError, match="Invalid path"):
-            handler.create_node(config)
+            await handler.create_node(config)
 
 
 @pytest.mark.asyncio
@@ -378,7 +391,7 @@ async def test_custom_node_handler_async_function():
         parameters={"add": 5},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
     assert callable(node)
 
     # Test the node function
@@ -386,7 +399,8 @@ async def test_custom_node_handler_async_function():
     assert result["result"] == 5
 
 
-def test_custom_node_handler_complex_state():
+@pytest.mark.asyncio
+async def test_custom_node_handler_complex_state():
     """Test CustomNodeHandler with complex state objects."""
     handler = CustomNodeHandler()
 
@@ -398,7 +412,7 @@ def test_custom_node_handler_complex_state():
         parameters={"filter_type": "active"},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
 
     # Test with complex state
     state = {
@@ -425,7 +439,8 @@ def test_custom_node_handler_integration_with_factory():
     assert "custom" in factory._handlers
 
 
-def test_custom_node_handler_edge_cases():
+@pytest.mark.asyncio
+async def test_custom_node_handler_edge_cases():
     """Test CustomNodeHandler with edge cases."""
     handler = CustomNodeHandler()
 
@@ -437,7 +452,7 @@ def test_custom_node_handler_edge_cases():
         parameters={"default_param": "default_value"},
     )
 
-    node = handler.create_node(config)
+    node = await handler.create_node(config)
 
     # Test with None state
     result = node(None)

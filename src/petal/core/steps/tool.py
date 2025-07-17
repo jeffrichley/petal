@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional
 from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolNode
 
+from petal.core.registry import ToolRegistry
 from petal.core.steps.base import StepStrategy
 
 
@@ -71,13 +72,13 @@ class ToolStepStrategy(StepStrategy):
     Strategy for creating tool execution steps.
     """
 
-    def create_step(self, config: Dict[str, Any]) -> Callable:
+    async def create_step(self, config: Dict[str, Any]) -> Callable:
         """
         Create a ToolStep from configuration.
 
         Args:
             config: Configuration dictionary containing:
-                - tools: List of tools to execute
+                - tools: List of tools to execute (can be strings or tool objects)
                 - scratchpad_key: Optional key for scratchpad in state
 
         Returns:
@@ -85,6 +86,7 @@ class ToolStepStrategy(StepStrategy):
 
         Raises:
             ValueError: If no tools are provided
+            KeyError: If a tool name cannot be resolved
         """
         tools = config.get("tools", [])
         scratchpad_key = config.get("scratchpad_key")
@@ -92,7 +94,19 @@ class ToolStepStrategy(StepStrategy):
         if not tools:
             raise ValueError("Tool step requires at least one tool")
 
-        return ToolStep(tools, scratchpad_key)
+        # Resolve string tool names to actual tools using async registry
+        resolved_tools = []
+        registry = ToolRegistry()
+
+        for tool in tools:
+            if isinstance(tool, str):
+                # Use async registry resolution for discovery support
+                resolved_tool = await registry.resolve(tool)
+                resolved_tools.append(resolved_tool)
+            else:
+                resolved_tools.append(tool)
+
+        return ToolStep(resolved_tools, scratchpad_key)
 
     def get_node_name(self, index: int) -> str:
         """

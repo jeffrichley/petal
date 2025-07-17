@@ -17,7 +17,7 @@ class DemoState(TypedDict):
     name: str
 
 
-def main():
+async def main():
     """Debug the graph object."""
     print("Creating agent factory...")
 
@@ -31,7 +31,7 @@ def main():
     )
 
     # Build the agent
-    agent = factory.build()
+    agent = await factory.build()
 
     print(f"Agent built: {agent.built}")
     print(f"Agent graph type: {type(agent.graph)}")
@@ -61,4 +61,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+
+    asyncio.run(main())
