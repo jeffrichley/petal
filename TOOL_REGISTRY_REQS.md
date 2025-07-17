@@ -15,17 +15,20 @@ Implement a lazy discovery system for tools that automatically scans for missing
 - **Folder Discovery**: Zero-config folder scanning with exclusion patterns
 - **MCP Integration**: Full MCP server and tool support via ToolFactory
 - **Module Caching**: Smart module loading with caching for performance
-- **100% Test Coverage**: Comprehensive test suite with 650+ tests passing
+- **100% Test Coverage**: Comprehensive test suite with 656 tests passing
+- **AgentFactory Integration**: AgentFactory now uses ToolRegistry singleton internally
+- **Tool Discovery Configuration**: AgentFactory supports tool discovery configuration via `with_tool_discovery()`
+- **Tool Step Integration**: Tool steps use ToolRegistry for tool resolution with discovery support
 
 ### 🔄 In Progress (Phase 4)
-- **AgentFactory Integration**: ToolRegistry singleton exists but AgentFactory still uses ToolFactory
 - **YAML Configuration Support**: Tool discovery not yet integrated into YAML configs
 - **Performance Optimization**: Discovery caching implemented but metrics not added
+- **Documentation Updates**: API docs and examples need updates for new features
 
 ### 📋 Remaining Work (Phase 5)
 - **Namespace Support**: Basic namespace parsing exists but auto-namespacing not implemented
 - **Discovery Hooks**: Custom discovery logic registration not implemented
-- **Configuration Integration**: Config-driven discovery settings not implemented
+- **Configuration Integration**: Config-driven discovery settings not fully implemented
 - **Documentation**: API docs, examples, and migration guide need updates
 
 ## 🏗️ Architecture Design
@@ -481,11 +484,11 @@ Raise KeyError
 ### Phase 4: Integration & Testing
 
 #### Task 4.1: AgentFactory Integration
-- [ ] Update AgentFactory to use ToolRegistry singleton
-- [ ] Maintain backward compatibility
-- [ ] Add tool discovery configuration
-- [ ] Update existing tests
-- [ ] Write integration tests
+- [x] Update AgentFactory to use ToolRegistry singleton
+- [x] Maintain backward compatibility
+- [x] Add tool discovery configuration
+- [x] Update existing tests
+- [x] Write integration tests
 
 #### Task 4.2: YAML Configuration Support
 - [ ] Add tool discovery to YAML configs
@@ -670,7 +673,7 @@ Raise KeyError
 - Configuration system
 - 100% test coverage for Phase 3
 
-### Phase 4: Integration & Testing (Week 7-8)
+### Phase 4: Integration & Testing (Week 7-8) 🔄 IN PROGRESS
 **Goal**: Integrate with existing systems and comprehensive testing
 
 **Tasks to Complete:**
@@ -703,13 +706,13 @@ Raise KeyError
   - Write documentation tests
 
 **Deliverables:**
-- Full AgentFactory integration
+- Full AgentFactory integration ✅ COMPLETED
 - YAML configuration support
 - Performance optimizations
 - Complete documentation
 - 100% test coverage for Phase 4
 
-### Phase 5: Quality Assurance (Week 9-10)
+### Phase 5: Quality Assurance (Week 9-10) 📋 PENDING
 **Goal**: Final testing, quality assurance, and production readiness
 
 **Tasks to Complete:**
@@ -761,8 +764,8 @@ Raise KeyError
 - [x] Discovery hooks operational (via strategy pattern)
 - [x] All Phase 3 tests passing
 
-### Week 8: Integration Complete
-- [ ] AgentFactory integration working
+### Week 8: Integration Complete 🔄 IN PROGRESS
+- [x] AgentFactory integration working
 - [ ] YAML configuration support functional
 - [ ] Performance optimizations complete
 - [ ] All Phase 4 tests passing
@@ -790,17 +793,19 @@ Each phase builds upon the previous one, ensuring a solid foundation before addi
 - **Discovery Strategies**: All four strategies (Decorator, Config, Folder, MCP) implemented
 - **Tool Decorators**: `@petaltool`, `@petalmcp`, `@petalmcp_tool` fully functional
 - **Module Caching**: Smart module loading with performance optimization
-- **Test Coverage**: 100% coverage with 650+ tests passing
+- **Test Coverage**: 100% coverage with 656 tests passing
 - **Code Quality**: All mypy, linting, and formatting checks pass
+- **AgentFactory Integration**: AgentFactory now uses ToolRegistry singleton internally
+- **Tool Discovery Configuration**: AgentFactory supports `with_tool_discovery()` method
+- **Tool Step Integration**: Tool steps use ToolRegistry for tool resolution with discovery support
 
 ### 🔄 Partially Implemented
-- **AgentFactory Integration**: ToolRegistry exists but AgentFactory still uses ToolFactory
+- **YAML Configuration Support**: Tool discovery not yet integrated into YAML configs
 - **Namespace Support**: Basic parsing exists but auto-namespacing not implemented
 - **Discovery Hooks**: Strategy pattern provides extensibility but custom hooks not implemented
-- **Configuration Integration**: Discovery works but config-driven settings not implemented
+- **Configuration Integration**: Discovery works but config-driven settings not fully implemented
 
 ### 📋 Not Yet Implemented
-- **AgentFactory Integration**: Need to update AgentFactory to use ToolRegistry singleton
 - **YAML Configuration Support**: Tool discovery not integrated into YAML configs
 - **Performance Metrics**: Discovery caching works but metrics not added
 - **Documentation Updates**: API docs and examples need updates for new features
@@ -809,8 +814,8 @@ Each phase builds upon the previous one, ensuring a solid foundation before addi
 - **Configuration-Driven Discovery**: Settings for folders, modules, exclusions
 
 ### 🎯 Next Priority Tasks
-1. **AgentFactory Integration**: Update AgentFactory to use ToolRegistry singleton
-2. **YAML Configuration Support**: Add tool discovery to YAML configs
-3. **Documentation Updates**: Update API docs and examples
-4. **Advanced Namespace Support**: Implement auto-namespacing
-5. **Discovery Hooks**: Add custom discovery logic registration
+1. **YAML Configuration Support**: Add tool discovery to YAML configs
+2. **Documentation Updates**: Update API docs and examples
+3. **Advanced Namespace Support**: Implement auto-namespacing
+4. **Discovery Hooks**: Add custom discovery logic registration
+5. **Performance Metrics**: Add discovery performance tracking
