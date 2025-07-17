@@ -71,6 +71,8 @@ uv run git diff --cached
 ```
 
 ### 4. Commit Changes
+When making the git commit message, please look at the diff between our codebase and the main branch. Analyze this difference to figure out what all has been accomplished.
+
 ```bash
 # Simple commit
 uv run git commit -m "Add MCP tool factory with namespace support"

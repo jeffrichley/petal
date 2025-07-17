@@ -167,6 +167,21 @@ class ValidationConfig(BaseModel):
     )
 
 
+class ToolDiscoveryConfig(BaseModel):
+    """Configuration for YAML nodes."""
+
+    enabled: bool = Field(default=True, description="Whether tool discovery is enabled")
+    folders: Optional[List[str]] = Field(
+        default=None, description="Custom folders to scan for tools"
+    )
+    config_locations: Optional[List[str]] = Field(
+        default=None, description="Custom config file locations to scan"
+    )
+    exclude_patterns: Optional[List[str]] = Field(
+        default=None, description="Custom exclusion patterns"
+    )
+
+
 class BaseNodeConfig(BaseModel):
     """Base configuration for all node types."""
 
@@ -186,6 +201,9 @@ class BaseNodeConfig(BaseModel):
     )
     output_schema: Optional[StateSchemaConfig] = Field(
         default=None, description="Output validation schema"
+    )
+    tool_discovery: Optional[ToolDiscoveryConfig] = Field(
+        default=None, description="Tool discovery configuration"
     )
 
     @field_validator("name")

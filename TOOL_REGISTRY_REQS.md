@@ -21,7 +21,7 @@ Implement a lazy discovery system for tools that automatically scans for missing
 - **Tool Step Integration**: Tool steps use ToolRegistry for tool resolution with discovery support
 
 ### 🔄 In Progress (Phase 4)
-- **YAML Configuration Support**: Tool discovery not yet integrated into YAML configs
+- [x] **YAML Configuration Support**: Tool discovery now integrated into YAML configs ✅ COMPLETED
 - **Performance Optimization**: Discovery caching implemented but metrics not added
 - **Documentation Updates**: API docs and examples need updates for new features
 
@@ -491,11 +491,11 @@ Raise KeyError
 - [x] Write integration tests
 
 #### Task 4.2: YAML Configuration Support
-- [ ] Add tool discovery to YAML configs
-- [ ] Support discovery configuration in agent configs
-- [ ] Add tool discovery validation
-- [ ] Update YAML parsing tests
-- [ ] Write YAML integration tests
+- [x] Add tool discovery to YAML configs
+- [x] Support discovery configuration in agent configs
+- [x] Add tool discovery validation
+- [x] Update YAML parsing tests
+- [x] Write YAML integration tests
 
 #### Task 4.3: Performance Optimization
 - [x] Optimize discovery caching
@@ -684,7 +684,7 @@ Raise KeyError
   - Update existing tests
   - Write integration tests
 
-- [ ] **Task 4.2**: YAML Configuration Support
+- [x] **Task 4.2**: YAML Configuration Support
   - Add tool discovery to YAML configs
   - Support discovery configuration in agent configs
   - Add tool discovery validation
@@ -766,7 +766,7 @@ Raise KeyError
 
 ### Week 8: Integration Complete 🔄 IN PROGRESS
 - [x] AgentFactory integration working
-- [ ] YAML configuration support functional
+- [x] YAML configuration support functional
 - [ ] Performance optimizations complete
 - [ ] All Phase 4 tests passing
 
@@ -793,14 +793,14 @@ Each phase builds upon the previous one, ensuring a solid foundation before addi
 - **Discovery Strategies**: All four strategies (Decorator, Config, Folder, MCP) implemented
 - **Tool Decorators**: `@petaltool`, `@petalmcp`, `@petalmcp_tool` fully functional
 - **Module Caching**: Smart module loading with performance optimization
-- **Test Coverage**: 100% coverage with 656 tests passing
+- **Test Coverage**: 100% coverage with 672
 - **Code Quality**: All mypy, linting, and formatting checks pass
 - **AgentFactory Integration**: AgentFactory now uses ToolRegistry singleton internally
 - **Tool Discovery Configuration**: AgentFactory supports `with_tool_discovery()` method
 - **Tool Step Integration**: Tool steps use ToolRegistry for tool resolution with discovery support
+- **YAML Configuration Support**: Tool discovery now integrated into YAML configs with sensible defaults
 
 ### 🔄 Partially Implemented
-- **YAML Configuration Support**: Tool discovery not yet integrated into YAML configs
 - **Namespace Support**: Basic parsing exists but auto-namespacing not implemented
 - **Discovery Hooks**: Strategy pattern provides extensibility but custom hooks not implemented
 - **Configuration Integration**: Discovery works but config-driven settings not fully implemented
