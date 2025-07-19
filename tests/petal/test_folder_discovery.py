@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
@@ -132,12 +132,12 @@ def cached_tool():
             # First call should trigger scan and find the tool
             tool1 = await discovery.discover("cached_tool")
             assert tool1 is not None
-            assert tool1.name == "cached_tool"
+            assert tool1.name == f"discovered_{tool_file.stem}:cached_tool"
 
             # Second call should use cache and find the same tool
             tool2 = await discovery.discover("cached_tool")
             assert tool2 is not None
-            assert tool2.name == "cached_tool"
+            assert tool2.name == f"discovered_{tool_file.stem}:cached_tool"
 
             # Should be the same tool instance (from cache)
             assert tool1 is tool2
@@ -211,14 +211,24 @@ def tool2():
             # Should discover all tools
             all_tools = await discovery.discover_all()
             assert len(all_tools) == 2
-            assert "tool1" in all_tools
-            assert "tool2" in all_tools
-            assert all_tools["tool1"].name == "tool1"
-            assert all_tools["tool2"].name == "tool2"
+            assert f"discovered_{tool1_file.stem}:tool1" in all_tools
+            assert f"discovered_{tool2_file.stem}:tool2" in all_tools
+            assert (
+                all_tools[f"discovered_{tool1_file.stem}:tool1"].name
+                == f"discovered_{tool1_file.stem}:tool1"
+            )
+            assert (
+                all_tools[f"discovered_{tool2_file.stem}:tool2"].name
+                == f"discovered_{tool2_file.stem}:tool2"
+            )
 
             # Verify they are real BaseTool instances
-            assert isinstance(all_tools["tool1"], BaseTool)
-            assert isinstance(all_tools["tool2"], BaseTool)
+            assert isinstance(
+                all_tools[f"discovered_{tool1_file.stem}:tool1"], BaseTool
+            )
+            assert isinstance(
+                all_tools[f"discovered_{tool2_file.stem}:tool2"], BaseTool
+            )
 
     @pytest.mark.asyncio
     async def test_folder_discovery_handles_folder_scanning_exceptions(self):
@@ -260,13 +270,19 @@ def real_python_path_tool():
                 tools = await discovery._scan_python_path()
 
                 # Verify we found the real tool
-                assert "real_python_path_tool" in tools
-                assert tools["real_python_path_tool"].name == "real_python_path_tool"
+                assert f"discovered_{tool_file.stem}:real_python_path_tool" in tools
+                assert (
+                    tools[f"discovered_{tool_file.stem}:real_python_path_tool"].name
+                    == f"discovered_{tool_file.stem}:real_python_path_tool"
+                )
 
                 # Verify it's a real BaseTool instance, not a mock
                 from langchain_core.tools import BaseTool
 
-                assert isinstance(tools["real_python_path_tool"], BaseTool)
+                assert isinstance(
+                    tools[f"discovered_{tool_file.stem}:real_python_path_tool"],
+                    BaseTool,
+                )
 
             finally:
                 # Restore original sys.path
@@ -342,7 +358,10 @@ def disabled_tool():
                 await discovery._perform_full_scan()
 
                 # Should not find the tool from Python path when scanning is disabled
-                assert "disabled_tool" not in discovery._cached_tools
+                assert (
+                    f"discovered_{tool_file.stem}:disabled_tool"
+                    not in discovery._cached_tools
+                )
 
         finally:
             # Restore original sys.path
@@ -390,8 +409,8 @@ def sub_tool():
             tools_recursive = await discovery_recursive._scan_folders()
 
             # Should find both tools (recursive)
-            assert "root_tool" in tools_recursive
-            assert "sub_tool" in tools_recursive
+            assert f"discovered_{root_file.stem}:root_tool" in tools_recursive
+            assert f"discovered_{sub_file.stem}:sub_tool" in tools_recursive
             assert len(tools_recursive) == 2
 
             # Test non-recursive scanning
@@ -402,8 +421,8 @@ def sub_tool():
             tools_non_recursive = await discovery_non_recursive._scan_folders()
 
             # Should only find root tool (non-recursive)
-            assert "root_tool" in tools_non_recursive
-            assert "sub_tool" not in tools_non_recursive
+            assert f"discovered_{root_file.stem}:root_tool" in tools_non_recursive
+            assert f"discovered_{sub_file.stem}:sub_tool" not in tools_non_recursive
             assert len(tools_non_recursive) == 1
 
     @pytest.mark.asyncio
@@ -429,8 +448,11 @@ def actual_test_tool():
                 tools = await discovery._load_tools_from_file(Path(f.name))
 
                 # Should find the tool
-                assert "actual_test_tool" in tools
-                assert tools["actual_test_tool"].name == "actual_test_tool"
+                assert f"discovered_{Path(f.name).stem}:actual_test_tool" in tools
+                assert (
+                    tools[f"discovered_{Path(f.name).stem}:actual_test_tool"].name
+                    == f"discovered_{Path(f.name).stem}:actual_test_tool"
+                )
 
             finally:
                 # Clean up
@@ -564,8 +586,15 @@ def dict_update_tool():
                 discovered_tools = await discovery._scan_python_path()
 
                 # Should find the tool and update the dict
-                assert "dict_update_tool" in discovered_tools
-                assert discovered_tools["dict_update_tool"].name == "dict_update_tool"
+                assert (
+                    f"discovered_{tool_file.stem}:dict_update_tool" in discovered_tools
+                )
+                assert (
+                    discovered_tools[
+                        f"discovered_{tool_file.stem}:dict_update_tool"
+                    ].name
+                    == f"discovered_{tool_file.stem}:dict_update_tool"
+                )
                 assert len(discovered_tools) == 1
 
         finally:
@@ -597,8 +626,11 @@ def registry_diff_tool():
                 tools = await discovery._load_tools_from_file(Path(f.name))
 
                 # Should find the tool through the registry diff mechanism
-                assert "registry_diff_tool" in tools
-                assert tools["registry_diff_tool"].name == "registry_diff_tool"
+                assert f"discovered_{Path(f.name).stem}:registry_diff_tool" in tools
+                assert (
+                    tools[f"discovered_{Path(f.name).stem}:registry_diff_tool"].name
+                    == f"discovered_{Path(f.name).stem}:registry_diff_tool"
+                )
 
             finally:
                 # Clean up
@@ -657,9 +689,128 @@ registry.register("continue_test_tool", continue_test_tool)
                     # Should not crash, and should handle the exception gracefully
                     # The tool that failed to resolve should not be in the results
                     assert isinstance(tools, dict)
-                    assert "continue_test_tool" not in tools
-                    assert "valid_tool" in tools
+                    assert (
+                        f"discovered_{Path(f.name).stem}:continue_test_tool"
+                        not in tools
+                    )
+                    assert f"discovered_{Path(f.name).stem}:valid_tool" in tools
 
             finally:
                 # Clean up
                 os.unlink(f.name)
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_direct_cache_lookup(self):
+        """Test that FolderDiscovery directly looks up tools in _cached_tools."""
+        discovery = FolderDiscovery()
+
+        # Manually populate the cache with a tool
+        mock_tool = Mock()
+        mock_tool.name = "test_namespace:test_tool"
+        discovery._cached_tools["test_namespace:test_tool"] = mock_tool
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test direct lookup with full namespaced name
+        tool = await discovery.discover("test_namespace:test_tool")
+
+        # Should find the tool directly from cache
+        assert tool is not None
+        assert tool is mock_tool
+        assert tool.name == "test_namespace:test_tool"
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_direct_cache_lookup_not_found(self):
+        """Test that FolderDiscovery returns None for tools not in cache."""
+        discovery = FolderDiscovery()
+
+        # Manually populate the cache with a tool
+        mock_tool = Mock()
+        mock_tool.name = "test_namespace:test_tool"
+        discovery._cached_tools["test_namespace:test_tool"] = mock_tool
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test lookup with non-existent tool
+        tool = await discovery.discover("nonexistent_namespace:nonexistent_tool")
+
+        # Should return None (not found in cache)
+        assert tool is None
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_direct_cache_lookup_empty_cache(self):
+        """Test that FolderDiscovery returns None when cache is empty."""
+        discovery = FolderDiscovery()
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test lookup with empty cache
+        tool = await discovery.discover("any_tool")
+
+        # Should return None (empty cache)
+        assert tool is None
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_handles_ambiguous_base_names(self):
+        """Test that FolderDiscovery returns None when multiple tools have the same base name."""
+        discovery = FolderDiscovery()
+
+        # Manually populate the cache with multiple tools that have the same base name
+        mock_tool1 = Mock()
+        mock_tool1.name = "module_a:calculator"
+        mock_tool2 = Mock()
+        mock_tool2.name = "module_b:calculator"
+        mock_tool3 = Mock()
+        mock_tool3.name = "module_c:search"
+
+        discovery._cached_tools["module_a:calculator"] = mock_tool1
+        discovery._cached_tools["module_b:calculator"] = mock_tool2
+        discovery._cached_tools["module_c:search"] = mock_tool3
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test lookup with ambiguous base name (multiple matches)
+        tool = await discovery.discover("calculator")
+
+        # Should return None due to ambiguity (multiple tools with same base name)
+        assert tool is None
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_handles_single_base_name_match(self):
+        """Test that FolderDiscovery returns the tool when only one tool has the base name."""
+        discovery = FolderDiscovery()
+
+        # Manually populate the cache with tools
+        mock_tool1 = Mock()
+        mock_tool1.name = "module_a:calculator"
+        mock_tool2 = Mock()
+        mock_tool2.name = "module_b:search"
+
+        discovery._cached_tools["module_a:calculator"] = mock_tool1
+        discovery._cached_tools["module_b:search"] = mock_tool2
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test lookup with unique base name (single match)
+        tool = await discovery.discover("calculator")
+
+        # Should return the single matching tool
+        assert tool is not None
+        assert tool is mock_tool1
+        assert tool.name == "module_a:calculator"
+
+    @pytest.mark.asyncio
+    async def test_folder_discovery_handles_no_base_name_match(self):
+        """Test that FolderDiscovery returns None when no tools have the base name."""
+        discovery = FolderDiscovery()
+
+        # Manually populate the cache with tools
+        mock_tool1 = Mock()
+        mock_tool1.name = "module_a:calculator"
+        mock_tool2 = Mock()
+        mock_tool2.name = "module_b:search"
+
+        discovery._cached_tools["module_a:calculator"] = mock_tool1
+        discovery._cached_tools["module_b:search"] = mock_tool2
+        discovery._scanned = True  # Mark as scanned so it doesn't trigger a full scan
+
+        # Test lookup with non-existent base name
+        tool = await discovery.discover("nonexistent")
+
+        # Should return None (no matches)
+        assert tool is None

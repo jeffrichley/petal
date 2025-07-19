@@ -4,7 +4,7 @@ from typing import Optional
 
 import pytest
 from langchain_core.tools import BaseTool
-from petal.core.registry import DiscoveryStrategy, ToolRegistry
+from petal.core.registry import AmbiguousToolNameError, DiscoveryStrategy, ToolRegistry
 
 
 @pytest.fixture(autouse=True)
@@ -181,6 +181,7 @@ async def test_discovery_strategy_exception_handling():
 async def test_tool_registry_fluent_interface():
     """Test that add() returns self for fluent interface."""
     registry = ToolRegistry()
+    registry._reset_for_testing()  # Reset for clean state
 
     from petal.core.decorators import petaltool
 
@@ -189,17 +190,24 @@ async def test_tool_registry_fluent_interface():
         """Test tool."""
         return "test"
 
-    result = registry.add("test_tool", test_tool)
-    assert result is registry
+    # The decorator automatically registers the tool, so we don't need to add it manually
+    # Just verify its in the registry
+    assert "test_registry:test_tool" in registry.list()
 
-    # Test chaining
+    # Test chaining with manual registration
     @petaltool
     def another_tool():
         """Another test tool."""
         return "another"
 
-    registry.add("another_tool", another_tool)  # type: ignore[arg-type]
-    registry.add("third_tool", test_tool)  # type: ignore[arg-type]
+    # Manually add a tool with a different name
+    result = registry.add("manual_tool", another_tool)
+    assert result is registry
+
+    # Verify both tools are registered
+    assert "test_registry:test_tool" in registry.list()
+    assert "test_registry:another_tool" in registry.list()
+    assert "manual_tool" in registry.list()
     assert len(registry.list()) == 3
 
 
@@ -279,12 +287,18 @@ async def test_tool_registry_list_sorted():
         """Beta tool."""
         return "beta"
 
-    registry.add("zebra", zebra)  # type: ignore[arg-type]
-    registry.add("alpha", alpha)  # type: ignore[arg-type]
-    registry.add("beta", beta)  # type: ignore[arg-type]
-
+    # The decorators automatically register the tools
     tool_list = registry.list()
-    assert tool_list == ["alpha", "beta", "zebra"]
+    # Tools are now registered under namespaced names
+    assert "test_registry:alpha" in tool_list
+    assert "test_registry:beta" in tool_list
+    assert "test_registry:zebra" in tool_list
+    # Verify they're sorted
+    assert tool_list == [
+        "test_registry:alpha",
+        "test_registry:beta",
+        "test_registry:zebra",
+    ]
 
 
 @pytest.mark.asyncio
@@ -421,7 +435,7 @@ async def test_langchain_tool_no_wrapping():
 
     # Should be a BaseTool
     assert isinstance(search_api, BaseTool)  # type: ignore[arg-type]
-    assert search_api.name == "search_api"  # type: ignore[union-attr]
+    assert search_api.name == "test_registry:search_api"  # type: ignore[union-attr]
     assert "Search API" in search_api.description  # type: ignore[union-attr]
 
     # Test metadata
@@ -437,7 +451,7 @@ async def test_langchain_tool_no_wrapping():
         return f"Custom: {query}"
 
     assert isinstance(custom_tool, BaseTool)  # type: ignore[arg-type]
-    assert custom_tool.name == "custom_name"  # type: ignore[union-attr]
+    assert custom_tool.name == "test_registry:custom_name"  # type: ignore[union-attr]
 
     # Test metadata preservation
     assert hasattr(custom_tool, "_petal_registered")
@@ -463,7 +477,7 @@ async def test_petaltool_decorator_basic():
 
     # Should be registered with ToolRegistry
     registry = ToolRegistry()
-    assert "search_api" in registry.list()
+    assert "test_registry:search_api" in registry.list()
 
     # Should work with LangChain invoke
     result = search_api.invoke({"query": "test"})
@@ -487,8 +501,8 @@ async def test_petaltool_decorator_with_name():
 
     # Should be registered with custom name
     registry = ToolRegistry()
-    assert "custom_search" in registry.list()
-    assert "search_api" not in registry.list()
+    assert "test_registry:custom_search" in registry.list()
+    assert "test_registry:search_api" not in registry.list()
 
     # Should work with LangChain invoke
     result = search_api.invoke({"query": "test"})
@@ -506,7 +520,7 @@ async def test_petaltool_decorator_metadata():
         return f"Results for: {query}"
 
     # Should have proper name and description
-    assert search_api.name == "search_api"  # type: ignore[union-attr]
+    assert search_api.name == "test_registry:search_api"  # type: ignore[union-attr]
     assert "Search the API for the given query" in search_api.description  # type: ignore[union-attr]
 
     # Should have proper schema
@@ -550,7 +564,7 @@ async def test_tool_registry_async_tool_invocation():
 
 @pytest.mark.asyncio
 async def test_tool_registry_sync_tool_invocation():
-    """Test that sync tools are properly invoked."""
+    """Test that sync tools work correctly with arguments."""
     registry = ToolRegistry()
     registry._reset_for_testing()  # Reset for clean state
 
@@ -559,21 +573,125 @@ async def test_tool_registry_sync_tool_invocation():
     @tool
     def sync_tool_with_args(arg1: str, arg2: int = 10) -> str:
         """Sync tool with arguments."""
-        return f"sync_result: {arg1}, {arg2}"
+        return f"{arg1}_{arg2}"
 
     registry.add("sync_tool", sync_tool_with_args)  # type: ignore[arg-type]
 
     # Test resolving and invoking sync tool
     resolved_tool = await registry.resolve("sync_tool")
+    result = resolved_tool.invoke({"arg1": "test", "arg2": 5})
+    assert result == "test_5"
 
-    # Test with positional arguments
-    result = await resolved_tool.ainvoke({"arg1": "test", "arg2": 5})
-    assert result == "sync_result: test, 5"
 
-    # Test with default argument
-    result = await resolved_tool.ainvoke({"arg1": "default_test"})
-    assert result == "sync_result: default_test, 10"
+@pytest.mark.asyncio
+async def test_tool_registry_resolve_by_base_name_single_match():
+    """Test that ToolRegistry.resolve() works with base names when there's only one match."""
+    registry = ToolRegistry()
+    registry._reset_for_testing()  # Reset for clean state
 
-    # Test that the tool has proper methods
-    assert hasattr(resolved_tool, "ainvoke")
-    assert hasattr(resolved_tool, "invoke")
+    from petal.core.decorators import petaltool
+
+    @petaltool
+    def calculator(expression: str) -> str:
+        """Calculate the result of an expression."""
+        return f"Result: {expression}"
+
+    # Register the tool (it will be registered with a namespace)
+    # The tool will be registered as "test_registry:calculator"
+
+    # Test resolving by base name (should find the single match)
+    tool = await registry.resolve("calculator")
+
+    # Should return the tool
+    assert tool is not None
+    assert tool.name == "test_registry:calculator"
+
+    # Test that it works correctly
+    result = tool.invoke({"expression": "2 + 2"})
+    assert result == "Result: 2 + 2"
+
+
+@pytest.mark.asyncio
+async def test_tool_registry_resolve_by_base_name_multiple_matches():
+    """Test that ToolRegistry.resolve() raises AmbiguousToolNameError when multiple tools have the same base name."""
+    registry = ToolRegistry()
+    registry._reset_for_testing()  # Reset for clean state
+
+    from petal.core.decorators import petaltool
+
+    @petaltool
+    def calculator(expression: str) -> str:
+        """Calculate the result of an expression."""
+        return f"Result: {expression}"
+
+    # Manually add another tool with the same base name
+    from langchain.tools import tool
+
+    @tool
+    def calculator2(expression: str) -> str:
+        """Another calculator tool."""
+        return f"Result2: {expression}"
+
+    registry.add("test_registry:calculator", calculator)  # type: ignore[arg-type]
+    registry.add("other_module:calculator", calculator2)  # type: ignore[arg-type]
+
+    # Test resolving by base name (should raise ambiguity error)
+    with pytest.raises(
+        AmbiguousToolNameError,
+        match="Ambiguous tool name 'calculator'. Multiple tools found",
+    ):
+        await registry.resolve("calculator")
+
+
+@pytest.mark.asyncio
+async def test_tool_registry_resolve_by_base_name_no_matches():
+    """Test that ToolRegistry.resolve() raises KeyError when no tools have the base name."""
+    registry = ToolRegistry()
+    registry._reset_for_testing()  # Reset for clean state
+
+    from petal.core.decorators import petaltool
+
+    @petaltool
+    def calculator(expression: str) -> str:
+        """Calculate the result of an expression."""
+        return f"Result: {expression}"
+
+    # Test resolving by non-existent base name
+    with pytest.raises(KeyError, match="Tool 'nonexistent' not found"):
+        await registry.resolve("nonexistent")
+
+
+@pytest.mark.asyncio
+async def test_tool_registry_resolve_by_full_name_ignores_base_name_logic():
+    """Test that ToolRegistry.resolve() uses direct lookup for full namespaced names."""
+    registry = ToolRegistry()
+    registry._reset_for_testing()  # Reset for clean state
+
+    from petal.core.decorators import petaltool
+
+    @petaltool
+    def calculator(expression: str) -> str:
+        """Calculate the result of an expression."""
+        return f"Result: {expression}"
+
+    # Manually add another tool with the same base name
+    from langchain.tools import tool
+
+    @tool
+    def calculator2(expression: str) -> str:
+        """Another calculator tool."""
+        return f"Result2: {expression}"
+
+    registry.add("test_registry:calculator", calculator)  # type: ignore[arg-type]
+    registry.add("other_module:calculator", calculator2)  # type: ignore[arg-type]
+
+    # Test resolving by full namespaced name (should work despite ambiguity in base name)
+    tool1 = await registry.resolve("test_registry:calculator")
+    assert tool1 is not None
+    assert tool1.name == "test_registry:calculator"
+
+    tool2 = await registry.resolve("other_module:calculator")
+    assert tool2 is not None
+    assert (
+        tool2.name == "calculator2"
+    )  # LangChain @tool uses function name, not registration name

@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from langchain_core.tools import BaseTool
 from petal.core.config.yaml import (
     BaseNodeConfig,
     CustomNodeConfig,
@@ -106,12 +107,24 @@ def dummy_tool_func(x):
     return x
 
 
+# Create a mock BaseTool-like object for testing
+class MockTool(BaseTool):
+    def __init__(self, name="dummy_tool"):
+        super().__init__(name=name, description="A dummy tool for testing")
+
+    def _run(self, *args, **kwargs):
+        return dummy_tool_func(*args, **kwargs)
+
+    async def _arun(self, *args, **kwargs):
+        return dummy_tool_func(*args, **kwargs)
+
+
 @pytest.mark.asyncio
 async def test_react_node_handler_creation():
     """Test ReactNodeHandler can create React nodes from config."""
     with patch(
         "petal.core.tool_factory.ToolFactory.resolve",
-        lambda _self, _name: dummy_tool_func,
+        lambda _self, _name: MockTool(_name),
     ):
         handler = ReactNodeHandler()
         config = ReactNodeConfig(
@@ -133,7 +146,7 @@ async def test_react_node_handler_with_tool_factory():
     """Test ReactNodeHandler integrates with ToolFactory."""
     with patch(
         "petal.core.tool_factory.ToolFactory.resolve",
-        lambda _self, _name: dummy_tool_func,
+        lambda _self, _name: MockTool(_name),
     ):
         handler = ReactNodeHandler()
         config = ReactNodeConfig(
@@ -209,7 +222,7 @@ async def test_react_node_handler_with_mcp_tools(monkeypatch):
         """A dummy tool for testing."""
         return None
 
-    monkeypatch.setattr(ToolFactory, "resolve", lambda _self, _name: dummy_tool)
+    monkeypatch.setattr(ToolFactory, "resolve", lambda _self, _name: MockTool(_name))
     handler = ReactNodeHandler(tool_factory=ToolFactory())
 
     # Call handler.create_node, which should trigger MCP registration

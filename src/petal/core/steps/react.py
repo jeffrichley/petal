@@ -17,7 +17,7 @@ class ReactStepStrategy(StepStrategy):
 
         Args:
             config: Configuration dictionary containing:
-                - tools: List of tool names or tool objects
+                - tools: List of tool names (strings) or tool objects (BaseTool)
                 - llm_instance: LLM instance (optional)
                 - llm_config: LLM configuration (optional)
                 - system_prompt: System prompt (optional)
@@ -45,18 +45,24 @@ class ReactStepStrategy(StepStrategy):
         if not state_schema:
             raise ValueError("React steps require a state_schema")
 
-        # Determine if tools are strings or objects
-        tool_names = None
+        # Process tools - handle mixed types (strings and BaseTool objects)
+        tool_names = []
         tool_factory = config.get("tool_factory", ToolFactory())
 
-        if tools and isinstance(tools[0], str):
-            tool_names = tools
-        elif tools:
-            # For tool objects, we need to handle them differently
-            # For now, let's convert them to names for simplicity
-            tool_names = [
-                getattr(tool, "name", f"tool_{i}") for i, tool in enumerate(tools)
-            ]
+        for tool in tools:
+            if isinstance(tool, str):
+                # String tool name - resolve it
+                try:
+                    tool_factory.resolve(tool)
+                    tool_names.append(tool)  # Keep the name for lookup
+                except KeyError as e:
+                    raise ValueError(f"Tool '{tool}' not found in factory") from e
+            else:
+                # BaseTool object - add it to factory and use its name
+                if not hasattr(tool, "name"):
+                    raise ValueError("Tool object must have a 'name' attribute")
+                tool_factory.add(tool.name, tool)
+                tool_names.append(tool.name)
 
         # Provide default LLM config if none provided
         if llm_instance is None and llm_config is None:

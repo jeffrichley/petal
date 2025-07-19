@@ -9,6 +9,31 @@ from petal.core.tool_factory import ToolFactory
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def auto_namespace(func: Callable) -> str:
+    """
+    Generate an auto-namespaced name for a function.
+
+    Args:
+        func: The function to generate a name for
+
+    Returns:
+        The namespaced name in format "module:function_name"
+        Falls back to just function_name if module is "__main__"
+    """
+    # If this is a LangChain BaseTool, get the original function if available
+    original_func = getattr(func, "_original_func", func)
+    module_name = (
+        getattr(original_func, "__module__", None) or func.__module__ or "None"
+    )
+    func_name = getattr(original_func, "__name__", None) or func.__name__ or "unknown"
+
+    # Fallback to just function name for __main__ module
+    if module_name == "__main__":
+        return func_name
+
+    return f"{module_name}:{func_name}"
+
+
 @overload
 def petaltool(func: F) -> BaseTool: ...
 
@@ -67,6 +92,7 @@ def petaltool(  # type: ignore[misc]
         tool_obj: BaseTool, func: Callable, tool_name: str
     ) -> BaseTool:
         registry = ToolRegistry()
+        # Always register under the namespaced name
         registry.add(tool_name, tool_obj)
         tool_obj._petal_registered = True  # type: ignore[attr-defined]
         tool_obj._original_func = func  # type: ignore[attr-defined]
@@ -85,15 +111,27 @@ def petaltool(  # type: ignore[misc]
             **kwargs,
         }
 
-        # If name is provided as a string, pass it as name_or_callable
         if isinstance(name_or_callable, str):
-            tool_obj = tool(name_or_callable, **tool_kwargs)(func)
+            # If the name already contains a colon, treat as fully qualified
+            if ":" in name_or_callable:
+                tool_name = name_or_callable
+            else:
+                # Auto-namespace the custom name
+                original_func = getattr(func, "_original_func", func)
+                module_name = (
+                    getattr(original_func, "__module__", None) or func.__module__
+                )
+                if module_name == "__main__":
+                    tool_name = name_or_callable
+                else:
+                    tool_name = f"{module_name}:{name_or_callable}"
+            tool_obj = tool(tool_name, **tool_kwargs)(func)
+            tool_obj.name = tool_name
         else:
             tool_obj = tool(**tool_kwargs)(func)
+            tool_name = auto_namespace(func)
+            tool_obj.name = tool_name
 
-        tool_name = (
-            name_or_callable if isinstance(name_or_callable, str) else func.__name__
-        )
         return _register_and_return(tool_obj, func, tool_name)
 
     # Handle @petaltool and @petaltool(...)

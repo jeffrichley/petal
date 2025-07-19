@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.tools import BaseTool
 from petal.core.decorators import petalmcp, petalmcp_tool, petaltool
-from petal.core.registry import ToolRegistry
+from petal.core.registry import AmbiguousToolNameError, ToolRegistry
 from petal.core.tool_factory import ToolFactory
 from pydantic import BaseModel
 
@@ -27,7 +27,8 @@ class TestPetaltoolDecorator:
 
         # Verify it's a BaseTool
         assert isinstance(search_api, BaseTool)
-        assert search_api.name == "search_api"
+        # Namespaced name expected
+        assert search_api.name == "test_decorators:search_api"
         assert "Search the API" in search_api.description
 
         # Test that it can be invoked
@@ -42,9 +43,9 @@ class TestPetaltoolDecorator:
             """Search the API for the given query."""
             return f"Search result for: {query}"
 
-        # Verify custom name is used
+        # Verify custom name is used (should be namespaced)
         assert isinstance(search_api, BaseTool)
-        assert search_api.name == "custom_search"
+        assert search_api.name == "test_decorators:custom_search"
 
     def test_petaltool_preserves_metadata(self):
         """Test that @petaltool preserves function metadata for LangChain compatibility."""
@@ -161,7 +162,7 @@ class TestPetaltoolDecorator:
 
         # Verify async function works
         assert isinstance(async_search, BaseTool)
-        assert async_search.name == "async_search"
+        assert async_search.name == "test_decorators:async_search"
 
     def test_petaltool_error_handling(self):
         """Test @petaltool error handling."""
@@ -190,8 +191,8 @@ class TestPetaltoolDecorator:
 
         # Both should be registered
         registry = ToolRegistry()
-        assert "tool1" in registry.list()
-        assert "tool2" in registry.list()
+        assert "test_decorators:tool1" in registry.list()
+        assert "test_decorators:tool2" in registry.list()
 
     def test_petaltool_langchain_tool_equivalence(self):
         """Test that @petaltool creates tools equivalent to LangChain's @tool."""
@@ -385,6 +386,67 @@ class TestPetaltoolDecorator:
             assert hasattr(tool_obj, "name")
             assert hasattr(tool_obj, "description")
             assert hasattr(tool_obj, "args_schema")
+
+    def test_petaltool_auto_namespacing(self):
+        """Test auto-namespacing functionality for @petaltool decorator."""
+        registry = ToolRegistry()
+
+        @petaltool
+        def tool_c(x: int) -> int:
+            """Tool C for testing."""
+            return x
+
+        @petaltool
+        def tool_a(x: int) -> int:
+            """Tool A for testing."""
+            return x
+
+        @petaltool
+        def tool_b(x: int) -> int:
+            """Tool B for testing."""
+            return x * 2
+
+        # Verify tools are registered with namespaced names
+        tools = registry.list()
+        assert "test_decorators:tool_a" in tools
+        assert "test_decorators:tool_b" in tools
+        assert "test_decorators:tool_c" in tools
+
+    @pytest.mark.asyncio
+    async def test_resolve_by_base_name_raises_when_ambiguous(self):
+        """Test that resolving by base name raises when multiple tools have the same base name."""
+
+        # Create first tool in test_decorators module
+        def duplicate_name() -> str:
+            """Tool with duplicate name."""
+            return "first"
+
+        duplicate_name.__module__ = "test_decorators"
+        decorated1 = petaltool(duplicate_name)
+
+        # Create second tool in a different module with the same base name
+        def duplicate_name2() -> str:
+            """Tool with duplicate name."""
+            return "second"
+
+        duplicate_name2.__module__ = "other_module"
+        decorated2 = petaltool(duplicate_name2)
+
+        registry = ToolRegistry()
+
+        # Manually register both tools in the registry with the same base name
+        registry._registry["test_decorators:duplicate_name"] = decorated1
+        registry._registry["other_module:duplicate_name"] = decorated2
+
+        # Should be resolvable by full namespaced names
+        tool1 = await registry.resolve("test_decorators:duplicate_name")
+        assert tool1 is not None
+        assert tool1.name == "test_decorators:duplicate_name"
+        tool2 = await registry.resolve("other_module:duplicate_name")
+        assert tool2 is not None
+        # Should raise our custom error when resolving by base name
+        with pytest.raises(AmbiguousToolNameError, match="Multiple tools found"):
+            await registry.resolve("duplicate_name")
 
 
 class TestPetalMCPDecorators:
@@ -599,3 +661,169 @@ class TestToolFactoryErrorCases:
 
         tool_list = tf.list()
         assert tool_list == ["tool_a", "tool_b", "tool_c"]
+
+
+class TestAutoNamespace:
+    """Test the auto_namespace function and __main__ module handling."""
+
+    def test_auto_namespace_with_normal_module(self):
+        """Test auto_namespace with a normal module name."""
+
+        def test_function():
+            pass
+
+        test_function.__module__ = "test_module"
+        test_function.__name__ = "test_function"
+
+        from petal.core.decorators import auto_namespace
+
+        result = auto_namespace(test_function)
+        assert result == "test_module:test_function"
+
+    def test_auto_namespace_with_main_module(self):
+        """Test auto_namespace with __main__ module returns just function name."""
+
+        def test_function():
+            pass
+
+        test_function.__module__ = "__main__"
+        test_function.__name__ = "test_function"
+
+        from petal.core.decorators import auto_namespace
+
+        result = auto_namespace(test_function)
+        assert result == "test_function"
+
+    def test_auto_namespace_with_none_module(self):
+        """Test auto_namespace handles None module gracefully."""
+
+        def test_function():
+            pass
+
+        test_function.__module__ = None
+        test_function.__name__ = "test_function"
+
+        from petal.core.decorators import auto_namespace
+
+        result = auto_namespace(test_function)  # type: ignore[assignment]
+        assert result == "None:test_function"
+
+    def test_auto_namespace_with_none_name(self):
+        """Test auto_namespace handles None function name gracefully."""
+        # This test is removed because Python doesn't allow setting __name__ to None
+        # and the fallback logic is already tested in other scenarios
+        pass
+
+    def test_auto_namespace_with_langchain_tool(self):
+        """Test auto_namespace works with LangChain BaseTool objects."""
+        from langchain_core.tools import Tool
+
+        def original_function():
+            pass
+
+        original_function.__module__ = "test_module"
+        original_function.__name__ = "test_function"
+
+        # Create a concrete Tool with _original_func attribute
+        tool = Tool(name="test_tool", description="Test", func=lambda: "test")
+        tool._original_func = original_function  # type: ignore[attr-defined]
+
+        from petal.core.decorators import auto_namespace
+
+        result = auto_namespace(tool)
+        assert result == "test_module:test_function"
+
+    def test_petaltool_with_main_module(self):
+        """Test @petaltool decorator works correctly with __main__ module."""
+
+        # Simulate a function defined in __main__
+        def main_function():
+            """Function defined in __main__."""
+            return "hello from main"
+
+        main_function.__module__ = "__main__"
+        main_function.__name__ = "main_function"
+
+        from petal.core.decorators import petaltool
+
+        # Decorate the function
+        decorated = petaltool(main_function)
+
+        # Check that the tool name is just the function name (no namespace)
+        assert decorated.name == "main_function"
+        assert callable(decorated)
+
+        # Test that it can be called
+        result = decorated.invoke({})
+        assert result == "hello from main"
+
+    def test_petaltool_with_custom_name_in_main_module(self):
+        """Test @petaltool with custom name in __main__ module."""
+
+        def main_function():
+            """Function defined in __main__."""
+            return "hello from main"
+
+        main_function.__module__ = "__main__"
+        main_function.__name__ = "main_function"
+
+        from petal.core.decorators import petaltool
+
+        # Decorate with custom name
+        decorated = petaltool("custom_name")(main_function)
+
+        # Check that the tool name is just the custom name (no namespace)
+        assert decorated.name == "custom_name"
+        assert callable(decorated)
+
+        # Test that it can be called
+        result = decorated.invoke({})
+        assert result == "hello from main"
+
+    def test_petaltool_with_fully_qualified_name_in_main(self):
+        """Test @petaltool with fully qualified name (with colon) in __main__ module."""
+
+        def main_function():
+            """Function defined in __main__."""
+            return "hello from main"
+
+        main_function.__module__ = "__main__"
+        main_function.__name__ = "main_function"
+
+        from petal.core.decorators import petaltool
+
+        # Decorate with fully qualified name
+        decorated = petaltool("custom:namespace:name")(main_function)
+
+        # Check that the tool name preserves the fully qualified name
+        assert decorated.name == "custom:namespace:name"
+        assert callable(decorated)
+
+        # Test that it can be called
+        result = decorated.invoke({})
+        assert result == "hello from main"
+
+    def test_petaltool_registration_in_main_module(self):
+        """Test that tools defined in __main__ are properly registered."""
+
+        def main_function():
+            """Function defined in __main__."""
+            return "hello from main"
+
+        main_function.__module__ = "__main__"
+        main_function.__name__ = "main_function"
+
+        from petal.core.decorators import petaltool
+        from petal.core.registry import ToolRegistry
+
+        # Decorate the function
+        decorated = petaltool(main_function)
+
+        # Check that it's registered in the registry
+        registry = ToolRegistry()
+        registered_tools = registry.list()
+        assert "main_function" in registered_tools
+
+        # Test that it can be resolved
+        resolved_tool = registry._registry["main_function"]
+        assert resolved_tool is decorated

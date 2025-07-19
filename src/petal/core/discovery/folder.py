@@ -1,6 +1,7 @@
 """Folder-based tool discovery strategy."""
 
 import fnmatch
+import importlib.util
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -88,8 +89,29 @@ class FolderDiscovery(DiscoveryStrategy):
         ):
             await self._perform_full_scan()
 
-        # Return from cache if found
-        return self._cached_tools.get(name)
+        # 1. Check direct match first
+        if name in self._cached_tools:
+            return self._cached_tools[name]
+
+        # 2. Check if this might be a base name (no colons)
+        if ":" not in name:
+            matching_tools = []
+            for tool_name in self._cached_tools:
+                # Extract base name (after the last colon)
+                base_name = tool_name.split(":")[-1] if ":" in tool_name else tool_name
+
+                if base_name == name:
+                    matching_tools.append(tool_name)
+
+            if len(matching_tools) == 1:
+                # Single match - return it
+                return self._cached_tools[matching_tools[0]]
+            elif len(matching_tools) > 1:
+                # Multiple matches - return None (let caller handle ambiguity)
+                return None
+
+        # 3. No match found
+        return None
 
     async def discover_all(self) -> Dict[str, BaseTool]:
         """
@@ -213,10 +235,6 @@ class FolderDiscovery(DiscoveryStrategy):
         return False
 
     async def _load_tools_from_file(self, file_path: Path) -> Dict[str, BaseTool]:
-        import importlib
-        import sys
-        from pathlib import Path
-
         tools = {}
 
         try:

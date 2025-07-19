@@ -1,6 +1,6 @@
 """Tests for decorator-based tool discovery."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
@@ -72,9 +72,9 @@ class TestModuleCache:
 
         # Verify we actually found some tools (the decorated ones above)
         assert len(tools1) > 0
-        assert "real_test_tool" in tools1
-        assert "explicit_name_tool" in tools1
-        assert "another_real_tool" in tools1
+        assert "test_decorator_discovery:real_test_tool" in tools1
+        assert "test_decorator_discovery:explicit_name_tool" in tools1
+        assert "test_decorator_discovery:another_real_tool" in tools1
 
     @pytest.mark.asyncio
     async def test_scan_all_modules_handles_import_errors(self):
@@ -140,9 +140,9 @@ class TestModuleCache:
         tools = await cache._scan_module_internal(__name__)
 
         # Should find our real decorated tools
-        assert "real_test_tool" in tools
-        assert "explicit_name_tool" in tools
-        assert "another_real_tool" in tools
+        assert "test_decorator_discovery:real_test_tool" in tools
+        assert "test_decorator_discovery:explicit_name_tool" in tools
+        assert "test_decorator_discovery:another_real_tool" in tools
 
         # Should not find regular function
         assert "regular_function" not in tools
@@ -189,15 +189,16 @@ class TestModuleCache:
 
         # Test with real decorated functions
         assert (
-            cache._extract_tool_name(real_test_tool, "default_name") == "real_test_tool"
+            cache._extract_tool_name(real_test_tool, "default_name")
+            == "test_decorator_discovery:real_test_tool"
         )
         assert (
             cache._extract_tool_name(explicit_name_tool, "default_name")
-            == "explicit_name_tool"
+            == "test_decorator_discovery:explicit_name_tool"
         )
         assert (
             cache._extract_tool_name(another_real_tool, "default_name")
-            == "another_real_tool"
+            == "test_decorator_discovery:another_real_tool"
         )
 
         # Test with regular function
@@ -371,9 +372,9 @@ class TestDecoratorDiscovery:
         discovery = DecoratorDiscovery()
 
         # Try to discover our real decorated tools
-        tool1 = await discovery.discover("real_test_tool")
-        tool2 = await discovery.discover("explicit_name_tool")
-        tool3 = await discovery.discover("another_real_tool")
+        tool1 = await discovery.discover("test_decorator_discovery:real_test_tool")
+        tool2 = await discovery.discover("test_decorator_discovery:explicit_name_tool")
+        tool3 = await discovery.discover("test_decorator_discovery:another_real_tool")
 
         # Should find the tools
         assert tool1 is not None
@@ -386,9 +387,9 @@ class TestDecoratorDiscovery:
         assert isinstance(tool3, BaseTool)
 
         # Verify tool names
-        assert tool1.name == "real_test_tool"
-        assert tool2.name == "explicit_name_tool"
-        assert tool3.name == "another_real_tool"
+        assert tool1.name == "test_decorator_discovery:real_test_tool"
+        assert tool2.name == "test_decorator_discovery:explicit_name_tool"
+        assert tool3.name == "test_decorator_discovery:another_real_tool"
 
     @pytest.mark.asyncio
     async def test_discover_handles_module_cache_errors(self):
@@ -401,6 +402,132 @@ class TestDecoratorDiscovery:
         tool = await discovery.discover("test_tool")
 
         # Should return None, not raise exception
+        assert tool is None
+
+    def test_find_tools_by_base_name_single_match(self):
+        """Test _find_tools_by_base_name with a single matching tool."""
+        discovery = DecoratorDiscovery()
+
+        # Create a mock tools dictionary with namespaced tools
+        all_tools = {
+            "module_a:calculator": Mock(),
+            "module_b:search": Mock(),
+            "module_c:calculator": Mock(),
+        }
+
+        # Test finding tools with base name "calculator"
+        matching_tools = discovery._find_tools_by_base_name(all_tools, "calculator")
+
+        # Should find both tools with base name "calculator"
+        assert len(matching_tools) == 2
+        assert "module_a:calculator" in matching_tools
+        assert "module_c:calculator" in matching_tools
+        assert "module_b:search" not in matching_tools
+
+    def test_find_tools_by_base_name_no_match(self):
+        """Test _find_tools_by_base_name with no matching tools."""
+        discovery = DecoratorDiscovery()
+
+        all_tools = {
+            "module_a:calculator": Mock(),
+            "module_b:search": Mock(),
+        }
+
+        # Test finding tools with base name "nonexistent"
+        matching_tools = discovery._find_tools_by_base_name(all_tools, "nonexistent")
+
+        # Should find no matches
+        assert len(matching_tools) == 0
+
+    def test_find_tools_by_base_name_with_non_namespaced_tools(self):
+        """Test _find_tools_by_base_name with tools that don't have namespaces."""
+        discovery = DecoratorDiscovery()
+
+        all_tools = {
+            "calculator": Mock(),
+            "search": Mock(),
+            "module_a:calculator": Mock(),
+        }
+
+        # Test finding tools with base name "calculator"
+        matching_tools = discovery._find_tools_by_base_name(all_tools, "calculator")
+
+        # Should find both the non-namespaced and namespaced tools
+        assert len(matching_tools) == 2
+        assert "calculator" in matching_tools
+        assert "module_a:calculator" in matching_tools
+
+    @pytest.mark.asyncio
+    async def test_discover_by_base_name_single_match(self):
+        """Test discover method with base name that has a single match."""
+        discovery = DecoratorDiscovery()
+
+        # Mock the module cache to return specific tools
+        mock_cache = AsyncMock()
+        calculator_tool = Mock()
+        calculator_tool.name = "module_a:calculator"
+        search_tool = Mock()
+        search_tool.name = "module_b:search"
+        mock_cache.scan_all_modules.return_value = {
+            "module_a:calculator": calculator_tool,
+            "module_b:search": search_tool,
+        }
+        discovery.module_cache = mock_cache
+
+        # Test discovering by base name "calculator"
+        tool = await discovery.discover("calculator")
+
+        # Should return the single matching tool
+        assert tool is not None
+        assert tool.name == "module_a:calculator"
+
+    @pytest.mark.asyncio
+    async def test_discover_by_base_name_multiple_matches(self):
+        """Test discover method with base name that has multiple matches."""
+        discovery = DecoratorDiscovery()
+
+        # Mock the module cache to return multiple tools with same base name
+        mock_cache = AsyncMock()
+        calc1_tool = Mock()
+        calc1_tool.name = "module_a:calculator"
+        calc2_tool = Mock()
+        calc2_tool.name = "module_b:calculator"
+        search_tool = Mock()
+        search_tool.name = "module_c:search"
+        mock_cache.scan_all_modules.return_value = {
+            "module_a:calculator": calc1_tool,
+            "module_b:calculator": calc2_tool,
+            "module_c:search": search_tool,
+        }
+        discovery.module_cache = mock_cache
+
+        # Test discovering by base name "calculator"
+        tool = await discovery.discover("calculator")
+
+        # Should return None due to ambiguity (multiple matches)
+        assert tool is None
+
+    @pytest.mark.asyncio
+    async def test_discover_by_base_name_no_matches(self):
+        """Test discover method with base name that has no matches."""
+        discovery = DecoratorDiscovery()
+
+        # Mock the module cache to return tools
+        mock_cache = AsyncMock()
+        calculator_tool = Mock()
+        calculator_tool.name = "module_a:calculator"
+        search_tool = Mock()
+        search_tool.name = "module_b:search"
+        mock_cache.scan_all_modules.return_value = {
+            "module_a:calculator": calculator_tool,
+            "module_b:search": search_tool,
+        }
+        discovery.module_cache = mock_cache
+
+        # Test discovering by base name "nonexistent"
+        tool = await discovery.discover("nonexistent")
+
+        # Should return None (no matches)
         assert tool is None
 
 
@@ -417,12 +544,12 @@ class TestDecoratorDiscoveryIntegration:
         registry.add_discovery_strategy(discovery)
 
         # Try to resolve a real tool
-        tool = await registry.resolve("real_test_tool")
+        tool = await registry.resolve("test_decorator_discovery:real_test_tool")
 
         assert tool is not None
         assert isinstance(tool, BaseTool)
-        assert tool.name == "real_test_tool"
-        assert "real_test_tool" in registry.list()
+        assert tool.name == "test_decorator_discovery:real_test_tool"
+        assert "test_decorator_discovery:real_test_tool" in registry.list()
 
     @pytest.mark.asyncio
     async def test_decorator_discovery_chain_of_responsibility(self):
@@ -434,15 +561,15 @@ class TestDecoratorDiscoveryIntegration:
         registry.add_discovery_strategy(discovery)
 
         # Try to resolve a tool that's not in direct registry
-        tool = await registry.resolve("explicit_name_tool")
+        tool = await registry.resolve("test_decorator_discovery:explicit_name_tool")
 
         # Check that we got a tool
         assert tool is not None
         assert isinstance(tool, BaseTool)
-        assert tool.name == "explicit_name_tool"
+        assert tool.name == "test_decorator_discovery:explicit_name_tool"
 
         # Tool should now be in direct registry
-        assert "explicit_name_tool" in registry.list()
+        assert "test_decorator_discovery:explicit_name_tool" in registry.list()
 
     @pytest.mark.asyncio
     async def test_decorator_discovery_cache_prevents_repeated_scans(self):
@@ -475,7 +602,7 @@ class TestDecoratorDiscoveryIntegration:
         registry.add_discovery_strategy(discovery)
 
         # Resolve a real tool
-        tool = await registry.resolve("real_test_tool")
+        tool = await registry.resolve("test_decorator_discovery:real_test_tool")
 
         # Execute the tool
         result = await tool.ainvoke({"text": "Hello World"})
@@ -492,7 +619,11 @@ class TestDecoratorDiscoveryIntegration:
 
         # Discover all our test tools
         tools = []
-        for tool_name in ["real_test_tool", "explicit_name_tool", "another_real_tool"]:
+        for tool_name in [
+            "test_decorator_discovery:real_test_tool",
+            "test_decorator_discovery:explicit_name_tool",
+            "test_decorator_discovery:another_real_tool",
+        ]:
             tool = await registry.resolve(tool_name)
             tools.append(tool)
 
@@ -502,6 +633,6 @@ class TestDecoratorDiscoveryIntegration:
 
         # Verify tool names
         tool_names = [tool.name for tool in tools]
-        assert "real_test_tool" in tool_names
-        assert "explicit_name_tool" in tool_names
-        assert "another_real_tool" in tool_names
+        assert "test_decorator_discovery:real_test_tool" in tool_names
+        assert "test_decorator_discovery:explicit_name_tool" in tool_names
+        assert "test_decorator_discovery:another_real_tool" in tool_names
