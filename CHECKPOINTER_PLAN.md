@@ -16,11 +16,7 @@ This plan outlines the integration of LangGraph's checkpointing system into the 
 - ✅ Example implementations and demos
 
 **What's Not Yet Implemented:**
-- ❌ Custom checkpointer classes (not needed - using LangGraph's)
-- ❌ Thread ID generation strategies (planned enhancement)
-- ❌ Enhanced Agent class with checkpoint management methods (planned enhancement)
 - ❌ YAML configuration support (planned enhancement)
-- ❌ Advanced features (compression, encryption, etc.) (planned enhancement)
 
 ## 📚 LangGraph Checkpointer Analysis
 
@@ -174,126 +170,7 @@ class AgentBuilder:
         return self
 ```
 
-### 4. **Enhanced Agent Class**
-
-**Note**: The current implementation does not include enhanced Agent class methods for checkpoint management. The checkpointer is integrated at the graph compilation level, and checkpoint management is handled through LangGraph's native APIs.
-
-**Planned Enhancement**: The Agent class will be enhanced to provide convenience methods for checkpoint management, making it easier for developers to work with checkpoints without directly accessing LangGraph's APIs.
-
-#### Planned Agent Enhancement
-```python
-class Agent:
-    """Enhanced Agent with checkpointer support."""
-
-    async def arun(self, state: dict, thread_id: Optional[str] = None, checkpoint_id: Optional[str] = None) -> dict:
-        """Run agent with checkpointing support."""
-        # Configure the run
-        config = {}
-        if thread_id:
-            config["configurable"] = {"thread_id": thread_id}
-        if checkpoint_id:
-            config["configurable"]["checkpoint_id"] = checkpoint_id
-
-        # Run the graph
-        result = await self.graph.ainvoke(state, config=config)
-        return result
-
-    def get_state(self, thread_id: str, checkpoint_id: Optional[str] = None) -> Any:
-        """Get the current state of a thread."""
-        config = {"configurable": {"thread_id": thread_id}}
-        if checkpoint_id:
-            config["configurable"]["checkpoint_id"] = checkpoint_id
-        return self.graph.get_state(config)
-
-    def get_state_history(self, thread_id: str) -> list[Any]:
-        """Get the full history of a thread."""
-        config = {"configurable": {"thread_id": thread_id}}
-        return list(self.graph.get_state_history(config))
-
-    def update_state(self, thread_id: str, values: dict, checkpoint_id: Optional[str] = None, as_node: Optional[str] = None) -> None:
-        """Update the state of a thread."""
-        config = {"configurable": {"thread_id": thread_id}}
-        if checkpoint_id:
-            config["configurable"]["checkpoint_id"] = checkpoint_id
-        self.graph.update_state(config, values, as_node=as_node)
-```
-
-### 5. **Thread ID Generation Strategies**
-
-**Note**: The current implementation does not include custom thread ID generation strategies. Thread IDs are managed by LangGraph's native checkpointing system and are typically provided by the user when invoking the agent.
-
-**Planned Enhancement**: Custom thread ID generation strategies will be added to provide convenience methods for generating consistent thread IDs across different use cases.
-
-**Important**: When using checkpointers, you **must** specify a `thread_id` as part of the `configurable` portion of the config when invoking the graph:
-
-```python
-config = {"configurable": {"thread_id": "user-123"}}
-result = await graph.ainvoke(state, config=config)
-```
-
-The `thread_id` is used to:
-- **Persist state**: Each thread maintains its own state history
-- **Enable resumption**: You can continue conversations from where they left off
-- **Support time travel**: You can replay or fork from any checkpoint in the thread
-- **Provide isolation**: Different threads don't interfere with each other
-
-#### Planned Thread ID Generators
-```python
-from typing import Callable, Optional
-import uuid
-import time
-
-class ThreadIDGenerator:
-    """Thread ID generation strategies."""
-
-    @staticmethod
-    def uuid() -> str:
-        """Generate UUID-based thread ID."""
-        return str(uuid.uuid4())
-
-    @staticmethod
-    def timestamp() -> str:
-        """Generate timestamp-based thread ID."""
-        return str(int(time.time()))
-
-    @staticmethod
-    def user_specific(user_id: str) -> str:
-        """Generate user-specific thread ID."""
-        return f"user-{user_id}-{int(time.time())}"
-
-    @staticmethod
-    def custom(generator_func: Callable[[], str]) -> str:
-        """Use custom generator function."""
-        return generator_func()
-
-class ThreadIDManager:
-    """Manage thread ID generation and validation."""
-
-    def __init__(self, strategy: str = "uuid", **kwargs):
-        self.strategy = strategy
-        self.kwargs = kwargs
-
-    def generate(self) -> str:
-        """Generate a new thread ID."""
-        if self.strategy == "uuid":
-            return ThreadIDGenerator.uuid()
-        elif self.strategy == "timestamp":
-            return ThreadIDGenerator.timestamp()
-        elif self.strategy == "user_specific":
-            user_id = self.kwargs.get("user_id")
-            if not user_id:
-                raise ValueError("user_id required for user_specific strategy")
-            return ThreadIDGenerator.user_specific(user_id)
-        elif self.strategy == "custom":
-            generator_func = self.kwargs.get("generator_func")
-            if not generator_func:
-                raise ValueError("generator_func required for custom strategy")
-            return ThreadIDGenerator.custom(generator_func)
-        else:
-            raise ValueError(f"Unknown thread ID strategy: {self.strategy}")
-```
-
-### 6. **YAML Configuration Support**
+### 4. **YAML Configuration Support**
 
 **Planned Enhancement**: YAML configuration support will be added to allow checkpointer configuration through YAML files, making it easier to configure agents declaratively.
 
@@ -362,12 +239,6 @@ class CheckpointerYAMLHandler:
 - [x] Add proper error handling for unsupported types
 - [x] Write integration tests with 100% coverage
 
-#### Task 1.3: Thread ID Management (Planned Enhancement)
-- [ ] Create `src/petal/core/checkpointer/thread_id.py` with `ThreadIDGenerator` and `ThreadIDManager`
-- [ ] Implement multiple generation strategies (uuid, timestamp, user_specific, custom)
-- [ ] Add validation and error handling
-- [ ] Write unit tests for all strategies
-
 ### Phase 2: File System and Advanced Checkpointers (Week 2)
 
 **Note**: The current implementation uses LangGraph's built-in checkpointers, which already provide file system and database support. Custom implementations are not needed unless specific requirements cannot be met by LangGraph's checkpointers.
@@ -380,13 +251,6 @@ class CheckpointerYAMLHandler:
 - **Status**: LangGraph's PostgresSaver and SqliteSaver already provide database support
 - **Alternative**: Use LangGraph's built-in database checkpointers
 
-#### Task 2.3: Checkpointer Utilities (Planned Enhancement)
-- [ ] Create `src/petal/core/checkpointer/utils.py` with helper functions
-- [ ] Add checkpoint compression and decompression
-- [ ] Add checkpoint validation and repair tools
-- [ ] Add checkpoint migration utilities
-- [ ] Write utility function tests
-
 ### Phase 3: AgentFactory Integration (Week 3)
 
 #### Task 3.1: Enhance AgentFactory ✅ (Completed 2024-12-22)
@@ -397,14 +261,7 @@ class CheckpointerYAMLHandler:
 - [x] Update existing tests
 - **Status:** AgentFactory and AgentBuilder both have `with_checkpointer()` methods for consistency
 
-#### Task 3.2: Enhance Agent Class (Planned Enhancement)
-- [ ] Add checkpointer support to `Agent` class
-- [ ] Implement `arun()` with proper thread_id and checkpoint_id handling
-- [ ] Add state management methods (get_state, get_state_history, update_state)
-- [ ] Add thread ID support in execution using LangGraph's configurable pattern
-- [ ] Write integration tests for thread persistence and state management
-
-#### Task 3.3: Update Builder Director ✅ (Completed 2024-12-22)
+#### Task 3.2: Update Builder Director ✅ (Completed 2024-12-22)
 - [x] Modify `AgentBuilderDirector` to handle checkpointer configuration
 - [x] Add checkpointer setup in graph building process
 - [x] Integrate with existing step strategies
@@ -430,50 +287,26 @@ class CheckpointerYAMLHandler:
 #### Task 4.3: Integration Testing
 - [ ] Create end-to-end tests with YAML configuration
 - [ ] Test checkpointer persistence across agent restarts
-- [ ] Test thread ID generation and management
 - [ ] Test checkpoint loading and resumption
 - [ ] Write comprehensive integration tests
 
-### Phase 5: Advanced Features and Optimization (Week 5)
+### Phase 5: Documentation and Examples (Week 5)
 
-#### Task 5.1: Checkpoint Metadata Support
-- [ ] Add metadata storage to checkpoint data
-- [ ] Implement metadata filtering and querying
-- [ ] Add checkpoint tagging and categorization
-- [ ] Add metadata-based checkpoint search
-- [ ] Write metadata handling tests
-
-#### Task 5.2: Checkpoint Compression and Optimization
-- [ ] Add automatic checkpoint compression for large states
-- [ ] Implement checkpoint deduplication
-- [ ] Add checkpoint cleanup and retention policies
-- [ ] Add checkpoint size monitoring and alerts
-- [ ] Write optimization tests
-
-#### Task 5.3: Checkpoint Security and Privacy
-- [ ] Add encryption support for sensitive checkpoint data
-- [ ] Implement access control for checkpoints
-- [ ] Add audit logging for checkpoint operations
-- [ ] Add data retention and deletion policies
-- [ ] Write security and privacy tests
-
-### Phase 6: Documentation and Examples (Week 6)
-
-#### Task 6.1: API Documentation
+#### Task 5.1: API Documentation
 - [ ] Update API documentation with checkpointer methods
 - [ ] Add checkpointer configuration examples
 - [ ] Create checkpointer usage guide
 - [ ] Add troubleshooting section
 - [ ] Update README with checkpointer features
 
-#### Task 6.2: Example Applications
+#### Task 5.2: Example Applications
 - [ ] Create conversational agent with persistence
 - [ ] Create workflow agent with checkpoint resumption
 - [ ] Create multi-user agent with thread isolation
 - [ ] Create long-running task agent with progress tracking
 - [ ] Write example application tests
 
-#### Task 6.3: Migration Guide
+#### Task 5.3: Migration Guide
 - [ ] Create migration guide from non-checkpointed to checkpointed agents
 - [ ] Add performance impact analysis
 - [ ] Add best practices for checkpointer usage
@@ -492,7 +325,7 @@ class CheckpointerYAMLHandler:
 
 ### Performance Requirements
 1. **Minimal Overhead**: Checkpointing adds <5% execution time overhead
-2. **Efficient Storage**: Checkpoints are compressed and optimized
+2. **Efficient Storage**: Checkpoints are optimized
 3. **Fast Retrieval**: Checkpoint loading completes in <100ms
 4. **Scalable**: Support for thousands of concurrent threads
 
@@ -503,77 +336,6 @@ class CheckpointerYAMLHandler:
 4. **Documentation**: Complete API documentation and examples
 
 ## 🔧 Technical Implementation Details
-
-### State Serialization
-```python
-import pickle
-import json
-from typing import Any, Dict
-
-class StateSerializer:
-    """Serialize and deserialize agent state for checkpointing."""
-
-    @staticmethod
-    def serialize(state: Dict[str, Any]) -> bytes:
-        """Serialize state to bytes."""
-        return pickle.dumps(state)
-
-    @staticmethod
-    def deserialize(data: bytes) -> Dict[str, Any]:
-        """Deserialize bytes to state."""
-        return pickle.loads(data)
-
-    @staticmethod
-    def to_json(state: Dict[str, Any]) -> str:
-        """Convert state to JSON string."""
-        return json.dumps(state, default=str)
-
-    @staticmethod
-    def from_json(data: str) -> Dict[str, Any]:
-        """Convert JSON string to state."""
-        return json.loads(data)
-```
-
-### Checkpoint Data Structure
-```python
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, Optional
-
-@dataclass
-class CheckpointData:
-    """Structure for checkpoint data."""
-
-    thread_id: str
-    checkpoint_id: str
-    state: Dict[str, Any]
-    metadata: Dict[str, Any]
-    timestamp: datetime
-    version: str = "1.0"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for storage."""
-        return {
-            "thread_id": self.thread_id,
-            "checkpoint_id": self.checkpoint_id,
-            "state": self.state,
-            "metadata": self.metadata,
-            "timestamp": self.timestamp.isoformat(),
-            "version": self.version
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CheckpointData":
-        """Create from dictionary."""
-        return cls(
-            thread_id=data["thread_id"],
-            checkpoint_id=data["checkpoint_id"],
-            state=data["state"],
-            metadata=data["metadata"],
-            timestamp=datetime.fromisoformat(data["timestamp"]),
-            version=data.get("version", "1.0")
-        )
-```
 
 ### Error Handling
 ```python
