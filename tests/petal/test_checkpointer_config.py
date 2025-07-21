@@ -32,7 +32,7 @@ class TestCheckpointerConfig:
     def test_checkpointer_config_invalid_type(self):
         """Test checkpointer config with invalid type."""
         with pytest.raises(ValidationError):
-            CheckpointerConfig(type="invalid")
+            CheckpointerConfig(type="invalid")  # type: ignore[arg-type]
 
     def test_agent_config_with_checkpointer(self):
         """Test agent config with checkpointer."""

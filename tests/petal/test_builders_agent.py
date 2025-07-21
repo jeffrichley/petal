@@ -169,7 +169,7 @@ class TestAgentBuilder:
         with pytest.raises(
             ValueError, match="Input should be 'memory', 'postgres' or 'sqlite'"
         ):
-            checkpointer_config = CheckpointerConfig(type="invalid_type", enabled=True)
+            checkpointer_config = CheckpointerConfig(type="invalid_type", enabled=True)  # type: ignore[arg-type]
             builder.with_checkpointer(checkpointer_config)
 
     def test_method_chaining(self):
