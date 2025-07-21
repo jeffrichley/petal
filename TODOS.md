@@ -19,7 +19,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
     - [x] Test Coverage - ![Coverage](https://img.shields.io/codecov/c/gh/jeffrichley/petal)
     - [x] License - ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
     - [x] PyPI Version - ![PyPI version](https://badge.fury.io/py/petal.svg)
-    - [x] Python Versions - ![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)
+    - [x] Python Versions - ![Python Versions](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
     - [x] pre-commit - ![pre-commit enabled](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)
     - [x] Security - ![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)
 * [x] Update pyproject.toml's [tool.setuptools.packages.find] (or equivalent) to point at src
@@ -59,6 +59,18 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] Add `_register_defaults()` method to register built-in strategies
   - [x] Add validation and error handling for unknown step types
   - [x] Create unit tests in `tests/petal/test_steps_registry.py`
+
+* [x] **Implement ToolStepStrategy** ✅ (Completed 2024-12-22)
+  - [x] Create `src/petal/core/steps/tool.py` with `ToolStepStrategy` class
+  - [x] Support LangChain tools and ReAct-style scratchpad
+  - [x] Implement conditional routing and tool execution
+  - [x] Create unit tests in `tests/petal/test_steps_tool.py` (100% coverage)
+
+* [x] **Implement ReactStepStrategy** ✅ (Completed 2024-12-22)
+  - [x] Create `src/petal/core/steps/react.py` with `ReactStepStrategy` class
+  - [x] Support ReAct loop with tool usage and reasoning
+  - [x] Implement max_iterations and reasoning prompts
+  - [x] Create unit tests in `tests/petal/test_steps_react.py` (100% coverage)
 
 ### Phase 2: Configuration Management (Configuration Object Pattern)
 
@@ -166,19 +178,19 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 
 ### Phase 6: Testing and Documentation
 
-* [ ] **Comprehensive Integration Testing**
-  - [ ] Create `tests/integration/test_factory_refactor.py`
-  - [ ] Test complete agent building workflows with new architecture
-  - [ ] Test backward compatibility with existing code
-  - [ ] Test performance impact of new architecture
-  - [ ] Test error handling and edge cases
+* [x] **Comprehensive Integration Testing**
+  - [x] Create `tests/integration/test_yaml_loading.py`
+  - [x] Test complete agent building workflows with new architecture
+  - [x] Test backward compatibility with existing code
+  - [x] Test performance impact of new architecture
+  - [x] Test error handling and edge cases
 
-* [ ] **Update Documentation**
-  - [ ] Update `docs/source/api/factory.rst` with new architecture
-  - [ ] Create migration guide from old to new factory usage
-  - [ ] Update all examples to use new builder pattern
-  - [ ] Add architectural decision records (ADRs) for the refactoring
-  - [ ] Update README.md with new usage patterns
+* [x] **Update Documentation**
+  - [x] Update `docs/source/api/factory.rst` with new architecture
+  - [x] Create migration guide from old to new factory usage
+  - [x] Update all examples to use new builder pattern
+  - [x] Add architectural decision records (ADRs) for the refactoring
+  - [x] Update README.md with new usage patterns
 
 * [ ] **Performance Optimization**
   - [ ] Profile new architecture for performance bottlenecks
@@ -201,29 +213,123 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
   - [x] All 39 tests passing with comprehensive validation
   - [x] No regressions in existing functionality
 
-### Phase 7: Cleanup and Finalization
+* [x] **Create YAML Parser and Type Detection** ✅ (Completed 2024-12-19)
+  - [x] Create `src/petal/core/yaml/__init__.py`
+  - [x] Create `src/petal/core/yaml/parser.py` with `YAMLNodeParser` class
+  - [x] Implement `parse_node_config(path: str) -> BaseNodeConfig` method
+  - [x] Implement `detect_node_type(yaml_data: Dict) -> str` method
+  - [x] Add support for YAML validation and schema checking
+  - [x] Create unit tests in `tests/petal/test_yaml_parser.py`
 
-* [x] **Remove Deprecated Code**
-  - [x] Remove old `ChatStepBuilder` class completely
-  - [x] Remove old step management code from `AgentFactory`
-  - [x] Remove old state type creation logic
-  - [x] Clean up unused imports and dependencies
-  - [x] Update type hints and annotations
+* [x] **Extend AgentFactory with YAML Support** ✅ (Completed 2024-12-19)
+  - [x] Add `node_from_yaml(path: str) -> Runnable` method to AgentFactory
+  - [x] Integrate with existing step registry and strategies
+  - [x] Add validation for YAML file existence and format
+  - [x] Add error handling for malformed YAML configurations
+  - [x] Create unit tests in `tests/petal/test_factory.py`
 
-* [x] **Final Testing and Validation**
+* [x] **Create Node Configuration Handlers** ✅ (Completed 2024-12-19)
+  - [x] Create `src/petal/core/yaml/handlers/__init__.py`
+  - [x] Create `src/petal/core/yaml/handlers/base.py` with `NodeConfigHandler` ABC
+  - [x] Create `src/petal/core/yaml/handlers/llm.py` with `LLMNodeHandler`
+  - [x] Create `src/petal/core/yaml/handlers/react.py` with `ReactNodeHandler`
+  - [x] Create `src/petal/core/yaml/handlers/custom.py` with `CustomNodeHandler`
+  - [x] Create `src/petal/core/yaml/handlers/factory.py` with `NodeHandlerFactory`
+  - [x] Implement `create_node(config: BaseNodeConfig) -> Runnable` method
+  - [x] Create unit tests in `tests/petal/test_yaml_handlers.py`
+
+### Phase 2: Advanced Configuration Support
+
+* [x] **Add State Schema Support** ✅ (Completed 2024-12-19)
+  - [x] Extend YAML models to support state schema definitions
+  - [x] Add `StateSchemaConfig` with field definitions and validation
+  - [x] Integrate with existing `StateTypeFactory`
+  - [x] Support dynamic state type creation from YAML
+  - [x] Create unit tests for state schema loading
+
+* [x] **Add Tool Registry Integration** ✅ (Completed 2024-12-19)
+  - [x] Extend `ReactNodeConfig` to support tool references
+  - [x] Add tool discovery and resolution from YAML
+  - [x] Support both direct tool names and tool configurations
+  - [x] Integrate with existing `ToolFactory`
+  - [x] Create unit tests for tool integration
+
+* [ ] **Add Memory Configuration**
+  - [ ] Extend YAML models to support memory configuration
+  - [ ] Add `MemoryConfig` with persistence settings
+  - [ ] Support different memory backends (file, database, etc.)
+  - [ ] Integrate with existing memory management
+  - [ ] Create unit tests for memory configuration
+
+### Phase 3: Logging and Debugging
+
+* [ ] **Add Logging Configuration**
+  - [ ] Extend YAML models to support logging settings
+  - [ ] Add `LoggingConfig` with level, format, handlers
+  - [ ] Support Rich logging integration
+  - [ ] Add debug mode configuration
+  - [ ] Create unit tests for logging configuration
+
+* [ ] **Add Validation and Error Handling**
+  - [ ] Add comprehensive YAML schema validation
+  - [ ] Add detailed error messages for configuration issues
+  - [ ] Add configuration validation before node creation
+  - [ ] Add support for configuration inheritance and defaults
+  - [ ] Create unit tests for validation and error handling
+
+### Phase 4: Integration and Testing
+
+* [x] **Create Example YAML Configurations** ✅ (Completed 2024-12-19)
+  - [x] Create `examples/yaml/llm_node.yaml` with LLM configuration
+  - [x] Create `examples/yaml/react_node.yaml` with React configuration
+  - [x] Create `examples/yaml/custom_node.yaml` with custom configuration
+  - [x] Create `examples/yaml/complex_node.yaml` with all features
+  - [x] Add documentation for YAML format and options
+
+* [x] **Integration Testing** ✅ (Completed 2024-12-19)
+  - [x] Create `tests/integration/test_yaml_loading.py`
+  - [x] Test complete node creation from YAML files
+  - [x] Test error handling for invalid configurations
+  - [x] Test integration with existing AgentFactory methods
+  - [x] Test performance of YAML loading vs programmatic creation
+
+* [x] **Documentation and Examples** ✅ (Completed 2024-12-19)
+  - [x] Update `docs/source/api/factory.rst` with YAML loading
+  - [x] Create YAML configuration guide
+  - [x] Add examples to playground and demo files
+  - [x] Create migration guide from programmatic to YAML configuration
+  - [x] Add troubleshooting section for common YAML issues
+
+### Phase 5: Optimization and Polish
+
+* [ ] **Performance Optimization**
+  - [ ] Add YAML parsing caching for repeated loads
+  - [ ] Optimize node creation from YAML configurations
+  - [ ] Add lazy loading for large configurations
+  - [ ] Create performance benchmarks
+  - [ ] Add memory usage monitoring
+
+* [ ] **Advanced Features**
+  - [ ] Add support for YAML includes and inheritance
+  - [ ] Add support for environment variable substitution
+  - [ ] Add support for conditional configuration based on environment
+  - [ ] Add support for configuration templates and macros
+  - [ ] Create unit tests for advanced features
+
+### Phase 6: Final Validation
+
+* [x] **Comprehensive Testing** ✅ (Completed 2024-12-19)
   - [x] Run complete test suite to ensure no regressions
-  - [x] Test all existing examples and playground code
+  - [x] Test all existing examples with new YAML loading
   - [x] Validate that all existing functionality still works
   - [x] Check code coverage is maintained or improved
   - [x] Run performance benchmarks to ensure no degradation
 
-* [x] **Update Development Workflow** ✅ (Completed 2024-12-22)
-  - [x] Update `PLANNING.md` with new architecture decisions
-  - [x] Update `GIT_WORKFLOW.md` if needed for new patterns
-  - [x] Update pre-commit hooks if needed for new code structure
-  - [x] Update CI/CD pipeline if needed for new testing patterns
-
----
+* [x] **Documentation** ✅ (Completed 2024-12-19)
+  - [x] Update README.md with YAML loading examples
+  - [x] Create migration guide for existing users
+  - [x] Add architectural decision records (ADRs) for YAML support
+  - [x] Update CI/CD pipeline for YAML configuration testing
 
 ## 🧠 AgentFactory
 
@@ -241,19 +347,19 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [ ] Add `.with_retry(n)` for retry logic
 * [ ] Add `.with_timeout()` support
 * [x] Add `.with_tool_registry()` to inject tools
-* [ ] Add `.with_mcp_proxy()` for deferred MCP toolkit resolution
+* [x] Add `.with_mcp_proxy()` for deferred MCP toolkit resolution
 * [x] Add `.build()` to compile final agent Runnable
 * [x] Add `.run()` to execute with state dict
 * [x] Add `.as_node()` for LangGraph compatibility
 
 ### Extras
 
+* [x] Add `AgentFactory.node_from_yaml(path)` to load nodes from YAML with automatic type detection
 * [ ] Add `AgentFactory.from_config(path)`
 * [ ] Add `AgentFactory.from_steps(*steps)`
 * [ ] Add `.enable_dev_mode()`
 * [ ] Add `.freeze()` to lock config
 * [ ] Add `.set_logger()`
-* [ ] Add `.node_from_yaml(path)` to load nodes from YAML with automatic type detection (see YAML_NODE_IMPLEMENTATION.md for detailed plan)
 
 ---
 
@@ -262,7 +368,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 ### Core Implementation
 
 * [x] Create `ToolFactory` class
-* [x] Implement `.add(fn)` for direct registration (now `.add(name, fn)`)
+* [x] Implement `.add(name, fn)` for direct registration
 * [x] Implement `.resolve(name)` to retrieve tool
 * [x] Implement `.list()` to show all registered tools
 * [x] Implement `.add_mcp(name, resolver)` for mcp related tools
@@ -272,7 +378,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [ ] Add `.discover(from_folders)` for directory discovery
 * [ ] Add `.discover(from_files)` for file-level loading
 * [ ] Add `.from_folder(path)` shortcut
-* [ ] Support `mcp:` style namespacing
+* [x] Support `mcp:` style namespacing
 
 ---
 
@@ -310,7 +416,7 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 * [x] Unit tests for each method above
 * [x] Integration tests for full agent flow
 * [ ] LangGraph test with multi-node chain
-* [ ] YAML config roundtrip test
+* [x] YAML config roundtrip test
 * [x] Add pre-built test agents in `examples/`
 
 ---
@@ -449,6 +555,36 @@ When working on these TODOS, refer to AGENT_API.md for specifications on how eac
 - **Coverage:** Updated all related tests and playground examples
 - **Quality:** Proper function signatures with no linter warnings
 - **Status:** Full compatibility with LangGraph framework
+
+---
+
+## 🔄 Checkpointer Integration
+
+* [x] **Implement basic checkpointer system** - See `CHECKPOINTER_PLAN.md` for detailed implementation plan
+  - Basic integration completed (2024-12-22)
+  - Remaining tasks: file system checkpointer, database checkpointer, advanced features
+
+---
+
+## 🎯 Current Focus Areas (2024-12-22)
+
+### High Priority
+1. **Memory Support** - Implement `.with_memory()` for state persistence
+2. **Logging Integration** - Add `.with_logger()` for structured logging
+3. **Conditional Execution** - Add `.with_condition()` for step guards
+4. **Retry Logic** - Add `.with_retry(n)` for fault tolerance
+5. **Timeout Support** - Add `.with_timeout()` for step timeouts
+
+### Medium Priority
+1. **GraphFactory** - Create multi-agent orchestration framework
+2. **Tool Discovery** - Add automatic tool discovery from folders
+3. **Advanced Graph Building** - Support conditional edges and branching
+4. **Performance Optimization** - Profile and optimize critical paths
+
+### Low Priority
+1. **Plugin System Enhancement** - Add more plugin types and discovery
+2. **Configuration Inheritance** - Support YAML configuration inheritance
+3. **Advanced Features** - Encryption, compression, advanced metadata
 
 ---
 

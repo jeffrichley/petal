@@ -700,12 +700,12 @@ class TestAutoNamespace:
         def test_function():
             pass
 
-        test_function.__module__ = None
+        test_function.__module__ = None  # type: ignore[assignment]
         test_function.__name__ = "test_function"
 
         from petal.core.decorators import auto_namespace
 
-        result = auto_namespace(test_function)  # type: ignore[assignment]
+        result = auto_namespace(test_function)
         assert result == "None:test_function"
 
     def test_auto_namespace_with_none_name(self):

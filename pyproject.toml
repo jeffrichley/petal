@@ -18,12 +18,16 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
+    "aiosqlite>=0.21.0",
     "fastmcp>=2.10.2",
     "langchain>=0.3.26",
     "langchain-mcp-adapters>=0.1.8",
     "langchain-ollama>=0.3.4",
     "langchain-openai>=0.3.27",
     "langgraph>=0.5.1",
+    "langgraph-checkpoint>=2.1.0",
+    "langgraph-checkpoint-postgres>=2.0.23",
+    "langgraph-checkpoint-sqlite>=2.0.10",
     "pre-commit>=4.2.0",
     "pyyaml>=6.0.2",
     "rich>=14.0.0",

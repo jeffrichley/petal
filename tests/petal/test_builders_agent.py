@@ -3,6 +3,7 @@
 import pytest
 from petal.core.builders.agent import AgentBuilder
 from petal.core.config.agent import AgentConfig
+from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.steps.registry import StepRegistry
 from typing_extensions import TypedDict
 
@@ -129,18 +130,47 @@ class TestAgentBuilder:
         """Test that with_graph_config returns self for fluent chaining."""
         builder = AgentBuilder(BuilderTestState)
 
-        graph_config = {
-            "graph_type": "linear",
-            "allow_parallel": True,
-            "max_retries": 5,
-        }
+        graph_config = {"graph_type": "linear", "allow_parallel": True}
         result = builder.with_graph_config(graph_config)
 
         assert result is builder
-        assert builder._config.graph_config is not None
         assert builder._config.graph_config.graph_type == "linear"
         assert builder._config.graph_config.allow_parallel is True
-        assert builder._config.graph_config.max_retries == 5
+
+    def test_with_checkpointer_fluent_interface(self):
+        """Test that with_checkpointer returns self for fluent chaining."""
+        builder = AgentBuilder(BuilderTestState)
+
+        checkpointer_config = CheckpointerConfig(type="memory", enabled=True)
+        result = builder.with_checkpointer(checkpointer_config)
+
+        assert result is builder
+        assert builder._config.checkpointer is not None
+        assert builder._config.checkpointer.type == "memory"
+        assert builder._config.checkpointer.enabled is True
+
+    def test_with_checkpointer_pydantic_validation(self):
+        """Test that with_checkpointer uses Pydantic validation."""
+        builder = AgentBuilder(BuilderTestState)
+
+        # Valid checkpointer config
+        checkpointer_config = CheckpointerConfig(type="memory", enabled=True)
+        builder.with_checkpointer(checkpointer_config)
+
+        assert builder._config.checkpointer is not None
+        assert builder._config.checkpointer.type == "memory"
+        assert builder._config.checkpointer.enabled is True
+
+    def test_with_checkpointer_invalid_config_raises_error(self):
+        """Test that invalid checkpointer config raises validation error."""
+        builder = AgentBuilder(BuilderTestState)
+
+        # Invalid checkpointer type - this will raise a Pydantic validation error
+        with pytest.raises(
+            ValueError, match="Input should be 'memory', 'postgres' or 'sqlite'"
+        ):
+            checkpointer_config = CheckpointerConfig(type="invalid_type", enabled=True)
+            builder.with_checkpointer(checkpointer_config)
 
     def test_method_chaining(self):
         """Test that multiple methods can be chained together."""

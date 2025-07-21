@@ -7,6 +7,7 @@ from langgraph.graph import END, START, StateGraph
 
 from petal.core.agent import Agent
 from petal.core.config.agent import AgentConfig
+from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.config.state import StateTypeFactory
 from petal.core.steps.registry import StepRegistry
 
@@ -110,7 +111,57 @@ class AgentBuilderDirector:
             if i == len(self.config.steps) - 1:
                 graph.add_edge(node_name, END)
 
-        return graph.compile()
+        # Handle checkpointer configuration
+        if self.config.checkpointer and self.config.checkpointer.enabled:
+            checkpointer = await self._create_checkpointer(self.config.checkpointer)
+            return graph.compile(checkpointer=checkpointer)
+        else:
+            return graph.compile()
+
+    async def _create_checkpointer(self, checkpointer_config: CheckpointerConfig):
+        """
+        Create a LangGraph checkpointer based on configuration.
+
+        Args:
+            checkpointer_config: The checkpointer configuration
+
+        Returns:
+            A LangGraph checkpointer instance
+
+        Raises:
+            ValueError: If checkpointer type is not supported
+        """
+        if checkpointer_config.type == "memory":
+            from langgraph.checkpoint.memory import InMemorySaver
+
+            return InMemorySaver()
+        elif checkpointer_config.type == "postgres":
+            from langgraph.checkpoint.postgres import PostgresSaver
+
+            if not checkpointer_config.config:
+                raise ValueError(
+                    "Postgres checkpointer requires configuration (connection_string)"
+                )
+            return PostgresSaver(**checkpointer_config.config)
+        elif checkpointer_config.type == "sqlite":
+            import aiosqlite
+            from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+            if not checkpointer_config.config:
+                raise ValueError("SQLite checkpointer requires configuration (db_file)")
+
+            # Get the database file path from config
+            db_file = checkpointer_config.config.get(
+                "db_file", "./data/conversations.db"
+            )
+
+            # Create async connection
+            conn = await aiosqlite.connect(db_file)
+            return AsyncSqliteSaver(conn)
+        else:
+            raise ValueError(
+                f"Unsupported checkpointer type: {checkpointer_config.type}"
+            )
 
     def _validate_configuration(self) -> None:
         """

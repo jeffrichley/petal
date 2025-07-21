@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 from petal.core.agent import Agent
 from petal.core.builders.agent import AgentBuilder
 from petal.core.config.agent import LLMConfig
+from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.registry import ToolRegistry
 
 
@@ -54,6 +55,21 @@ class AgentFactory:
         Add an async step to the agent. If no node_name is provided, one will be auto-generated.
         """
         self._builder.with_step("custom", step_function=step, node_name=node_name)
+        return self
+
+    def with_checkpointer(
+        self, checkpointer_config: CheckpointerConfig
+    ) -> "AgentFactory":
+        """
+        Configure checkpointer for state persistence.
+
+        Args:
+            checkpointer_config: The checkpointer configuration
+
+        Returns:
+            self: For method chaining
+        """
+        self._builder._config.set_checkpointer(checkpointer_config)
         return self
 
     def with_tools(

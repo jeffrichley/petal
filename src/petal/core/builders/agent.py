@@ -11,6 +11,7 @@ from petal.core.config.agent import (
     MemoryConfig,
     StepConfig,
 )
+from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.steps.registry import StepRegistry
 
 
@@ -41,6 +42,7 @@ class AgentBuilder:
             graph_config=GraphConfig(),
             llm_config=None,
             logging_config=LoggingConfig(),
+            checkpointer=None,
         )
         self._registry = StepRegistry()
 
@@ -198,6 +200,28 @@ class AgentBuilder:
             self._config.graph_config = graph
         except Exception as e:
             raise ValueError(f"Invalid graph configuration: {e}") from e
+
+        return self
+
+    def with_checkpointer(
+        self, checkpointer_config: CheckpointerConfig
+    ) -> "AgentBuilder":
+        """
+        Add checkpointer configuration to the agent.
+
+        Args:
+            checkpointer_config: The checkpointer configuration
+
+        Returns:
+            self: For method chaining
+
+        Raises:
+            ValueError: If checkpointer configuration is invalid
+        """
+        try:
+            self._config.set_checkpointer(checkpointer_config)
+        except Exception as e:
+            raise ValueError(f"Invalid checkpointer configuration: {e}") from e
 
         return self
 

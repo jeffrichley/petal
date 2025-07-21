@@ -4,6 +4,8 @@ from typing import Annotated, Any, Dict, List, Optional, Type
 
 from pydantic import AfterValidator, BaseModel, Field
 
+from petal.core.config.checkpointer import CheckpointerConfig
+
 
 def validate_strategy_type(v: str) -> str:
     """Validate strategy type is not empty."""
@@ -124,6 +126,9 @@ class AgentConfig(BaseModel):
     logging_config: LoggingConfig = Field(
         default_factory=LoggingConfig, description="Logging configuration"
     )
+    checkpointer: Optional[CheckpointerConfig] = Field(
+        default=None, description="Checkpointer configuration"
+    )
 
     def add_step(self, step_config: StepConfig) -> None:
         """Add a step to the configuration."""
@@ -140,6 +145,10 @@ class AgentConfig(BaseModel):
     def set_logging(self, logging_config: LoggingConfig) -> None:
         """Set logging configuration."""
         self.logging_config = logging_config
+
+    def set_checkpointer(self, checkpointer_config: CheckpointerConfig) -> None:
+        """Set checkpointer configuration."""
+        self.checkpointer = checkpointer_config
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
