@@ -39,8 +39,11 @@ repos:
         entry: pip-audit
         language: system
         pass_filenames: false
+        files: ^(pyproject\.toml|requirements.*\.txt|Pipfile|poetry\.lock)
       - id: coverage-check
         name: coverage-check
         entry: scripts/check_coverage.py
         language: system
         pass_filenames: false
+        types: [python]
+        files: ^(src/|tests/|examples/|scripts/)
