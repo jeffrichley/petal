@@ -1,8 +1,8 @@
 import pytest
 from langchain_core.messages import AIMessage
-from petal.core.factory import AgentFactory
-
 from tests.petal.conftest_factory import ChatState
+
+from petal.core.factory import AgentFactory
 
 
 @pytest.mark.asyncio

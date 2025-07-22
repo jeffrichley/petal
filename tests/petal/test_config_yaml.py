@@ -3,6 +3,8 @@
 from typing import Dict, List
 
 import pytest
+from pydantic import ValidationError
+
 from petal.core.config.yaml import (
     BaseNodeConfig,
     LLMNodeConfig,
@@ -16,7 +18,6 @@ from petal.core.config.yaml import (
     validate_provider,
     validate_temperature,
 )
-from pydantic import ValidationError
 
 
 class TestValidationFunctions:

@@ -1,11 +1,12 @@
 import pytest
+from pydantic import ValidationError
+
 from petal.core.config.yaml import (
     CustomNodeConfig,
     LLMNodeConfig,
     ReactNodeConfig,
     ToolDiscoveryConfig,
 )
-from pydantic import ValidationError
 
 
 @pytest.mark.asyncio

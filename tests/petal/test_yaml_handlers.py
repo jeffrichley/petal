@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from langchain_core.tools import BaseTool
+
 from petal.core.config.yaml import (
     BaseNodeConfig,
     CustomNodeConfig,

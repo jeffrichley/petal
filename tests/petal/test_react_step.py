@@ -4,10 +4,11 @@ from typing import List
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from pydantic import BaseModel
+
 from petal.core.decorators import petaltool
 from petal.core.steps.react import ReactStepStrategy
 from petal.core.tool_factory import ToolFactory
-from pydantic import BaseModel
 
 
 class ReactTestState(BaseModel):

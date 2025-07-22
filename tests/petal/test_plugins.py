@@ -5,6 +5,7 @@ import tempfile
 from typing import Any, Dict, Type
 
 import pytest
+
 from petal.core.plugins.base import PluginManager, StepPlugin
 from petal.core.steps.base import StepStrategy
 

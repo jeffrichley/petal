@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from petal.core.builders.director import AgentBuilderDirector
 from petal.core.config.agent import AgentConfig, StepConfig
 from petal.core.config.checkpointer import CheckpointerConfig

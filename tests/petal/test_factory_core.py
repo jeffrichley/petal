@@ -4,11 +4,11 @@ from typing import Any, Dict
 
 import pytest
 from langgraph.graph import END, START, StateGraph
-from petal.core.agent import Agent
-from petal.core.factory import AgentFactory
+from tests.petal.conftest_factory import SimpleState
 from typing_extensions import TypedDict
 
-from tests.petal.conftest_factory import SimpleState
+from petal.core.agent import Agent
+from petal.core.factory import AgentFactory
 
 
 @pytest.mark.asyncio

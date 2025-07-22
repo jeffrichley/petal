@@ -1,10 +1,10 @@
-[![Build Status](https://github.com/jeffrichley/petal/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffrichley/petal/actions)
+[![CI](https://github.com/jeffrichley/petal/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffrichley/petal/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/petal.svg)](https://badge.fury.io/py/petal)
-[![Python Versions](https://img.shields.io/pypi/pyversions/petal.svg)](https://pypi.org/project/petal/)
+[![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pre-commit enabled](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 [![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)](https://github.com/pypa/pip-audit)
-[![Coverage](https://img.shields.io/codecov/c/gh/jeffrichley/petal)](https://codecov.io/gh/jeffrichley/petal)
+[![Coverage](https://codecov.io/gh/jeffrichley/petal/branch/main/graph/badge.svg)](https://codecov.io/gh/jeffrichley/petal)
 
 # 🌸 Petal
 

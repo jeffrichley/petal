@@ -3,6 +3,7 @@ import os
 import pytest
 import yaml
 from langchain_core.tools import BaseTool
+
 from petal.core.discovery.config import ConfigDiscovery
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "../fixtures/")

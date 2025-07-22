@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.message import add_messages
-from petal.core.factory import AgentFactory
 from pydantic import BaseModel
+from tests.petal.conftest_factory import ChatState, DefaultState
 from typing_extensions import TypedDict
 
-from tests.petal.conftest_factory import ChatState, DefaultState
+from petal.core.factory import AgentFactory
 
 
 @pytest.mark.asyncio

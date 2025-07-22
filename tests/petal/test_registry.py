@@ -4,6 +4,7 @@ from typing import Optional
 
 import pytest
 from langchain_core.tools import BaseTool
+
 from petal.core.registry import AmbiguousToolNameError, DiscoveryStrategy, ToolRegistry
 
 

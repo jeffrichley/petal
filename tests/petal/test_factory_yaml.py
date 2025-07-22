@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 import pytest
+from tests.petal.conftest_factory import DefaultState
+
 from petal.core.config.yaml import LLMNodeConfig, ReactNodeConfig
 from petal.core.factory import AgentFactory
 from petal.core.yaml.parser import YAMLFileNotFoundError
-
-from tests.petal.conftest_factory import DefaultState
 
 
 @pytest.mark.asyncio

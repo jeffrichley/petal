@@ -1,7 +1,7 @@
 import pytest
-from petal.core.factory import AgentFactory
-
 from tests.petal.conftest_factory import ChatState
+
+from petal.core.factory import AgentFactory
 
 
 # New tests for ToolRegistry integration
@@ -43,6 +43,7 @@ class TestToolRegistryIntegration:
         """AgentFactory should maintain backward compatibility with existing API."""
         # Arrange
         from langchain_core.tools import BaseTool
+
         from petal.core.registry import ToolRegistry
 
         class DummyTool(BaseTool):

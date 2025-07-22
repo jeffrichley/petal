@@ -10,6 +10,7 @@ import tempfile
 
 import yaml
 from langchain_core.tools import tool
+
 from petal.core.discovery.config import ConfigDiscovery
 from petal.core.registry import ToolRegistry
 

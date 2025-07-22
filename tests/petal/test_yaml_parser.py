@@ -1,4 +1,5 @@
 import pytest
+
 from petal.core.config.yaml import LLMNodeConfig
 from petal.core.yaml.parser import YAMLFileNotFoundError, YAMLNodeParser, YAMLParseError
 

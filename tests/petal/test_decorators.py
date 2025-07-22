@@ -8,10 +8,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel
+
 from petal.core.decorators import petalmcp, petalmcp_tool, petaltool
 from petal.core.registry import AmbiguousToolNameError, ToolRegistry
 from petal.core.tool_factory import ToolFactory
-from pydantic import BaseModel
 
 
 class TestPetaltoolDecorator:

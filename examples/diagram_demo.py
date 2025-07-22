@@ -6,8 +6,9 @@ Demo script for testing the diagram_graph functionality.
 from typing import TypedDict
 
 from langgraph.graph.message import add_messages
-from petal.core.factory import AgentFactory
 from typing_extensions import Annotated
+
+from petal.core.factory import AgentFactory
 
 
 class DemoState(TypedDict):

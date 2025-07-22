@@ -1,11 +1,12 @@
 """Unit tests for AgentBuilder."""
 
 import pytest
+from typing_extensions import TypedDict
+
 from petal.core.builders.agent import AgentBuilder
 from petal.core.config.agent import AgentConfig
 from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.steps.registry import StepRegistry
-from typing_extensions import TypedDict
 
 
 class BuilderTestState(TypedDict):

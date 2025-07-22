@@ -14,8 +14,9 @@ from typing import Annotated
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langgraph.graph.message import add_messages
-from petal import AgentFactory
 from typing_extensions import TypedDict
+
+from petal import AgentFactory
 
 load_dotenv()
 

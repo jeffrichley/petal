@@ -4,6 +4,7 @@ import asyncio
 from typing import Annotated, TypedDict
 
 from langgraph.graph.message import add_messages
+
 from petal.core.config.checkpointer import CheckpointerConfig
 from petal.core.factory import AgentFactory
 
@@ -136,8 +137,9 @@ def demonstrate_consistent_interface():
 
     # Example 1: Using AgentFactory with_checkpointer
     print("\n1. AgentFactory with_checkpointer:")
-    from petal.core.factory import AgentFactory
     from typing_extensions import TypedDict
+
+    from petal.core.factory import AgentFactory
 
     class DemoState(TypedDict):
         messages: list

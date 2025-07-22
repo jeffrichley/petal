@@ -33,7 +33,6 @@ dependencies = [
     "rich>=14.0.0",
     "setuptools>=80.9.0",
     "starlette>=0.47.2",
-    "types-pyyaml>=6.0.12.20250516",
 ]
 
 [project.optional-dependencies]
@@ -49,8 +48,8 @@ dev = [
   "pip-audit>=2.6",
   "ipython>=8.10",
   "types-requests",
-  "fastmcp",
-  "langchain-mcp-adapters>=0.1.8"
+  "types-pyyaml>=6.0.12.20250516",
+  "vulture>=2.14",
 ]
 
 docs = [
@@ -70,8 +69,7 @@ test = [
 ]
 
 typecheck = [
-  "mypy",
-  "types-requests"
+  "mypy"
 ]
 
 security = [
@@ -88,11 +86,11 @@ where = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py311"]
-skip-magic-trailing-comma = false
 
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+src = ["src"]  # Helps with module resolution
 
 [tool.ruff.lint]
 extend-select = [
@@ -102,6 +100,8 @@ ignore = [
   "E501",  # Line too long (we use Black's wrapping)
   "B008"   # Don't call function with mutable default
 ]
+fixable = ["ALL"]  # Enables autofix where possible
+unfixable = []     # Keep empty to allow all fixes
 
 [tool.mypy]
 files = ["src", "tests", "examples", "scripts"]
@@ -133,19 +133,22 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 norecursedirs = ["debug_*.py", "test_*_debug.py", "test_langgraph_*.py"]
 addopts = [
-    "--cov=src/petal",
+    "--cov",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=80"
+    "--cov-report=xml"
 ]
 filterwarnings = [
     "ignore::pydantic.PydanticDeprecatedSince20:langchain_core.*",
     "ignore::pydantic.PydanticDeprecatedSince20:langchain.*"
 ]
 
-[dependency-groups]
-dev = [
-    "types-pyyaml>=6.0.12.20250516",
-    "vulture>=2.14",
-]
+[tool.coverage.run]
+source = ["src/petal"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.coverage.html]
+directory = "htmlcov"

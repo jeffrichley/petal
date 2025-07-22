@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
+
 from petal.core.discovery.folder import FolderDiscovery
 
 

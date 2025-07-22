@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 
 import pytest
-from petal.core.agent import Agent
-from petal.core.factory import AgentFactory
+from tests.petal.conftest_factory import ChatState
 from typing_extensions import TypedDict
 
-from tests.petal.conftest_factory import ChatState
+from petal.core.agent import Agent
+from petal.core.factory import AgentFactory
 
 
 class TestDiagramAgent:

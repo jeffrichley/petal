@@ -3,14 +3,14 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
-from petal.core.factory import AgentFactory
-
 from tests.petal.conftest_factory import (
     ChatState,
     MixedState,
     SimpleState,
     add_messages,
 )
+
+from petal.core.factory import AgentFactory
 
 
 @pytest.mark.asyncio

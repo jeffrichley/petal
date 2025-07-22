@@ -1,9 +1,10 @@
 """Tests for checkpointer configuration."""
 
 import pytest
+from pydantic import ValidationError
+
 from petal.core.config.agent import AgentConfig
 from petal.core.config.checkpointer import CheckpointerConfig
-from pydantic import ValidationError
 
 
 class TestCheckpointerConfig:

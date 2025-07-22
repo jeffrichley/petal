@@ -2,11 +2,11 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
+from pydantic import BaseModel
+from tests.petal.conftest_factory import ChatState
+
 from petal.core.factory import AgentFactory
 from petal.core.tool_factory import ToolFactory
-from pydantic import BaseModel
-
-from tests.petal.conftest_factory import ChatState
 
 
 @pytest.mark.asyncio

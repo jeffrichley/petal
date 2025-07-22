@@ -4,8 +4,9 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import tool
 from langgraph.graph import END
-from petal.core.builders.react import ReActAgentBuilder, ReActLoopState
 from pydantic import BaseModel, Field
+
+from petal.core.builders.react import ReActAgentBuilder, ReActLoopState
 
 
 @tool

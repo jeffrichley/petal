@@ -4,13 +4,14 @@ import logging
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from petal.core.factory import AgentFactory
-from petal.core.tool_factory import ToolFactory
 from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+
+from petal.core.factory import AgentFactory
+from petal.core.tool_factory import ToolFactory
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
