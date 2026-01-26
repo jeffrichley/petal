@@ -77,27 +77,23 @@ class TestFolderDiscovery:
             test_file = Path(temp_dir) / "test_tool.py"
             excluded_file = Path(temp_dir) / "test_temp.py"
 
-            test_file.write_text(
-                '''
+            test_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("test_tool")
 def test_tool():
     """A test tool for discovery."""
     pass
-'''
-            )
+''')
 
-            excluded_file.write_text(
-                '''
+            excluded_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("excluded_tool")
 def excluded_tool():
     """An excluded tool for discovery."""
     pass
-'''
-            )
+''')
 
             discovery = FolderDiscovery(
                 folders=[temp_dir], exclude_patterns=["*_temp.py"], auto_discover=False
@@ -117,16 +113,14 @@ def excluded_tool():
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a real tool file
             tool_file = Path(temp_dir) / "cached_tool.py"
-            tool_file.write_text(
-                '''
+            tool_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("cached_tool")
 def cached_tool():
     """A tool for testing caching."""
     return "cached result"
-'''
-            )
+''')
 
             discovery = FolderDiscovery(folders=[temp_dir], auto_discover=False)
 
@@ -185,27 +179,23 @@ def cached_tool():
             tool1_file = Path(temp_dir) / "tool1.py"
             tool2_file = Path(temp_dir) / "tool2.py"
 
-            tool1_file.write_text(
-                '''
+            tool1_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("tool1")
 def tool1():
     """First test tool."""
     return "result1"
-'''
-            )
+''')
 
-            tool2_file.write_text(
-                '''
+            tool2_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("tool2")
 def tool2():
     """Second test tool."""
     return "result2"
-'''
-            )
+''')
 
             discovery = FolderDiscovery(folders=[temp_dir], auto_discover=False)
 
@@ -256,16 +246,14 @@ def tool2():
             try:
                 # Create a real tool file that matches the pattern *tools*.py
                 tool_file = Path(temp_dir) / "real_tools.py"
-                tool_file.write_text(
-                    '''
+                tool_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("real_python_path_tool")
 def real_python_path_tool():
     """A real tool found via Python path scanning."""
     return "real result"
-'''
-                )
+''')
 
                 # Actually scan for tools (no mocking of core functionality)
                 tools = await discovery._scan_python_path()
@@ -313,12 +301,10 @@ def real_python_path_tool():
 
         # Create a file that will cause import errors
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                """
+            f.write("""
 # This will cause a syntax error
 invalid syntax here
-"""
-            )
+""")
             f.flush()
 
             # Should handle the syntax error gracefully
@@ -344,16 +330,14 @@ invalid syntax here
 
                 # Create a tool file that would be found if scanning was enabled
                 tool_file = Path(temp_dir) / "disabled_tools.py"
-                tool_file.write_text(
-                    '''
+                tool_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("disabled_tool")
 def disabled_tool():
     """A tool that should not be found when scanning is disabled."""
     return "disabled"
-'''
-                )
+''')
 
                 # Perform full scan with Python path scanning disabled
                 await discovery._perform_full_scan()
@@ -380,27 +364,23 @@ def disabled_tool():
             root_file = Path(temp_dir) / "root_tool.py"
             sub_file = subdir / "sub_tool.py"
 
-            root_file.write_text(
-                '''
+            root_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("root_tool")
 def root_tool():
     """Root level tool."""
     return "root"
-'''
-            )
+''')
 
-            sub_file.write_text(
-                '''
+            sub_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("sub_tool")
 def sub_tool():
     """Sub directory tool."""
     return "sub"
-'''
-            )
+''')
 
             # Test recursive scanning
             discovery_recursive = FolderDiscovery(
@@ -432,16 +412,14 @@ def sub_tool():
         discovery = FolderDiscovery()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 
 @petaltool("actual_test_tool")
 def actual_test_tool():
     """A test tool that should be discovered."""
     return "test result"
-'''
-            )
+''')
             f.flush()
 
             try:
@@ -466,16 +444,14 @@ def actual_test_tool():
 
         # Create a tool file that will register a tool but then fail to resolve
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 
 @petaltool("registry_test_tool")
 def registry_test_tool():
     """A tool that will be registered but may fail to resolve."""
     return "test"
-'''
-            )
+''')
             f.flush()
 
             try:
@@ -497,8 +473,7 @@ def registry_test_tool():
 
         # Create a file with an import that will fail
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 from nonexistent_module import some_function  # This will cause an ImportError
 
@@ -506,8 +481,7 @@ from nonexistent_module import some_function  # This will cause an ImportError
 def import_error_tool():
     """A tool that will fail to import due to missing dependency."""
     return some_function()
-'''
-            )
+''')
             f.flush()
 
             try:
@@ -528,8 +502,7 @@ def import_error_tool():
 
         # Create a file with a tool that will cause a runtime error when executed
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 
 # This will cause a NameError when the module is executed
@@ -539,8 +512,7 @@ undefined_variable = some_undefined_function()
 def runtime_error_tool():
     """A tool that will cause a runtime error."""
     return "test"
-'''
-            )
+''')
             f.flush()
 
             try:
@@ -569,16 +541,14 @@ def runtime_error_tool():
 
                 # Create a tool file that matches the pattern
                 tool_file = Path(temp_dir) / "dict_update_tools.py"
-                tool_file.write_text(
-                    '''
+                tool_file.write_text('''
 from petal.core.decorators import petaltool
 
 @petaltool("dict_update_tool")
 def dict_update_tool():
     """A tool to test dictionary updates."""
     return "dict update test"
-'''
-                )
+''')
 
                 # Start with empty tools dict
                 # Delete the line: tools = {}
@@ -609,16 +579,14 @@ def dict_update_tool():
 
         # Create a tool file that will register a new tool
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 
 @petaltool("registry_diff_tool")
 def registry_diff_tool():
     """A tool to test registry diff mechanism."""
     return "registry diff test"
-'''
-            )
+''')
             f.flush()
 
             try:
@@ -644,8 +612,7 @@ def registry_diff_tool():
 
         # Create a tool file that defines one BaseTool and registers another tool in the registry
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(
-                '''
+            f.write('''
 from petal.core.decorators import petaltool
 import petal.core.registry
 
@@ -660,8 +627,7 @@ def continue_test_tool():
     """A tool to test continue behavior on registry resolve exception."""
     return "continue test"
 registry.register("continue_test_tool", continue_test_tool)
-'''
-            )
+''')
             f.flush()
 
             try:
