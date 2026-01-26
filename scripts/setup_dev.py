@@ -9,6 +9,7 @@ Sets up a world-class Python development environment for new contributors.
 - Runs pip-audit and pytest
 - Prints next steps
 """
+
 import os
 import shutil
 import subprocess
@@ -86,8 +87,7 @@ def main() -> None:
     run(f'"{venv_bin}/pytest"', check=False)
 
     # 7. Print next steps
-    print(
-        """
+    print("""
 \033[92m✅ Development environment is ready!\033[0m
 
 Activate your virtual environment:
@@ -98,8 +98,7 @@ Activate your virtual environment:
 - Pre-commit hooks are installed and will run on every commit.
 - Run 'pytest' to test, 'pip-audit' to check security, and 'uv pip install -e .[dev]' to update deps.
 - See README.md for more info.
-"""
-    )
+""")
 
 
 if __name__ == "__main__":

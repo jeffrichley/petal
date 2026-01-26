@@ -774,8 +774,7 @@ async def test_config_discovery_real_world_usage(tmp_path):
     # Create a tools.py file with actual tools
     tools_file = tools_dir / "tools.py"
     with open(tools_file, "w") as f:
-        f.write(
-            '''from langchain_core.tools import tool
+        f.write('''from langchain_core.tools import tool
 
 @tool
 def search_database(query: str) -> str:
@@ -791,8 +790,7 @@ def send_email(recipient: str, subject: str, body: str) -> str:
 def calculate_tax(amount: float, rate: float) -> float:
     """Calculate tax for a given amount and rate."""
     return amount * rate / 100
-'''
-        )
+''')
 
     # Create a YAML config file
     config_file = config_dir / "tools.yaml"
